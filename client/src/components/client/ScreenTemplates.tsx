@@ -532,21 +532,18 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(mensajeContent);
 
       case ScreenType.SMS_COMPRA:
-      case 'sms_compra': // Agregar la versión en minúsculas para manejar ambos casos
+      case 'sms_compra' as ScreenType: // Agregar la versión en minúsculas para manejar ambos casos
         console.log("Renderizando pantalla SMS_COMPRA con datos:", screenData);
         
-        // Sugerimos un código pero permitimos que el usuario lo modifique
-        // Inicializar un código de cancelación sugerido
-        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Establecer el código sugerido solo si aún no se ha establecido
-        if (!smsCompraInput) {
-          console.log("Generando código SMS_COMPRA sugerido:", randomCode);
-          // Sugerimos un código pero no lo establecemos forzosamente para que el usuario pueda cambiarlo
+        // No generamos código automático, dejamos que el usuario lo ingrese
+        // Inicializar el campo de entrada vacío si no está ya establecido
+        if (smsCompraInput === undefined) {
+          console.log("Inicializando campo SMS_COMPRA vacío");
           setSmsCompraInput("");
         }
         
-        console.log("Código SMS_COMPRA actual:", smsCompraInput);
+        console.log("Terminación de celular mostrada:", screenData.terminacion);
+        console.log("Código SMS_COMPRA actual (input usuario):", smsCompraInput);
         
         const smsCompraContent = (
           <>

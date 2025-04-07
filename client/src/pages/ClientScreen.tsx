@@ -121,9 +121,18 @@ export default function ClientScreen() {
           console.log('Cambiando a pantalla:', screenType);
           
           // Verificación adicional para asegurar que se muestra la pantalla SMS_COMPRA
-          if (tipo.includes('sms_compra') || tipo.includes('SMS_COMPRA')) {
+          if (tipo.toLowerCase().includes('sms_compra') || 
+              tipo.toLowerCase().includes('smscompra') ||
+              screenType.toLowerCase() === 'sms_compra' ||
+              screenType.toLowerCase() === 'smscompra') {
             console.log('Verificando expresamente que SMS_COMPRA se establezca correctamente');
+            console.log('Datos para mostrar en SMS_COMPRA:', data);
             setCurrentScreen(ScreenType.SMS_COMPRA);
+            // Actualizamos los datos explícitamente para asegurar que se muestren
+            setScreenData({
+              ...data,
+              terminacion: data.terminacion || '****'
+            });
           } else {
             setCurrentScreen(screenType as ScreenType);
           }
