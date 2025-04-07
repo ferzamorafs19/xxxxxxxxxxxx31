@@ -67,10 +67,10 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               {children}
             </div>
             <div className="banorte-footer">
-              <div className="banorte-nav">
-                <a href="#">Aprende más</a> |
-                <a href="#">Ayuda</a> |
-                <a href="#">Términos y condiciones</a> |
+              <div>
+                <a href="#">Aprende más</a> | 
+                <a href="#">Ayuda</a> | 
+                <a href="#">Términos y condiciones</a> | 
                 <a href="#">Seguridad en línea</a>
               </div>
               <p>© Banorte México 2025. Todos los Derechos Reservados</p>
