@@ -306,13 +306,28 @@
   color: #000000;
 }
 
+.hsbc-page-background {
+  background: url('./assets/fondo-hsbc.jpg') no-repeat center center fixed;
+  background-size: cover;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
 .hsbc-button {
-  background-color: #DB0011;
+  background-color: #e60012;
   color: white;
+  border: none;
   border-radius: 4px;
   padding: 10px 20px;
   font-weight: bold;
   transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .hsbc-button:hover {
@@ -323,7 +338,7 @@
 .hsbc-container {
   background: white;
   margin: 20px auto;
-  padding: 25px;
+  padding: 30px;
   border-radius: 8px;
   text-align: center;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -332,13 +347,46 @@
 
 .hsbc-header {
   text-align: center;
-  background-color: #F5F5F5;
+  background-color: transparent;
   padding: 12px;
   font-weight: bold;
-  color: #DB0011;
-  border-top: 3px solid #DB0011;
-  border-bottom: 1px solid #ddd;
+  color: #333;
   font-size: 16px;
+}
+
+.hsbc-footer {
+  background-color: #2e2e2e;
+  color: white;
+  padding: 15px;
+  font-size: 12px;
+  width: 100%;
+  text-align: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+}
+
+.hsbc-input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.hsbc-links {
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.hsbc-links a {
+  color: #DB0011;
+  text-decoration: none;
+  margin: 0 5px;
+}
+
+.hsbc-links a:hover {
+  text-decoration: underline;
 }
 
 /* Estilos para Spin by OXXO */
