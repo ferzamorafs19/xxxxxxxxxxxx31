@@ -14,6 +14,7 @@ import bancoppelLogo from '@assets/bancoppel.png';
 import hsbcLogo from '@assets/Hsbc.png';
 import amexLogo from '@assets/Amex.png';
 import santanderLogo from '../../assets/santander_logo.png';
+import santanderLogoWhite from '../../assets/santander_logo_white.png';
 
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
@@ -415,7 +416,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'AMEX':
         return <img src={amexLogo} alt="American Express" className="h-16 mx-auto mb-4" />;
       case 'SANTANDER':
-        return <img src={santanderLogo} alt="Santander" className="h-16 mx-auto mb-4" />;  
+        return <img src={santanderLogoWhite} alt="Santander" className="h-16 mx-auto mb-4 filter brightness-0 invert" />;  
       case 'BANORTE':
         return <div className="banorte-header">
           <img src={banorteLogoFooter} alt="Banorte" className="banorte-logo h-14 mx-auto" />
@@ -436,7 +437,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANCOPPEL': return 'bg-[#0066B3] text-white p-2';
       case 'HSBC': return 'bg-white text-[#DB0011] p-2 border-t-2 border-[#DB0011]';
       case 'AMEX': return 'bg-[#0077C8] text-white p-2';
-      case 'SANTANDER': return 'bg-[#EC0000] text-white p-2';
+      case 'SANTANDER': return 'santander-header';
       case 'BANORTE': return 'banorte-header';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }

@@ -710,6 +710,9 @@
   font-weight: bold;
   color: white;
   font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .santander-button {
