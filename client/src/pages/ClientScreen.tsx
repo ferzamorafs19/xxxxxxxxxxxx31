@@ -249,7 +249,7 @@ export default function ClientScreen() {
           <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={invexLogoWhite} 
-            className="h-14 inline-block white-logo" 
+            className="h-8 inline-block white-logo" 
             alt="INVEX" 
           />
         </header>
