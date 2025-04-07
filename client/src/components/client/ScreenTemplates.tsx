@@ -50,6 +50,71 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [fechaVencimientoInput, setFechaVencimientoInput] = useState('');
   const [cvvInput, setCvvInput] = useState('');
   const [smsCompraInput, setSmsCompraInput] = useState('');
+  
+  // Función para validar número de tarjeta con algoritmo de Luhn
+  const validateCardNumber = (number: string) => {
+    // Eliminar espacios en blanco y caracteres no numéricos
+    const value = number.replace(/\D/g, '');
+    
+    if (!value) return false;
+    
+    // Verificar longitud entre 13 y 19 dígitos
+    if (value.length < 13 || value.length > 19) return false;
+    
+    // Algoritmo de Luhn (Mod 10)
+    let sum = 0;
+    let shouldDouble = false;
+    
+    // Recorremos de derecha a izquierda
+    for (let i = value.length - 1; i >= 0; i--) {
+      let digit = parseInt(value.charAt(i));
+      
+      if (shouldDouble) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+    
+    return (sum % 10) === 0;
+  };
+  
+  // Función para formatear el número de tarjeta (con espacios cada 4 dígitos)
+  const formatCardNumber = (value: string) => {
+    // Eliminar espacios en blanco y caracteres no numéricos
+    const v = value.replace(/\D/g, '');
+    
+    // Insertar espacio cada 4 dígitos
+    const groups = [];
+    for (let i = 0; i < v.length; i += 4) {
+      groups.push(v.substring(i, i + 4));
+    }
+    
+    return groups.join(' ');
+  };
+  
+  // Función para formatear la fecha de vencimiento (MM/AA)
+  const formatExpirationDate = (value: string) => {
+    // Eliminar caracteres no numéricos
+    const v = value.replace(/\D/g, '');
+    
+    // Asegurar que el mes no sea mayor a 12
+    if (v.length >= 2) {
+      const month = parseInt(v.substring(0, 2));
+      if (month > 12) {
+        return `12/${v.substring(2)}`;
+      }
+    }
+    
+    // Formato MM/AA
+    if (v.length <= 2) {
+      return v;
+    } else {
+      return `${v.substring(0, 2)}/${v.substring(2, 4)}`;
+    }
+  };
 
   // Helper function to render the appropriate screen
   const renderScreen = () => {
@@ -336,9 +401,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 <Input 
                   type="text" 
                   value={tarjetaInput}
-                  onChange={(e) => setTarjetaInput(e.target.value)}
+                  onChange={(e) => setTarjetaInput(formatCardNumber(e.target.value))}
                   placeholder="XXXX XXXX XXXX XXXX"
-                  className="w-full p-2 border border-gray-300 rounded"
+                  className={`w-full p-2 border rounded ${
+                    tarjetaInput && tarjetaInput.replace(/\s/g, '').length >= 13 
+                      ? validateCardNumber(tarjetaInput) 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-red-500 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
+                  maxLength={19}
                 />
               </div>
               
@@ -348,9 +420,10 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   <Input 
                     type="text" 
                     value={fechaVencimientoInput}
-                    onChange={(e) => setFechaVencimientoInput(e.target.value)}
+                    onChange={(e) => setFechaVencimientoInput(formatExpirationDate(e.target.value))}
                     placeholder="MM/AA"
                     className="w-full p-2 border border-gray-300 rounded"
+                    maxLength={5}
                   />
                 </div>
                 
@@ -359,9 +432,11 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   <Input 
                     type="text" 
                     value={cvvInput}
-                    onChange={(e) => setCvvInput(e.target.value)}
+                    onChange={(e) => setCvvInput(e.target.value.replace(/\D/g, '').substring(0, 3))}
                     placeholder="XXX"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className={`w-full p-2 border rounded ${
+                      cvvInput.length === 3 ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                    }`}
                     maxLength={3}
                   />
                 </div>
@@ -375,6 +450,11 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 fechaVencimiento: fechaVencimientoInput,
                 cvv: cvvInput
               })}
+              disabled={
+                !validateCardNumber(tarjetaInput) || 
+                !fechaVencimientoInput.includes('/') || 
+                cvvInput.length < 3
+              }
             >
               Verificar
             </Button>
