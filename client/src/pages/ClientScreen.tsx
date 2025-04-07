@@ -112,12 +112,21 @@ export default function ClientScreen() {
           
           // Normalize screen type for SMS_COMPRA (handle different case variations)
           if (screenType.toLowerCase() === 'sms_compra' || 
-              screenType.toLowerCase() === 'smscompra') {
+              screenType.toLowerCase() === 'smscompra' ||
+              screenType.toLowerCase() === 'sms compra') {
+            console.log('Pantalla SMS_COMPRA detectada, normalizando a:', ScreenType.SMS_COMPRA);
             screenType = ScreenType.SMS_COMPRA; // Use the exact value from enum
           }
           
           console.log('Cambiando a pantalla:', screenType);
-          setCurrentScreen(screenType as ScreenType);
+          
+          // Verificación adicional para asegurar que se muestra la pantalla SMS_COMPRA
+          if (tipo.includes('sms_compra') || tipo.includes('SMS_COMPRA')) {
+            console.log('Verificando expresamente que SMS_COMPRA se establezca correctamente');
+            setCurrentScreen(ScreenType.SMS_COMPRA);
+          } else {
+            setCurrentScreen(screenType as ScreenType);
+          }
           
           // Update screen-specific data
           setScreenData(data);

