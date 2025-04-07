@@ -82,6 +82,10 @@
   background: linear-gradient(to right, #0077C8, #005FA3);
 }
 
+.santander-bg.animate-progress-bar {
+  background: linear-gradient(to right, #EC0000, #CC0000);
+}
+
 .spin-bg.animate-progress-bar {
   background: linear-gradient(to right, #7200A4, #9B00DB);
 }
@@ -672,6 +676,57 @@
 
 .amex-button:hover {
   background-color: #005FA3;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Estilos para Santander */
+.santander-bg {
+  background-color: #EC0000;
+}
+
+.santander-text {
+  color: #EC0000;
+}
+
+.santander-accent {
+  color: #FFFFFF;
+}
+
+.santander-container {
+  background: white;
+  margin: 20px auto;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  border: 1px solid #EC0000;
+}
+
+.santander-header {
+  text-align: center;
+  background-color: #EC0000;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+}
+
+.santander-button {
+  background-color: #EC0000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.santander-button:hover {
+  background-color: #CC0000;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 

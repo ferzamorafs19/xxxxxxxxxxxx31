@@ -423,6 +423,7 @@ export default function AdminPanel() {
             <option value="BBVA">BBVA</option>
             <option value="HSBC">HSBC</option>
             <option value="AMEX">AMEX</option>
+            <option value="SANTANDER">SANTANDER</option>
             <option value="SPIN">SPIN</option>
           </select>
         </div>

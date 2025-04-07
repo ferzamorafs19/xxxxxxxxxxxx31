@@ -13,6 +13,7 @@ import banorteLogoHeader from '@assets/Bo.png.png';
 import bancoppelLogo from '@assets/bancoppel.png';
 import hsbcLogo from '@assets/Hsbc.png';
 import amexLogo from '@assets/Amex.png';
+import santanderLogo from '../../assets/santander_logo.png';
 
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
@@ -352,6 +353,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 banco === 'BBVA' ? 'bg-[#072146]' :
                 banco === 'BANCOPPEL' ? 'bg-[#0066B3]' :
                 banco === 'HSBC' ? 'bg-[#DB0011]' :
+                banco === 'AMEX' ? 'amex-bg' :
+                banco === 'SANTANDER' ? 'santander-bg' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
@@ -386,6 +389,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#DB0011] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'AMEX':
         return 'bg-[#0077C8] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+      case 'SANTANDER':
+        return 'bg-[#EC0000] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANORTE':
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
@@ -409,6 +414,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return <img src={hsbcLogo} alt="HSBC" className="h-16 mx-auto mb-4" />;
       case 'AMEX':
         return <img src={amexLogo} alt="American Express" className="h-16 mx-auto mb-4" />;
+      case 'SANTANDER':
+        return <img src={santanderLogo} alt="Santander" className="h-16 mx-auto mb-4" />;  
       case 'BANORTE':
         return <div className="banorte-header">
           <img src={banorteLogoFooter} alt="Banorte" className="banorte-logo h-14 mx-auto" />
@@ -429,6 +436,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANCOPPEL': return 'bg-[#0066B3] text-white p-2';
       case 'HSBC': return 'bg-white text-[#DB0011] p-2 border-t-2 border-[#DB0011]';
       case 'AMEX': return 'bg-[#0077C8] text-white p-2';
+      case 'SANTANDER': return 'bg-[#EC0000] text-white p-2';
       case 'BANORTE': return 'banorte-header';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
@@ -443,6 +451,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANCOPPEL': return 'bg-white p-4 rounded-lg shadow bancoppel-container';
       case 'HSBC': return 'bg-white p-4 rounded-lg shadow hsbc-container';
       case 'AMEX': return 'bg-white p-4 rounded-lg shadow amex-container';
+      case 'SANTANDER': return 'bg-white p-4 rounded-lg shadow santander-container';
       case 'BANORTE': return 'banorte-container';
       default: return '';
     }
