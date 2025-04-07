@@ -31,7 +31,7 @@ export default function AdminPanel() {
   // Generate link mutation
   const generateLink = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('GET', '/api/generate-link');
+      const res = await apiRequest('GET', `/api/generate-link?banco=${activeBank === 'todos' ? 'LIVERPOOL' : activeBank}`);
       return await res.json();
     },
     onSuccess: (data) => {
@@ -65,7 +65,7 @@ export default function AdminPanel() {
   useEffect(() => {
     // Initialize sessions from API data
     if (initialSessions) {
-      setSessions(initialSessions);
+      setSessions(Array.isArray(initialSessions) ? initialSessions : []);
     }
   }, [initialSessions]);
 

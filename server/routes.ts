@@ -64,10 +64,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/generate-link', async (req, res) => {
     try {
+      const { banco = "LIVERPOOL" } = req.query;
       const sessionId = nanoid(10);
       const session = await storage.createSession({ 
         sessionId, 
-        banco: "Invex",
+        banco: banco as string,
         folio: nanoid(6),
         pasoActual: ScreenType.FOLIO,
       });
@@ -227,13 +228,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Remove from clients if it was a client
-      for (const [sessionId, client] of clients.entries()) {
+      Array.from(clients.entries()).forEach(([sessionId, client]) => {
         if (client === ws) {
           clients.delete(sessionId);
           console.log(`Client with session ID ${sessionId} disconnected`);
-          break;
         }
-      }
+      });
     });
   });
 

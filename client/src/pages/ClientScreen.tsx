@@ -119,7 +119,7 @@ export default function ClientScreen() {
     <div className="min-h-screen flex flex-col bg-white">
       <header className="bg-[#e10098] text-white p-3 text-center">
         <img 
-          src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Liverpool_logo_2022.svg" 
+          src="https://www.liverpool.com.mx/static/images/logo.svg" 
           className="h-12 inline-block" 
           alt="Liverpool" 
         />
