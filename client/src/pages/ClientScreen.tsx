@@ -7,6 +7,7 @@ import { formatDate } from '@/utils/helpers';
 import liverpoolLogo from '../assets/pngwing.com 2.png';
 import citibanamexLogo from '../assets/Banamex.png';
 import banbajioLogo from '../assets/banbajio_logo.png';
+import banbajioBackground from '../assets/IMG_0354.jpeg';
 
 export default function ClientScreen() {
   // Get session ID from URL
@@ -102,14 +103,16 @@ export default function ClientScreen() {
     if (sessionData.banco === 'BANBAJIO') {
       return (
         <>
-          <div className="logo text-center py-4">
+          <div className="logo text-center py-4 bg-white">
             <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/f/f3/BanBajio_logo.svg" 
+              src={banbajioLogo} 
               alt="BanBajío"
               className="h-16 inline-block"
             />
           </div>
-          <div className="banbajio-header">7 de abril de 2025</div>
+          <div className="banbajio-header">
+            {formatDate(new Date())}
+          </div>
         </>
       );
     } else if (sessionData.banco === 'CITIBANAMEX') {
@@ -213,7 +216,18 @@ export default function ClientScreen() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col ${sessionData.banco === 'BANBAJIO' ? 'bg-[url("https://i.ibb.co/8x40ZZM/banbajio-fondo.jpg")] bg-cover' : 'bg-white'}`}>
+    <div 
+      className={`min-h-screen flex flex-col ${
+        sessionData.banco === 'BANBAJIO' 
+          ? 'banbajio-background'  
+          : 'bg-white'
+      }`}
+      style={
+        sessionData.banco === 'BANBAJIO' 
+          ? { backgroundImage: `url(${banbajioBackground})`, backgroundSize: 'cover' } 
+          : {}
+      }
+    >
       {renderHeader()}
       {renderBankInfo()}
 
