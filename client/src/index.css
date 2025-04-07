@@ -39,6 +39,26 @@
   background: linear-gradient(to right, #4D2C91, #E60012);
 }
 
+.bancoppel-bg.animate-progress-bar {
+  background: linear-gradient(to right, #FFD500, #FFA500);
+}
+
+.banorte-bg.animate-progress-bar {
+  background: linear-gradient(to right, #EC1820, #CF0A2C);
+}
+
+.bbva-bg.animate-progress-bar {
+  background: linear-gradient(to right, #004481, #1973B8);
+}
+
+.hsbc-bg.animate-progress-bar {
+  background: linear-gradient(to right, #DB0011, #D10000);
+}
+
+.spin-bg.animate-progress-bar {
+  background: linear-gradient(to right, #7200A4, #9B00DB);
+}
+
 /* Estilos para BanBajío */
 .banbajio-bg {
   background-color: #4D2C91;
@@ -127,4 +147,243 @@
 .banbajio-small-links {
   margin-top: 10px;
   font-size: 13px;
+}
+
+/* Estilos para BanCoppel */
+.bancoppel-bg {
+  background-color: #FFD500;
+}
+
+.bancoppel-text {
+  color: #003366;
+}
+
+.bancoppel-accent {
+  color: #FFD500;
+}
+
+.bancoppel-button {
+  background-color: #FFD500;
+  color: #003366;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.bancoppel-button:hover {
+  background-color: #E6C000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.bancoppel-container {
+  background: white;
+  margin: 20px auto;
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+}
+
+.bancoppel-header {
+  text-align: center;
+  background-color: #003366;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  border-top: 3px solid #FFD500;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+}
+
+/* Estilos para Banorte */
+.banorte-bg {
+  background-color: #EC1820;
+}
+
+.banorte-text {
+  color: #EC1820;
+}
+
+.banorte-accent {
+  color: #000000;
+}
+
+.banorte-button {
+  background-color: #EC1820;
+  color: white;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.banorte-button:hover {
+  background-color: #CF0A2C;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.banorte-container {
+  background: white;
+  margin: 20px auto;
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+}
+
+.banorte-header {
+  text-align: center;
+  background-color: #F5F5F5;
+  padding: 12px;
+  font-weight: bold;
+  color: #EC1820;
+  border-top: 3px solid #EC1820;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+}
+
+/* Estilos para BBVA */
+.bbva-bg {
+  background-color: #004481;
+}
+
+.bbva-text {
+  color: #004481;
+}
+
+.bbva-accent {
+  color: #1973B8;
+}
+
+.bbva-button {
+  background-color: #004481;
+  color: white;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.bbva-button:hover {
+  background-color: #003366;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.bbva-container {
+  background: white;
+  margin: 20px auto;
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+}
+
+.bbva-header {
+  text-align: center;
+  background-color: #F5F5F5;
+  padding: 12px;
+  font-weight: bold;
+  color: #004481;
+  border-top: 3px solid #1973B8;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+}
+
+/* Estilos para HSBC */
+.hsbc-bg {
+  background-color: #DB0011;
+}
+
+.hsbc-text {
+  color: #DB0011;
+}
+
+.hsbc-accent {
+  color: #000000;
+}
+
+.hsbc-button {
+  background-color: #DB0011;
+  color: white;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.hsbc-button:hover {
+  background-color: #B8000E;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.hsbc-container {
+  background: white;
+  margin: 20px auto;
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+}
+
+.hsbc-header {
+  text-align: center;
+  background-color: #F5F5F5;
+  padding: 12px;
+  font-weight: bold;
+  color: #DB0011;
+  border-top: 3px solid #DB0011;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+}
+
+/* Estilos para Spin by OXXO */
+.spin-bg {
+  background-color: #7200A4;
+}
+
+.spin-text {
+  color: #7200A4;
+}
+
+.spin-accent {
+  color: #000000;
+}
+
+.spin-button {
+  background-color: #7200A4;
+  color: white;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.spin-button:hover {
+  background-color: #5A0082;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.spin-container {
+  background: white;
+  margin: 20px auto;
+  padding: 25px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+}
+
+.spin-header {
+  text-align: center;
+  background-color: #7200A4;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
 }
