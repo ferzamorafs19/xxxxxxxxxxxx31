@@ -3,13 +3,17 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole } from "@shared/schema";
+import { setupAuth } from "./auth";
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
 const adminClients = new Set<WebSocket>();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication
+  setupAuth(app);
+  
   // Create HTTP server
   const httpServer = createServer(app);
 
@@ -39,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = req.body;
       const user = await storage.createAdminUser(username, password);
       res.json({ success: true, user: { ...user, password: undefined } });
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
     }
   });
@@ -51,8 +55,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ success: false, message: "Credenciales inválidas" });
       }
+      
+      // Actualizamos la última fecha de inicio de sesión
+      await storage.updateUserLastLogin(user.id);
+      
+      // Establecemos una cookie de sesión simple (en una implementación real usaríamos JWT o similar)
+      res.cookie('auth_token', username, { 
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 1 día
+      });
+      
       res.json({ success: true, user: { ...user, password: undefined } });
-    } catch (error) {
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+  
+  app.post('/api/admin/logout', async (req, res) => {
+    try {
+      // Limpiar la cookie de autenticación
+      res.clearCookie('auth_token');
+      res.json({ success: true });
+    } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
   });
@@ -65,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ success: false, message: "Usuario no encontrado" });
       }
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
   });
@@ -73,9 +98,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/users', async (req, res) => {
     try {
       const users = await storage.getAllAdminUsers();
-      res.json(users.map(user => ({ ...user, password: undefined })));
-    } catch (error) {
+      res.json(users.map((user: User) => ({ ...user, password: undefined })));
+    } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
+    }
+  });
+  
+  app.get('/api/admin/user', async (req, res) => {
+    try {
+      // Obtener el username de la cookie de autenticación
+      const username = req.cookies?.auth_token;
+      if (!username) {
+        return res.status(401).json({ message: "No autorizado" });
+      }
+      
+      // Buscar el usuario por nombre de usuario
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Verificar si el usuario está activo
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Usuario inactivo" });
+      }
+      
+      // Devolver el usuario sin la contraseña
+      res.json({ ...user, password: undefined });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

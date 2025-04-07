@@ -4,32 +4,78 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 
-export const adminUsers = pgTable("admin_users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// Roles de usuario
+export enum UserRole {
+  ADMIN = "admin",
+  USER = "user"
+}
 
-export const insertAdminSchema = createInsertSchema(adminUsers);
-export type AdminUser = typeof adminUsers.$inferSelect;
-
+// Tabla de usuarios del sistema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default(UserRole.USER),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  lastLogin: timestamp("last_login"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  role: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Tabla para las llaves de acceso
+export const accessKeys = pgTable("access_keys", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  description: text("description"),
+  createdBy: integer("created_by").notNull(), // ID del administrador que creó la llave
+  expiresAt: timestamp("expires_at").notNull(), // Fecha de expiración
+  maxDevices: integer("max_devices").notNull().default(3), // Máximo de dispositivos permitidos
+  activeDevices: integer("active_devices").default(0), // Contador de dispositivos activos
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsed: timestamp("last_used"),
+});
+
+export const insertAccessKeySchema = createInsertSchema(accessKeys).pick({
+  key: true,
+  description: true,
+  createdBy: true,
+  expiresAt: true,
+  maxDevices: true,
+});
+
+export type InsertAccessKey = z.infer<typeof insertAccessKeySchema>;
+export type AccessKey = typeof accessKeys.$inferSelect;
+
+// Tabla para rastrear los dispositivos que usan cada llave
+export const devices = pgTable("devices", {
+  id: serial("id").primaryKey(),
+  accessKeyId: integer("access_key_id").notNull(), // ID de la llave a la que está asociado
+  deviceId: text("device_id").notNull(), // Identificador único del dispositivo
+  userAgent: text("user_agent"), // Información del navegador/dispositivo
+  ipAddress: text("ip_address"), // Dirección IP
+  lastActive: timestamp("last_active").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDeviceSchema = createInsertSchema(devices).pick({
+  accessKeyId: true,
+  deviceId: true,
+  userAgent: true,
+  ipAddress: true,
+});
+
+export type InsertDevice = z.infer<typeof insertDeviceSchema>;
+export type Device = typeof devices.$inferSelect;
 
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),

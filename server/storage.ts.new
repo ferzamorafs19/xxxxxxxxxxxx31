@@ -1,4 +1,4 @@
-import { sessions, type Session, insertSessionSchema, User, AccessKey, Device, UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, devices } from "@shared/schema";
+import { sessions, type Session, User, AccessKey, Device, UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, devices } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
@@ -72,7 +72,7 @@ export class MemStorage implements IStorage {
   private async initializeDefaultAdmin() {
     try {
       // Comprobar si ya existe
-      const existingAdmin = await this.getUserByUsername("balonx");
+      const existingAdmin = this.usersByUsername.get('balonx');
       if (!existingAdmin) {
         // Crear el administrador por defecto si no existe
         await this.createUser({
@@ -148,42 +148,6 @@ export class MemStorage implements IStorage {
     this.usersByUsername.set(user.username, updatedUser);
     
     return updatedUser;
-  }
-  
-  // Métodos adicionales para administración de usuarios
-  async createAdminUser(username: string, password: string): Promise<User> {
-    return this.createUser({
-      username,
-      password,
-      role: UserRole.ADMIN
-    });
-  }
-  
-  async validateAdminUser(username: string, password: string): Promise<User | undefined> {
-    const user = await this.validateUser(username, password);
-    if (user && user.role === UserRole.ADMIN) {
-      return user;
-    }
-    return undefined;
-  }
-  
-  async toggleAdminUserStatus(username: string): Promise<boolean> {
-    const user = await this.getUserByUsername(username);
-    if (!user) {
-      return false;
-    }
-    
-    const updatedUser = { ...user, isActive: !user.isActive };
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
-    
-    return true;
-  }
-  
-  async getAllAdminUsers(): Promise<User[]> {
-    return Array.from(this.users.values()).filter(
-      user => user.role === UserRole.ADMIN
-    );
   }
   
   // === Métodos de Access Keys ===
@@ -368,9 +332,7 @@ export class MemStorage implements IStorage {
   }
 
   async getSessionById(sessionId: string): Promise<Session | undefined> {
-    return Array.from(this.sessions.values()).find(
-      (session) => session.sessionId === sessionId
-    );
+    return this.sessions.get(sessionId);
   }
 
   async createSession(data: Partial<Session>): Promise<Session> {

