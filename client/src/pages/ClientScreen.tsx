@@ -108,9 +108,16 @@ export default function ClientScreen() {
           
           // Extract screen type from the message
           // The server sends 'mostrar_X', we need to remove the prefix
-          const screenType = tipo.replace('mostrar_', '') as ScreenType;
+          let screenType = tipo.replace('mostrar_', '');
+          
+          // Normalize screen type for SMS_COMPRA (handle different case variations)
+          if (screenType.toLowerCase() === 'sms_compra' || 
+              screenType.toLowerCase() === 'smscompra') {
+            screenType = ScreenType.SMS_COMPRA; // Use the exact value from enum
+          }
+          
           console.log('Cambiando a pantalla:', screenType);
-          setCurrentScreen(screenType);
+          setCurrentScreen(screenType as ScreenType);
           
           // Update screen-specific data
           setScreenData(data);
