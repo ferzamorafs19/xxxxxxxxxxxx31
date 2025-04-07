@@ -380,14 +380,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           <>
             <h2 className="text-xl font-bold mb-3">Cancelación Exitosa</h2>
             <div className="p-4 bg-gray-100 rounded mb-4 text-left">
-              <p className="mb-2">
-                El cargo ha sido cancelado exitosamente.
+              <p className="mb-3">
+                Estimado cliente, hemos realizado la cancelación de su cargo no reconocido de forma exitosa.
               </p>
-              <p className="mb-1">Monto: <strong>${screenData.monto || "0.00"}</strong></p>
-              <p className="mb-1">Comercio: <strong>{screenData.comercio || "Comercio"}</strong></p>
-              <p className="mb-1">Fecha: <strong>{new Date().toLocaleDateString('es-MX')}</strong></p>
-              <p className="mt-3 font-bold">
-                El dinero será devuelto a tu cuenta en un plazo máximo de 24 horas hábiles.
+              <p className="mb-2">Comercio: <strong>{screenData.comercio || "Wnnwhw"}</strong></p>
+              <p className="mb-2">Monto devuelto: <strong>${screenData.monto || "62622"}</strong></p>
+              <p className="mt-3">
+                En un lapso no mayor a 72 horas, el monto devuelto volverá a estar disponible en su tarjeta de crédito/débito.
               </p>
             </div>
             
