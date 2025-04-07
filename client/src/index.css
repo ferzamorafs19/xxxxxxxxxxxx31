@@ -78,6 +78,10 @@
   background: linear-gradient(to right, #DB0011, #D10000);
 }
 
+.amex-bg.animate-progress-bar {
+  background: linear-gradient(to right, #0077C8, #005FA3);
+}
+
 .spin-bg.animate-progress-bar {
   background: linear-gradient(to right, #7200A4, #9B00DB);
 }
@@ -618,6 +622,57 @@
   text-align: center;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   max-width: 400px;
+}
+
+/* Estilos para AMEX */
+.amex-bg {
+  background-color: #0077C8;
+}
+
+.amex-text {
+  color: #0077C8;
+}
+
+.amex-accent {
+  color: #006FCF;
+}
+
+.amex-container {
+  background: white;
+  margin: 20px auto;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  border: 1px solid #0077C8;
+}
+
+.amex-header {
+  text-align: center;
+  background-color: #0077C8;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+}
+
+.amex-button {
+  background-color: #0077C8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.amex-button:hover {
+  background-color: #005FA3;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .hsbc-header {

