@@ -422,7 +422,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'CITIBANAMEX': return 'citibanamex-header';
       case 'BBVA': return 'bbva-header';
       case 'BANCOPPEL': return 'bg-[#0066B3] text-white p-2';
-      case 'HSBC': return 'bg-[#DB0011] text-white p-2';
+      case 'HSBC': return 'bg-white text-[#DB0011] p-2 border-t-2 border-[#DB0011]';
       case 'BANORTE': return 'banorte-header';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }

