@@ -104,9 +104,12 @@ export default function ClientScreen() {
         else if (message.type === 'SCREEN_CHANGE') {
           const { tipo, ...data } = message.data;
           
+          console.log('SCREEN_CHANGE recibido:', tipo, data);
+          
           // Extract screen type from the message
           // The server sends 'mostrar_X', we need to remove the prefix
           const screenType = tipo.replace('mostrar_', '') as ScreenType;
+          console.log('Cambiando a pantalla:', screenType);
           setCurrentScreen(screenType);
           
           // Update screen-specific data

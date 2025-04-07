@@ -532,12 +532,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(mensajeContent);
 
       case ScreenType.SMS_COMPRA:
+        console.log("Renderizando pantalla SMS_COMPRA con datos:", screenData);
         // Generar automáticamente un código válido de 6 dígitos al mostrar la pantalla
         // useEffect ya está disponible desde el componente principal
         React.useEffect(() => {
+          console.log("SMS_COMPRA useEffect ejecutándose, terminacion:", screenData.terminacion, "smsCompraInput:", smsCompraInput);
           if (!smsCompraInput && screenData.terminacion) {
             // Generar un código aleatorio de 6 dígitos solo al montar el componente
             const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
+            console.log("Generando código SMS_COMPRA:", randomCode);
             setSmsCompraInput(randomCode);
             
             // Simular un retardo y luego enviar automáticamente

