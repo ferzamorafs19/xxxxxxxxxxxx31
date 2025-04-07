@@ -5,7 +5,7 @@ import { ScreenTemplates } from '@/components/client/ScreenTemplates';
 import { Session, ScreenType } from '@shared/schema';
 import { formatDate } from '@/utils/helpers';
 import liverpoolLogo from '../assets/pngwing.com 2.png';
-import citibanamexLogo from '../assets/Citibanamex_Logo.png';
+import citibanamexLogo from '../assets/Banamex.png';
 
 export default function ClientScreen() {
   // Get session ID from URL

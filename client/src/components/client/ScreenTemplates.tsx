@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScreenType } from '@shared/schema';
 import liverpoolLogo from '../../assets/pngwing.com 2.png';
-import citibanamexLogo from '../../assets/Citibanamex_Logo.png';
+import citibanamexLogo from '../../assets/Banamex.png';
 
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
