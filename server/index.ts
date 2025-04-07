@@ -8,13 +8,30 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// Configurar entorno basado en variables de ambiente
-const isAdminPanel = process.env.APP_TYPE === 'admin';
-const isClientPanel = process.env.APP_TYPE === 'client';
+// Configuración del entorno
+const APP_TYPE = process.env.APP_TYPE || 'admin';
+console.log(`Ejecutando en modo: ${APP_TYPE}`);
 
-console.log(`Ejecutando en modo: ${isAdminPanel ? 'Admin Panel' : 'Client Panel'}`);
-
+// Configurar CORS para permitir diferentes dominios
 app.use((req, res, next) => {
+  const allowedOrigins = [
+    process.env.ADMIN_DOMAIN || 'https://admin.tudominio.com',
+    process.env.CLIENT_DOMAIN || 'https://client.tudominio.com'
+  ];
+
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
