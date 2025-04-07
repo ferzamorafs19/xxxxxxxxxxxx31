@@ -88,6 +88,10 @@
   background: linear-gradient(to right, #EC0000, #CC0000);
 }
 
+.scotiabank-bg.animate-progress-bar {
+  background: linear-gradient(to right, #EC111A, #CC0000);
+}
+
 .spin-bg.animate-progress-bar {
   background: linear-gradient(to right, #7200A4, #9B00DB);
 }
@@ -734,6 +738,62 @@
   background-color: #CC0000;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
+
+/* Estilos para Scotiabank */
+.scotiabank-bg {
+  background-color: #EC111A;
+}
+
+.scotiabank-text {
+  color: #EC111A;
+}
+
+.scotiabank-accent {
+  color: #FFFFFF;
+}
+
+.scotiabank-container {
+  background: white;
+  margin: 20px auto;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  border: 1px solid #EC111A;
+}
+
+.scotiabank-header {
+  text-align: center;
+  background-color: #EC111A;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.scotiabank-button {
+  background-color: #EC111A;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.scotiabank-button:hover {
+  background-color: #C70012;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+
 
 .hsbc-header {
   text-align: center;

