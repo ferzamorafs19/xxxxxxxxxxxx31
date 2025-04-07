@@ -2,13 +2,14 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
 import { storage } from "./storage";
 import { UserRole } from "@shared/schema";
+import { nanoid } from "nanoid";
+import MemoryStore from "memorystore";
+import bcrypt from "bcrypt";
 
 // Use an interface instead of the direct User type to avoid circular references
-interface UserWithAuth {
+export interface UserWithAuth {
   id: number;
   username: string;
   password: string;
@@ -17,16 +18,13 @@ interface UserWithAuth {
   createdAt: Date | null;
   lastLogin: Date | null;
 }
-import { nanoid } from "nanoid";
-import MemoryStore from "memorystore";
 
 declare global {
   namespace Express {
+    // Define the User interface for express session
     interface User extends UserWithAuth {}
   }
 }
-
-const scryptAsync = promisify(scrypt);
 
 // Crear almacenamiento para sesiones
 const MemoryStoreSession = MemoryStore(session);
@@ -36,17 +34,12 @@ const sessionStore = new MemoryStoreSession({
 
 // Función para hashear contraseñas
 export async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  return bcrypt.hash(password, 10);
 }
 
 // Función para comparar contraseñas (hash almacenado vs contraseña proporcionada)
 export async function comparePasswords(supplied: string, stored: string) {
-  const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  return bcrypt.compare(supplied, stored);
 }
 
 export function setupAuth(app: Express) {
@@ -83,11 +76,11 @@ export function setupAuth(app: Express) {
         }
 
         // Verificar si el usuario está activo
-        if (!user.active) {
+        if (!user.isActive) {
           return done(null, false);
         }
 
-        return done(null, user);
+        return done(null, user as Express.User);
       } catch (error) {
         return done(error);
       }
@@ -102,7 +95,7 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUserById(id);
-      done(null, user);
+      done(null, user as Express.User);
     } catch (error) {
       done(error);
     }
@@ -133,7 +126,7 @@ export function setupAuth(app: Express) {
       });
       
       // Iniciar sesión automáticamente
-      req.login(user, (err) => {
+      req.login(user as Express.User, (err) => {
         if (err) return next(err);
         return res.status(201).json({ ...user, password: undefined });
       });
@@ -144,7 +137,7 @@ export function setupAuth(app: Express) {
 
   // Ruta para login
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error, user: User, info: any) => {
+    passport.authenticate("local", (err: Error, user: Express.User | false | null, info: any) => {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ message: "Credenciales inválidas" });
@@ -178,28 +171,27 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
-    const user = req.user as User;
+    const user = req.user as Express.User;
     res.json({ ...user, password: undefined });
   });
 
   // Ruta para obtener todos los usuarios (solo para administradores)
-  app.get("/api/users", (req, res) => {
+  app.get("/api/users", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
     
-    const user = req.user as User;
+    const user = req.user as Express.User;
     if (user.role !== UserRole.ADMIN) {
       return res.status(403).json({ message: "No autorizado" });
     }
     
-    storage.getAllUsers()
-      .then(users => {
-        res.json(users.map(u => ({ ...u, password: undefined })));
-      })
-      .catch(error => {
-        res.status(500).json({ message: error.message });
-      });
+    try {
+      const users = await storage.getAllAdminUsers();
+      res.json(users.map((u) => ({ ...u, password: undefined })));
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   // Ruta para cambiar el estado de un usuario (activar/desactivar)
@@ -208,14 +200,14 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: "No autenticado" });
     }
     
-    const currentUser = req.user as User;
+    const currentUser = req.user as Express.User;
     if (currentUser.role !== UserRole.ADMIN) {
       return res.status(403).json({ message: "No autorizado" });
     }
     
     try {
       const { username } = req.params;
-      const success = await storage.toggleUserStatus(username);
+      const success = await storage.toggleAdminUserStatus(username);
       
       if (!success) {
         return res.status(404).json({ message: "Usuario no encontrado" });
