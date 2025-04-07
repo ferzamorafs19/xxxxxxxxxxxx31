@@ -8,7 +8,7 @@ import citibanamexLogo from '../../assets/Banamex.png';
 import banbajioLogo from '../../assets/banbajio_logo_oficial.png';
 import bbvaLogo from '../../assets/bbva_logo.png';
 import bbvaLogoWhite from '../../assets/bbva_logo_white.png';
-import banorteLogoFooter from '@assets/Banorte-01.png';
+import banorteLogoFooter from '@assets/Banorte-01.png'; // El logo rojo de Banorte
 import banorteLogoHeader from '@assets/Bo.png.png';
 
 interface ScreenTemplatesProps {
