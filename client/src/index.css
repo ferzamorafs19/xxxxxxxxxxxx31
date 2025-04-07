@@ -31,8 +31,8 @@
 }
 
 /* Estilos para las barras de progreso con gradiente según el banco */
-.bg-\[\#e10098\].animate-progress-bar {
-  background: linear-gradient(to right, #e10098, #ff45c3);
+.bg-\[\#EC1C24\].animate-progress-bar {
+  background: linear-gradient(to right, #EC1C24, #ff3333);
 }
 
 .bg-\[\#0070BA\].animate-progress-bar {

