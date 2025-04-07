@@ -433,6 +433,24 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
     }
   };
 
+  // Renderizado especial para HSBC que incluye fondo y footer
+  if (banco === 'HSBC') {
+    return (
+      <div className="hsbc-page-background">
+        <div className="hsbc-container">
+          <div className="logo text-center mb-4">
+            {bankLogo()}
+          </div>
+          {renderScreen()}
+        </div>
+        <div className="hsbc-footer">
+          © HSBC México 2023. Todos los Derechos Reservados
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizado normal para otros bancos
   return (
     <div className={getBankContainerClass()}>
       <div className="logo text-center mb-4">
