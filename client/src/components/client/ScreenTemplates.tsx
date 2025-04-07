@@ -299,17 +299,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
     }
   };
 
-  // Logo del banco que se mostrará en todas las pantallas
-  const renderLogo = () => (
-    <div className="flex justify-center mb-6">
-      <img 
-        src={banco === 'CITIBANAMEX' ? citibanamexLogo : liverpoolLogo} 
-        alt={banco === 'CITIBANAMEX' ? 'Citibanamex' : 'Liverpool'} 
-        className="h-20" 
-      />
-    </div>
-  );
-
   // Definimos las clases de estilos para los botones según el banco
   const primaryBtnClass = banco === 'CITIBANAMEX' 
     ? "bg-[#0070BA] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors" 
@@ -317,7 +306,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
   return (
     <>
-      {renderLogo()}
       {renderScreen()}
     </>
   );
