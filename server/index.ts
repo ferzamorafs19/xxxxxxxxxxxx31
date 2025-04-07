@@ -8,6 +8,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// Configuración según el entorno
+const isAdminOnly = process.env.ADMIN_ONLY === 'true';
+const isClientOnly = process.env.CLIENT_ONLY === 'true';
+
+if (isAdminOnly) {
+  console.log('Ejecutando en modo panel administrativo');
+} else if (isClientOnly) {
+  console.log('Ejecutando en modo cliente');
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
