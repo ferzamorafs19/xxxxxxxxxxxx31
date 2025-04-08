@@ -1,4 +1,4 @@
-import { sessions, type Session, insertSessionSchema, User, AccessKey, Device, UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, devices } from "@shared/schema";
+import { sessions, type Session, insertSessionSchema, User, AccessKey, Device, UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, devices, SmsConfig, InsertSmsConfig, SmsCredits, SmsHistory, InsertSmsHistory } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
@@ -30,6 +30,20 @@ export interface IStorage {
   cleanupExpiredUsers(): Promise<number>;
   deleteUser(username: string): Promise<boolean>;
   
+  // API de SMS
+  getSmsConfig(): Promise<SmsConfig | null>;
+  updateSmsConfig(data: InsertSmsConfig): Promise<SmsConfig>;
+  
+  // Créditos de SMS
+  getUserSmsCredits(userId: number): Promise<number>;
+  addSmsCredits(userId: number, amount: number): Promise<SmsCredits>;
+  useSmsCredit(userId: number): Promise<boolean>;
+  
+  // Historial de SMS
+  addSmsToHistory(data: InsertSmsHistory): Promise<SmsHistory>;
+  getUserSmsHistory(userId: number): Promise<SmsHistory[]>;
+  updateSmsStatus(id: number, status: string, errorMessage?: string): Promise<SmsHistory>;
+  
   // Keys de acceso
   createAccessKey(data: InsertAccessKey): Promise<AccessKey>;
   getAccessKeyById(id: number): Promise<AccessKey | undefined>;
@@ -56,6 +70,9 @@ export class MemStorage implements IStorage {
   private accessKeys: Map<number, AccessKey>;
   private accessKeysByKey: Map<string, AccessKey>;
   private devices: Map<number, Device>;
+  private smsConfig: SmsConfig | null;
+  private smsCredits: Map<number, SmsCredits>;
+  private smsHistory: Map<number, SmsHistory>;
   private currentId: { [key: string]: number };
 
   constructor() {
@@ -65,11 +82,16 @@ export class MemStorage implements IStorage {
     this.accessKeys = new Map();
     this.accessKeysByKey = new Map();
     this.devices = new Map();
+    this.smsConfig = null;
+    this.smsCredits = new Map();
+    this.smsHistory = new Map();
     this.currentId = {
       user: 1,
       session: 1,
       accessKey: 1,
-      device: 1
+      device: 1,
+      smsCredits: 1,
+      smsHistory: 1,
     };
     
     // Crear el usuario administrador por defecto
@@ -582,6 +604,129 @@ export class MemStorage implements IStorage {
     const updatedSession = { ...session, saved: true };
     this.sessions.set(sessionId, updatedSession);
     return updatedSession;
+  }
+  
+  // === Métodos de API SMS ===
+  async getSmsConfig(): Promise<SmsConfig | null> {
+    return this.smsConfig;
+  }
+  
+  async updateSmsConfig(data: InsertSmsConfig): Promise<SmsConfig> {
+    const config: SmsConfig = {
+      id: 1, // Siempre usamos ID=1 para la configuración única
+      apiKey: data.apiKey,
+      isActive: true,
+      updatedAt: new Date(),
+      updatedBy: data.updatedBy
+    };
+    
+    this.smsConfig = config;
+    return config;
+  }
+  
+  // === Métodos de créditos SMS ===
+  async getUserSmsCredits(userId: number): Promise<number> {
+    const credits = this.smsCredits.get(userId);
+    return credits && credits.credits ? credits.credits : 0;
+  }
+  
+  async addSmsCredits(userId: number, amount: number): Promise<SmsCredits> {
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new Error(`Usuario con ID ${userId} no encontrado`);
+    }
+    
+    const existingCredits = this.smsCredits.get(userId);
+    let smsCredits: SmsCredits;
+    
+    if (existingCredits) {
+      // Actualizar créditos existentes
+      const currentCredits = existingCredits.credits || 0;
+      smsCredits = {
+        ...existingCredits,
+        credits: currentCredits + amount,
+        updatedAt: new Date()
+      };
+    } else {
+      // Crear nuevo registro de créditos
+      const id = this.currentId.smsCredits++;
+      smsCredits = {
+        id,
+        userId,
+        credits: amount,
+        updatedAt: new Date()
+      };
+    }
+    
+    this.smsCredits.set(userId, smsCredits);
+    return smsCredits;
+  }
+  
+  async useSmsCredit(userId: number): Promise<boolean> {
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new Error(`Usuario con ID ${userId} no encontrado`);
+    }
+    
+    const existingCredits = this.smsCredits.get(userId);
+    if (!existingCredits || !existingCredits.credits || existingCredits.credits <= 0) {
+      return false; // No hay créditos suficientes
+    }
+    
+    // Decrementar créditos
+    const updatedCredits: SmsCredits = {
+      ...existingCredits,
+      credits: existingCredits.credits - 1,
+      updatedAt: new Date()
+    };
+    
+    this.smsCredits.set(userId, updatedCredits);
+    return true;
+  }
+  
+  // === Métodos de historial SMS ===
+  async addSmsToHistory(data: InsertSmsHistory): Promise<SmsHistory> {
+    const id = this.currentId.smsHistory++;
+    
+    const smsHistory: SmsHistory = {
+      id,
+      userId: data.userId,
+      phoneNumber: data.phoneNumber,
+      message: data.message,
+      sentAt: new Date(),
+      status: 'pending',
+      sessionId: data.sessionId || null,
+      errorMessage: null
+    };
+    
+    this.smsHistory.set(id, smsHistory);
+    return smsHistory;
+  }
+  
+  async getUserSmsHistory(userId: number): Promise<SmsHistory[]> {
+    return Array.from(this.smsHistory.values())
+      .filter(sms => sms.userId === userId)
+      .sort((a, b) => {
+        const dateA = a.sentAt ? new Date(a.sentAt) : new Date();
+        const dateB = b.sentAt ? new Date(b.sentAt) : new Date();
+        return dateB.getTime() - dateA.getTime();
+      });
+  }
+  
+  async updateSmsStatus(id: number, status: string, errorMessage?: string): Promise<SmsHistory> {
+    const sms = this.smsHistory.get(id);
+    if (!sms) {
+      throw new Error(`SMS con ID ${id} no encontrado`);
+    }
+    
+    const updatedSms: SmsHistory = {
+      ...sms,
+      status,
+      errorMessage: errorMessage || sms.errorMessage
+    };
+    
+    this.smsHistory.set(id, updatedSms);
+    return updatedSms;
   }
   
   async cleanupExpiredSessions(): Promise<number> {

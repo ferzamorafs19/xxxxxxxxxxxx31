@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 
 // Store active connections
@@ -770,6 +770,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     });
+  });
+  
+  // === API de SMS ===
+  
+  // Obtener la configuración actual de la API de SMS
+  app.get('/api/sms/config', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const config = await storage.getSmsConfig();
+      // Si hay una config, ocultamos la api key por seguridad, solo mostramos si está activa
+      if (config) {
+        res.json({
+          isActive: config.isActive,
+          updatedAt: config.updatedAt,
+          updatedBy: config.updatedBy,
+          hasApiKey: !!config.apiKey
+        });
+      } else {
+        res.json(null);
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Actualizar la configuración de la API de SMS
+  app.post('/api/sms/config', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const user = req.user;
+      // Solo usuario administrador puede actualizar la configuración
+      if (user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Solo administradores pueden actualizar la configuración de API" });
+      }
+      
+      const data = insertSmsConfigSchema.parse({
+        apiKey: req.body.apiKey,
+        updatedBy: user.username
+      });
+      
+      const config = await storage.updateSmsConfig(data);
+      res.json({
+        isActive: config.isActive,
+        updatedAt: config.updatedAt,
+        updatedBy: config.updatedBy,
+        success: true
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Obtener los créditos SMS del usuario actual
+  app.get('/api/sms/credits', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const user = req.user;
+      const credits = await storage.getUserSmsCredits(user.id);
+      res.json({ credits });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Agregar créditos a un usuario (solo admin)
+  app.post('/api/sms/credits/:userId', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const currentUser = req.user;
+      // Solo administradores pueden agregar créditos
+      if (currentUser.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Solo administradores pueden agregar créditos" });
+      }
+      
+      const userId = parseInt(req.params.userId);
+      const { amount } = req.body;
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "La cantidad debe ser un número positivo" });
+      }
+      
+      const smsCredits = await storage.addSmsCredits(userId, amount);
+      res.json({
+        success: true,
+        credits: smsCredits.credits,
+        message: `Se han agregado ${amount} créditos. Total: ${smsCredits.credits}`
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Enviar un SMS
+  app.post('/api/sms/send', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const user = req.user;
+      const config = await storage.getSmsConfig();
+      
+      // Verificar si la API está configurada
+      if (!config || !config.apiKey || !config.isActive) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "La API de SMS no está configurada o está inactiva" 
+        });
+      }
+      
+      // Verificar si el usuario tiene créditos
+      const hasCredits = await storage.useSmsCredit(user.id);
+      if (!hasCredits) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No tienes créditos suficientes para enviar un SMS" 
+        });
+      }
+      
+      // Validar los datos del SMS
+      const { phoneNumber, message, sessionId } = req.body;
+      
+      if (!phoneNumber || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Se requiere número de teléfono y mensaje" 
+        });
+      }
+      
+      // Preparar los datos para el historial
+      const smsData = insertSmsHistorySchema.parse({
+        userId: user.id,
+        phoneNumber,
+        message,
+        sessionId: sessionId || null
+      });
+      
+      // Guardar en el historial como pendiente
+      const smsRecord = await storage.addSmsToHistory(smsData);
+      
+      // TODO: Implementar la llamada real a la API de Sofmex
+      // Esta es una simulación, en una implementación real haríamos la llamada HTTP
+      try {
+        // Simulamos un retraso para la llamada a la API
+        // En una implementación real, aquí se haría la llamada a la API de Sofmex
+        // Ejemplo: const response = await fetch('https://www.sofmex.com/api/sms/send', {...});
+        
+        // Por ahora, simulamos una respuesta exitosa
+        setTimeout(async () => {
+          await storage.updateSmsStatus(smsRecord.id, 'sent');
+        }, 1000);
+        
+        res.json({
+          success: true,
+          message: "Mensaje enviado correctamente",
+          smsId: smsRecord.id
+        });
+      } catch (apiError: any) {
+        // Si ocurre un error con la API, actualizar el estado del SMS
+        await storage.updateSmsStatus(smsRecord.id, 'failed', apiError.message);
+        throw apiError;
+      }
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
+    }
+  });
+  
+  // Obtener historial de SMS enviados
+  app.get('/api/sms/history', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const user = req.user;
+      const history = await storage.getUserSmsHistory(user.id);
+      
+      res.json(history);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   return httpServer;

