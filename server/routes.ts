@@ -331,6 +331,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Eliminar un usuario (solo usuario "balonx" puede hacerlo)
+  app.delete('/api/users/regular/:username', async (req, res) => {
+    console.log('[API] Solicitud para eliminar usuario');
+    
+    if (!req.isAuthenticated()) {
+      console.log('[API] Error: Usuario no autenticado');
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const currentUser = req.user;
+    console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
+    
+    // Solo permitir al usuario "balonx" acceder a esta ruta
+    if (currentUser.username !== "balonx") {
+      console.log('[API] Error: Usuario no autorizado (no es balonx)');
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    const { username } = req.params;
+    
+    // No permitir eliminar al usuario admin "balonx"
+    if (username === "balonx") {
+      console.log('[API] Error: No se puede eliminar al usuario admin "balonx"');
+      return res.status(403).json({ message: "No se puede eliminar al usuario administrador principal" });
+    }
+    
+    try {
+      console.log(`[API] Intentando eliminar usuario: ${username}`);
+      const deleted = await storage.deleteUser(username);
+      
+      if (!deleted) {
+        console.log(`[API] Error: Usuario ${username} no encontrado`);
+        return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+      }
+      
+      console.log(`[API] Usuario eliminado con éxito: ${username}`);
+      res.json({ success: true, message: `Usuario ${username} eliminado correctamente` });
+    } catch (error: any) {
+      console.log(`[API] Error al eliminar usuario: ${error.message}`);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+  
   app.get('/api/admin/user', async (req, res) => {
     try {
       // Obtener el username de la cookie de autenticación

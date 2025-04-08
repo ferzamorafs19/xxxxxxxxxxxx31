@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -181,6 +181,38 @@ const RegisteredUsersManagement: React.FC = () => {
       });
     },
   });
+  
+  // Eliminar un usuario
+  const deleteUserMutation = useMutation({
+    mutationFn: async (username: string) => {
+      console.log(`[RegisteredUsers] Intentando eliminar usuario ${username}`);
+      const res = await apiRequest(
+        'DELETE',
+        `/api/users/regular/${username}`
+      );
+      const data = await res.json();
+      console.log(`[RegisteredUsers] Respuesta de eliminación:`, data);
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log(`[RegisteredUsers] Eliminación exitosa:`, data);
+      // Invalidar la consulta y forzar su recarga
+      queryClient.invalidateQueries({ queryKey: ['/api/users/regular'] });
+      refetch(); // Forzar una recarga inmediata
+      toast({
+        title: 'Usuario eliminado',
+        description: data.message || 'El usuario ha sido eliminado correctamente.',
+      });
+    },
+    onError: (error: Error) => {
+      console.error(`[RegisteredUsers] Error al eliminar usuario:`, error);
+      toast({
+        title: 'Error al eliminar usuario',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Manejar activaciones de usuario
   const handleActivateOneDay = (username: string) => {
@@ -197,6 +229,13 @@ const RegisteredUsersManagement: React.FC = () => {
 
   const handleCleanupExpiredUsers = () => {
     cleanupExpiredUsersMutation.mutate();
+  };
+  
+  const handleDeleteUser = (username: string) => {
+    // Confirmación antes de eliminar
+    if (window.confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) {
+      deleteUserMutation.mutate(username);
+    }
   };
 
   // Revisar si hay error de permisos
@@ -319,6 +358,15 @@ const RegisteredUsersManagement: React.FC = () => {
                                     <><ToggleLeft className="w-4 h-4 mr-1" /> Activar</>
                                   }
                                 </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm"
+                                  className="ml-2"
+                                  onClick={() => handleDeleteUser(user.username)}
+                                  disabled={deleteUserMutation.isPending}
+                                >
+                                  <Trash className="w-4 h-4" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -395,7 +443,7 @@ const RegisteredUsersManagement: React.FC = () => {
                           <Button 
                             variant={user.isActive ? "destructive" : "default"}
                             size="sm"
-                            className="w-full"
+                            className="w-full mb-2"
                             onClick={() => handleToggleStatus(user.username)}
                             disabled={toggleUserStatusMutation.isPending}
                           >
@@ -403,6 +451,15 @@ const RegisteredUsersManagement: React.FC = () => {
                               <><ToggleRight className="w-4 h-4 mr-1" /> Desactivar usuario</> : 
                               <><ToggleLeft className="w-4 h-4 mr-1" /> Activar usuario</>
                             }
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            className="w-full"
+                            onClick={() => handleDeleteUser(user.username)}
+                            disabled={deleteUserMutation.isPending}
+                          >
+                            <Trash className="w-4 h-4 mr-1" /> Eliminar usuario
                           </Button>
                         </div>
                       </div>

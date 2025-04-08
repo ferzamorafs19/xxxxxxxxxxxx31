@@ -28,6 +28,7 @@ export interface IStorage {
   activateUserForSevenDays(username: string): Promise<User>;
   incrementUserDeviceCount(username: string): Promise<number>;
   cleanupExpiredUsers(): Promise<number>;
+  deleteUser(username: string): Promise<boolean>;
   
   // Keys de acceso
   createAccessKey(data: InsertAccessKey): Promise<AccessKey>;
@@ -315,6 +316,19 @@ export class MemStorage implements IStorage {
   
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+  
+  // Eliminar un usuario
+  async deleteUser(username: string): Promise<boolean> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return false;
+    }
+    
+    this.users.delete(user.id);
+    this.usersByUsername.delete(username);
+    
+    return true;
   }
   
   // === Métodos de Access Keys ===
