@@ -404,40 +404,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Obtenemos el dominio base desde las variables de entorno
       const { REPLIT_DOMAINS } = process.env;
-      const baseDomain = REPLIT_DOMAINS ? REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
+      const domain = REPLIT_DOMAINS ? REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
       
-      // Creamos un dominio diferente para los clientes
-      // Si estamos en producción (Replit), usamos una variante del dominio
-      // Si estamos en desarrollo local, usamos el mismo dominio
-      let clientDomain;
+      // En lugar de intentar usar subdominios, usaremos rutas diferentes
+      // La ruta del cliente tendrá un prefijo especial que la hace diferente 
+      // del panel de administración
       
-      if (REPLIT_DOMAINS) {
-        // En Replit, asumimos que el dominio es algo como "app-name.username.repl.co"
-        // o el dominio personalizado
-        if (baseDomain.includes('.replit.app')) {
-          // Para dominios personalizados .replit.app
-          clientDomain = `client.${baseDomain}`;
-        } else if (baseDomain.includes('.repl.co')) {
-          // Para dominios estándar de Replit
-          const parts = baseDomain.split('.');
-          if (parts.length >= 3) {
-            // Ajustamos el subdominio para los clientes
-            parts[0] = `${parts[0]}-client`;
-            clientDomain = parts.join('.');
-          } else {
-            clientDomain = `client-${baseDomain}`;
-          }
-        } else {
-          // Cualquier otro caso, agregamos "client" como subdominio
-          clientDomain = `client.${baseDomain}`;
-        }
-      } else {
-        // En desarrollo local, usamos el mismo dominio pero con una ruta diferente
-        clientDomain = baseDomain;
-      }
-      
-      // Armamos el enlace final
-      const link = `https://${clientDomain}/client/${sessionId}`;
+      // Armamos el enlace final - usando la misma URL base pero con una ruta específica
+      const link = `https://${domain}/client/${sessionId}`;
       
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
@@ -445,8 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         sessionId, 
         link, 
-        code: sixDigitCode,
-        clientDomain
+        code: sixDigitCode
       });
     } catch (error) {
       console.error("Error generating link:", error);
