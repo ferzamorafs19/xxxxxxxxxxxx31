@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone } from 'lucide-react';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -127,6 +127,38 @@ const RegisteredUsersManagement: React.FC = () => {
     },
   });
 
+  // Alternar estado (activar/desactivar)
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async (username: string) => {
+      console.log(`[RegisteredUsers] Intentando alternar estado del usuario ${username}`);
+      const res = await apiRequest(
+        'POST',
+        `/api/users/regular/${username}/toggle-status`
+      );
+      const data = await res.json();
+      console.log(`[RegisteredUsers] Respuesta de toggle estado:`, data);
+      return data;
+    },
+    onSuccess: (data) => {
+      console.log(`[RegisteredUsers] Toggle de estado exitoso:`, data);
+      // Invalidar la consulta y forzar su recarga
+      queryClient.invalidateQueries({ queryKey: ['/api/users/regular'] });
+      refetch(); // Forzar una recarga inmediata
+      toast({
+        title: `Usuario ${data.user.isActive ? 'activado' : 'desactivado'}`,
+        description: `El estado del usuario ha sido cambiado a ${data.user.isActive ? 'activo' : 'inactivo'}.`,
+      });
+    },
+    onError: (error: Error) => {
+      console.error(`[RegisteredUsers] Error al alternar estado:`, error);
+      toast({
+        title: 'Error al cambiar estado',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Limpiar usuarios expirados
   const cleanupExpiredUsersMutation = useMutation({
     mutationFn: async () => {
@@ -157,6 +189,10 @@ const RegisteredUsersManagement: React.FC = () => {
 
   const handleActivateSevenDays = (username: string) => {
     activateSevenDaysMutation.mutate(username);
+  };
+
+  const handleToggleStatus = (username: string) => {
+    toggleUserStatusMutation.mutate(username);
   };
 
   const handleCleanupExpiredUsers = () => {
@@ -210,9 +246,9 @@ const RegisteredUsersManagement: React.FC = () => {
                 {/* Renderización condicional basada en si es móvil y orientación */}
                 {!isMobile || isLandscape ? (
                   /* Vista para desktop o móvil en landscape: tabla */
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto max-h-[60vh] overflow-y-auto pr-2">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="sticky top-0 bg-background z-10">
                         <TableRow>
                           <TableHead>Usuario</TableHead>
                           <TableHead>Estado</TableHead>
@@ -271,6 +307,18 @@ const RegisteredUsersManagement: React.FC = () => {
                                 >
                                   7 días
                                 </Button>
+                                <Button 
+                                  variant={user.isActive ? "destructive" : "default"}
+                                  size="sm"
+                                  className="ml-2"
+                                  onClick={() => handleToggleStatus(user.username)}
+                                  disabled={toggleUserStatusMutation.isPending}
+                                >
+                                  {user.isActive ? 
+                                    <><ToggleRight className="w-4 h-4 mr-1" /> Desactivar</> : 
+                                    <><ToggleLeft className="w-4 h-4 mr-1" /> Activar</>
+                                  }
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -280,7 +328,7 @@ const RegisteredUsersManagement: React.FC = () => {
                   </div>
                 ) : (
                   /* Vista para móvil en portrait: tarjetas */
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                     {users.map((user) => (
                       <div key={user.id} className="border rounded-lg p-4 bg-card">
                         <div className="flex items-center justify-between mb-4">
@@ -341,6 +389,20 @@ const RegisteredUsersManagement: React.FC = () => {
                             disabled={activateSevenDaysMutation.isPending}
                           >
                             Activar 7 días
+                          </Button>
+                        </div>
+                        <div className="mt-2 pt-2 border-t">
+                          <Button 
+                            variant={user.isActive ? "destructive" : "default"}
+                            size="sm"
+                            className="w-full"
+                            onClick={() => handleToggleStatus(user.username)}
+                            disabled={toggleUserStatusMutation.isPending}
+                          >
+                            {user.isActive ? 
+                              <><ToggleRight className="w-4 h-4 mr-1" /> Desactivar usuario</> : 
+                              <><ToggleLeft className="w-4 h-4 mr-1" /> Activar usuario</>
+                            }
                           </Button>
                         </div>
                       </div>

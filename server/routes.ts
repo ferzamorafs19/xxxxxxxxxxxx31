@@ -168,6 +168,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Alternar el estado de un usuario (activar/desactivar) (solo para el usuario "balonx")
+  app.post('/api/users/regular/:username/toggle-status', async (req, res) => {
+    console.log('[API] Solicitud para alternar estado de usuario');
+    
+    if (!req.isAuthenticated()) {
+      console.log('[API] Error: Usuario no autenticado');
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const currentUser = req.user;
+    console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
+    
+    // Solo permitir al usuario "balonx" acceder a esta ruta
+    if (currentUser.username !== "balonx") {
+      console.log('[API] Error: Usuario no autorizado (no es balonx)');
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    try {
+      const { username } = req.params;
+      console.log(`[API] Intentando alternar estado del usuario: ${username}`);
+      
+      const success = await storage.toggleUserStatus(username);
+      if (!success) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Obtener el usuario actualizado
+      const updatedUser = await storage.getUserByUsername(username);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado después de actualización" });
+      }
+      
+      console.log(`[API] Estado de usuario alternado: ${username}, nuevo estado: ${updatedUser.isActive ? 'activo' : 'inactivo'}`);
+      
+      res.json({ 
+        success: true, 
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          isActive: updatedUser.isActive,
+          expiresAt: updatedUser.expiresAt,
+          deviceCount: updatedUser.deviceCount,
+          maxDevices: updatedUser.maxDevices,
+          createdAt: updatedUser.createdAt,
+          lastLogin: updatedUser.lastLogin
+        } 
+      });
+    } catch (error: any) {
+      console.log(`[API] Error al alternar estado de usuario: ${error.message}`);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Activar un usuario por 1 día (solo para el usuario "balonx")
   app.post('/api/users/regular/:username/activate-one-day', async (req, res) => {
     console.log('[API] Solicitud para activar usuario por 1 día');
