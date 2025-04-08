@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target } from 'lucide-react';
@@ -26,7 +26,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
   isLoading 
 }) => {
   const { toast } = useToast();
-  const isMobile = useIsMobile();
+  const { isMobile, isLandscape } = useDeviceInfo();
   // Estado para resaltar las filas recién actualizadas
   const [highlightedRows, setHighlightedRows] = useState<Record<string, boolean>>({});
   
@@ -180,8 +180,8 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   return (
     <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
-      {/* Vista para móvil: tarjetas */}
-      {isMobile ? (
+      {/* Vista para móvil: tarjetas o vista tabla para móvil en landscape */}
+      {(isMobile && !isLandscape) ? (
         <>
           {filteredSessions.length === 0 ? (
             <div className="w-full bg-[#1e1e1e] rounded-lg p-4 text-center text-gray-400">

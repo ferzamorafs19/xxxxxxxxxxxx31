@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, X, Clock, User, Calendar, Smartphone } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useDeviceInfo } from '@/hooks/use-device-orientation';
 
 // Interfaces
 interface User {
@@ -27,7 +27,7 @@ const RegisteredUsersManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const isMobile = useIsMobile();
+  const { isMobile, isLandscape } = useDeviceInfo();
 
   // Consultar los usuarios (solo el usuario balonx puede ver esto)
   const { 
@@ -170,8 +170,9 @@ const RegisteredUsersManagement: React.FC = () => {
               </div>
             ) : (
               <>
-                {/* Vista desktop */}
-                {!isMobile && (
+                {/* Renderización condicional basada en si es móvil y orientación */}
+                {!isMobile || isLandscape ? (
+                  /* Vista para desktop o móvil en landscape: tabla */
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -240,10 +241,8 @@ const RegisteredUsersManagement: React.FC = () => {
                       </TableBody>
                     </Table>
                   </div>
-                )}
-                
-                {/* Vista móvil - tarjetas para cada usuario */}
-                {isMobile && (
+                ) : (
+                  /* Vista para móvil en portrait: tarjetas */
                   <div className="space-y-4">
                     {users.map((user) => (
                       <div key={user.id} className="border rounded-lg p-4 bg-card">
