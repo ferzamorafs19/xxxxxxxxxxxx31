@@ -38,11 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch,
   } = useQuery<any | null, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
+  console.log("[Auth] Estado de autenticación:", user ? `Usuario ${user.username} autenticado` : "No autenticado");
   const isAdmin = user?.role === UserRole.ADMIN;
 
   const loginMutation = useMutation({
@@ -55,7 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (data) => {
+      console.log("[Auth] Login exitoso:", data);
       queryClient.setQueryData(["/api/user"], data);
+      // También refrescar explícitamente para asegurar que tenemos los datos más recientes
+      refetch();
       toast({
         title: "Inicio de sesión exitoso",
         description: "Bienvenido al panel de administración",

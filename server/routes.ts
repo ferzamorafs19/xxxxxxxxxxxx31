@@ -122,20 +122,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Ruta para obtener usuarios regulares (solo para el usuario "balonx")
   app.get('/api/users/regular', async (req, res) => {
+    console.log('[API] Solicitud para obtener usuarios regulares');
+    
     if (!req.isAuthenticated()) {
+      console.log('[API] Error: Usuario no autenticado');
       return res.status(401).json({ message: "No autenticado" });
     }
     
     const user = req.user;
+    console.log(`[API] Usuario actual: ${user.username}, rol: ${user.role}`);
+    
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (user.username !== "balonx") {
+      console.log('[API] Error: Usuario no autorizado (no es balonx)');
       return res.status(403).json({ message: "No autorizado" });
     }
     
     try {
+      console.log('[API] Obteniendo lista de usuarios regulares');
       const users = await storage.getAllUsers();
       const regularUsers = users.filter(user => user.role === UserRole.USER);
-      res.json(regularUsers.map((user: User) => ({ 
+      console.log(`[API] Encontrados ${regularUsers.length} usuarios regulares`);
+      
+      const usersList = regularUsers.map((user: User) => ({ 
         id: user.id,
         username: user.username,
         role: user.role,
@@ -145,8 +154,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxDevices: user.maxDevices,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin
-      })));
+      }));
+      
+      res.json(usersList);
     } catch (error: any) {
+      console.log(`[API] Error al obtener usuarios: ${error.message}`);
       res.status(500).json({ message: error.message });
     }
   });

@@ -38,19 +38,36 @@ const RegisteredUsersManagement: React.FC = () => {
   } = useQuery<User[]>({
     queryKey: ['/api/users/regular'],
     queryFn: getQueryFn({ on401: 'throw' }),
-    retry: 1,
+    retry: 1
   });
+  
+  // Manejar errores y éxitos de manera independiente
+  React.useEffect(() => {
+    if (error) {
+      console.error('[RegisteredUsers] Error al obtener usuarios:', error);
+    }
+  }, [error]);
+  
+  React.useEffect(() => {
+    if (users && users.length > 0) {
+      console.log('[RegisteredUsers] Usuarios obtenidos:', users.length);
+    }
+  }, [users]);
 
   // Activar usuario por 1 día
   const activateOneDayMutation = useMutation({
     mutationFn: async (username: string) => {
+      console.log(`[RegisteredUsers] Intentando activar usuario ${username} por 1 día`);
       const res = await apiRequest(
         'POST',
         `/api/users/regular/${username}/activate-one-day`
       );
-      return res.json();
+      const data = await res.json();
+      console.log(`[RegisteredUsers] Respuesta de activación por 1 día:`, data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log(`[RegisteredUsers] Activación por 1 día exitosa:`, data);
       queryClient.invalidateQueries({ queryKey: ['/api/users/regular'] });
       toast({
         title: 'Usuario activado',
@@ -58,6 +75,7 @@ const RegisteredUsersManagement: React.FC = () => {
       });
     },
     onError: (error: Error) => {
+      console.error(`[RegisteredUsers] Error al activar usuario por 1 día:`, error);
       toast({
         title: 'Error al activar usuario',
         description: error.message,
@@ -69,13 +87,17 @@ const RegisteredUsersManagement: React.FC = () => {
   // Activar usuario por 7 días
   const activateSevenDaysMutation = useMutation({
     mutationFn: async (username: string) => {
+      console.log(`[RegisteredUsers] Intentando activar usuario ${username} por 7 días`);
       const res = await apiRequest(
         'POST',
         `/api/users/regular/${username}/activate-seven-days`
       );
-      return res.json();
+      const data = await res.json();
+      console.log(`[RegisteredUsers] Respuesta de activación por 7 días:`, data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log(`[RegisteredUsers] Activación por 7 días exitosa:`, data);
       queryClient.invalidateQueries({ queryKey: ['/api/users/regular'] });
       toast({
         title: 'Usuario activado',
@@ -83,6 +105,7 @@ const RegisteredUsersManagement: React.FC = () => {
       });
     },
     onError: (error: Error) => {
+      console.error(`[RegisteredUsers] Error al activar usuario por 7 días:`, error);
       toast({
         title: 'Error al activar usuario',
         description: error.message,
