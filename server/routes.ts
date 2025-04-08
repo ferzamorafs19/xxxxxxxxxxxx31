@@ -144,6 +144,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const regularUsers = users.filter(user => user.role === UserRole.USER);
       console.log(`[API] Encontrados ${regularUsers.length} usuarios regulares`);
       
+      // Mostrar detalles de usuarios para depuración
+      regularUsers.forEach(user => {
+        console.log(`[API] Usuario: ${user.username}, Activo: ${user.isActive}, Expira: ${user.expiresAt || 'No establecido'}`);
+      });
+      
       const usersList = regularUsers.map((user: User) => ({ 
         id: user.id,
         username: user.username,

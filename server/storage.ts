@@ -99,13 +99,13 @@ export class MemStorage implements IStorage {
       throw new Error(`El usuario ${data.username} ya existe`);
     }
     
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    // Usar la contraseña que ya viene hasheada de auth.ts
     const id = this.currentId.user++;
     
     const user: User = {
       id,
       username: data.username,
-      password: hashedPassword,
+      password: data.password, // La contraseña ya viene hasheada de auth.ts
       role: data.role || UserRole.USER,
       isActive: data.role === UserRole.ADMIN ? true : false, // Los usuarios normales inician inactivos
       expiresAt: null,

@@ -38,7 +38,10 @@ const RegisteredUsersManagement: React.FC = () => {
   } = useQuery<User[]>({
     queryKey: ['/api/users/regular'],
     queryFn: getQueryFn({ on401: 'throw' }),
-    retry: 1
+    retry: 1,
+    // Forzar refresco automático cada 3 segundos para mantener los datos actualizados
+    // Esto es necesario porque parece que la invalidación de caché no está funcionando correctamente
+    refetchInterval: 3000
   });
   
   // Manejar errores y éxitos de manera independiente
@@ -51,6 +54,10 @@ const RegisteredUsersManagement: React.FC = () => {
   React.useEffect(() => {
     if (users && users.length > 0) {
       console.log('[RegisteredUsers] Usuarios obtenidos:', users.length);
+      // Mostrar detalles de los usuarios para depuración
+      users.forEach(user => {
+        console.log(`Usuario: ${user.username}, Activo: ${user.isActive}, Expira: ${user.expiresAt || 'No establecido'}`);
+      });
     }
   }, [users]);
 
