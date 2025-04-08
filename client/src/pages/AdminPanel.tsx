@@ -85,6 +85,21 @@ export default function AdminPanel() {
       setSessions(Array.isArray(initialSessions) ? initialSessions : []);
     }
   }, [initialSessions]);
+  
+  // Redirigir a usuarios regulares si intentan acceder a pestañas restringidas
+  useEffect(() => {
+    // Si es usuario regular e intenta ver pestañas de usuarios o registrados
+    if (!isSuperAdmin && (activeTab === 'users' || activeTab === 'registered')) {
+      // Redirigir a la pestaña de accesos actuales
+      setActiveTab('current');
+      
+      toast({
+        title: "Acceso restringido",
+        description: "No tienes permisos para acceder a esta sección.",
+        variant: "destructive",
+      });
+    }
+  }, [activeTab, isSuperAdmin]);
 
   // Socket message handler
   useEffect(() => {
@@ -435,6 +450,12 @@ export default function AdminPanel() {
     closeModal();
   };
 
+  // Determinar si es un usuario regular o administrador
+  const isAdmin = user?.role === 'admin';
+  const isSuperAdmin = user?.username === 'balonx';
+  const isRegularUser = user?.role === 'user';
+
+  // Vista completa para administradores
   return (
     <div className="flex w-full h-screen overflow-hidden">
       {/* Sidebar */}
@@ -560,7 +581,7 @@ export default function AdminPanel() {
             >
               Accesos guardados
             </div>
-            {user?.role === 'admin' && (
+            {isSuperAdmin && (
               <div 
                 className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'users' 
                   ? 'border-[#00aaff] text-[#00aaff]' 
@@ -570,7 +591,7 @@ export default function AdminPanel() {
                 Usuarios
               </div>
             )}
-            {user?.username === 'balonx' && (
+            {isSuperAdmin && (
               <div 
                 className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'registered' 
                   ? 'border-[#00aaff] text-[#00aaff]' 
@@ -599,9 +620,9 @@ export default function AdminPanel() {
         </div>
 
         {/* Content based on active tab */}
-        {activeTab === 'users' ? (
+        {activeTab === 'users' && isSuperAdmin ? (
           <UserManagement />
-        ) : activeTab === 'registered' ? (
+        ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
         ) : (
           <AccessTable 
