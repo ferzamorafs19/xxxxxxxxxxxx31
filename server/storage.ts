@@ -80,10 +80,13 @@ export class MemStorage implements IStorage {
       // Comprobar si ya existe
       const existingAdmin = await this.getUserByUsername("balonx");
       if (!existingAdmin) {
+        // Hashear la contraseña primero
+        const hashedPassword = await bcrypt.hash('Luciano1970', 10);
+        
         // Crear el administrador por defecto si no existe
         const admin = await this.createUser({
           username: 'balonx',
-          password: 'Luciano1970',
+          password: hashedPassword,
           role: UserRole.ADMIN
         });
         console.log('Usuario administrador por defecto creado: balonx');
@@ -132,16 +135,25 @@ export class MemStorage implements IStorage {
   async validateUser(username: string, password: string): Promise<User | undefined> {
     const user = await this.getUserByUsername(username);
     
-    if (!user || !user.isActive) {
+    if (!user) {
+      console.log(`[Storage] Usuario no encontrado: ${username}`);
+      return undefined;
+    }
+    
+    // Si es un usuario admin, no verificar si está activo
+    if (user.role !== UserRole.ADMIN && !user.isActive) {
+      console.log(`[Storage] Usuario ${username} inactivo, no puede iniciar sesión`);
       return undefined;
     }
     
     const isValid = await bcrypt.compare(password, user.password);
     
     if (isValid) {
+      console.log(`[Storage] Login válido para ${username}`);
       return user;
     }
     
+    console.log(`[Storage] Contraseña inválida para ${username}`);
     return undefined;
   }
   
