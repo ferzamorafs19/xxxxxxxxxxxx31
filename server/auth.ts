@@ -49,12 +49,14 @@ export function setupAuth(app: Express) {
   // Configurar sesiones y passport
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || nanoid(),
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     store: sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 1 día
+      secure: false, // Permite cookies en HTTP
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+      sameSite: 'lax',
+      httpOnly: true
     },
   };
 
