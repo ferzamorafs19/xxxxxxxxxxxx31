@@ -84,10 +84,10 @@ export class MemStorage implements IStorage {
     this.devices = new Map();
     this.smsConfig = {
       id: 1,
-      username: null,
-      password: null,
+      username: 'josemorenofs19@gmail.com',
+      password: 'Balon19@',
       apiUrl: 'https://api.sofmex.mx/api/sms',
-      isActive: false,
+      isActive: true,
       updatedAt: new Date(),
       updatedBy: 'system'
     };

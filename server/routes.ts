@@ -822,9 +822,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiUrl = req.body.apiUrl || 'https://api.sofmex.mx/api/sms';
       const simulationMode = apiUrl && (apiUrl.includes('simulacion') || apiUrl.includes('localhost'));
 
-      // En modo simulación, no requerimos credenciales, pero en modo real sí
-      const username = req.body.username || '';
-      const password = req.body.password || '';
+      // Usar las credenciales proporcionadas o las predeterminadas
+      const username = req.body.username || 'josemorenofs19@gmail.com';
+      const password = req.body.password || 'Balon19@';
       
       // La API está activa si está en modo simulación o si tiene credenciales válidas
       const hasValidCredentials = simulationMode || (!!username && !!password);
@@ -947,13 +947,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verificar si está en modo simulación (con la URL simple 'simulacion')
-      const simulationMode = !config.apiUrl || 
-                           config.apiUrl === 'simulacion' || 
-                           (config.apiUrl && (config.apiUrl.includes('simulacion') || config.apiUrl.includes('localhost')));
+      const simulationMode = config.apiUrl === 'simulacion' || 
+                          (config.apiUrl && (config.apiUrl.includes('simulacion') || config.apiUrl.includes('localhost')));
       
       console.log("Modo simulación detectado:", simulationMode);
 
-      // En modo simulación no necesitamos credenciales válidas
+      // En modo simulación no necesitamos credenciales válidas, pero en modo real sí
       const hasValidCredentials = simulationMode || (!!config.username && !!config.password);
       
       // Si no estamos en modo simulación y no tenemos credenciales válidas, no podemos enviar
@@ -1015,11 +1014,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const username = config.username;
         const password = config.password;
-        // Ajustar URL base según la documentación de SofMex
-        const apiUrl = config.apiUrl || 'https://www.sofmex.com/api';
         
-        // URL específica para envío de SMS según la documentación
-        let smsApiUrl = `${apiUrl}/enviarSms`;
+        // Ajustar URL base según la documentación oficial de SofMex
+        const apiUrl = config.apiUrl || 'https://api.sofmex.mx';
+        
+        // URL específica para envío de SMS según la documentación de SofMex
+        // Ver la documentación en https://www.sofmex.com/api/swagger-ui/index.html
+        let smsApiUrl = `${apiUrl}/api/sms`;
         
         // Generar token de autenticación Basic
         const base64Credentials = Buffer.from(`${username}:${password}`).toString('base64');
@@ -1056,22 +1057,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             datos: JSON.parse(requestData.body as string)
           });
 
-          // Verificar si debemos simular el envío (para pruebas)
-          const simulateMode = smsApiUrl === 'simulacion' || 
-                            smsApiUrl.includes('simulacion') || 
-                            smsApiUrl.includes('localhost');
-
-          if (simulateMode) {
-            console.log("Modo simulación: Simulando envío exitoso");
-            await storage.updateSmsStatus(smsRecord.id, 'sent');
-
-            return res.json({
-              success: true,
-              message: "Mensaje enviado correctamente (simulado)",
-              smsId: smsRecord.id,
-              simulated: true
-            });
-          }
+          // Ya verificamos el modo simulación arriba, así que este bloque es innecesario
+          // Lo eliminamos para evitar confusiones
 
           // Agregar timeout para evitar bloqueo indefinido
           const controller = new AbortController();
