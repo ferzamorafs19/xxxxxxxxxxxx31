@@ -4,7 +4,11 @@
  * @returns Formatted date string
  */
 export function formatDate(date: Date): string {
-  return date.toLocaleDateString('es-ES', {
+  // Forzar año 2025 para todas las fechas
+  const newDate = new Date(date);
+  newDate.setFullYear(2025);
+  
+  return newDate.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
