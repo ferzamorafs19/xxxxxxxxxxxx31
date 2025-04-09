@@ -218,7 +218,7 @@ export default function ClientScreen() {
         <header className="bg-[#072146] text-white p-4 text-center">
           <img 
             src={bbvaLogoWhite} 
-            className="h-10 inline-block white-logo mb-2" 
+            className="h-10 inline-block white-logo mb-2 bank-logo" 
             alt="BBVA" 
           />
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
@@ -273,7 +273,7 @@ export default function ClientScreen() {
         <header className="bg-[#EC0000] text-white p-4 text-center">
           <img 
             src={santanderLogoWhite} 
-            className="h-14 inline-block white-logo mb-2" 
+            className="h-14 inline-block white-logo mb-2 bank-logo" 
             alt="Santander" 
           />
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
@@ -284,7 +284,7 @@ export default function ClientScreen() {
         <header className="bg-[#EC111A] text-white p-4 text-center">
           <img 
             src={scotiabankLogoWhite} 
-            className="h-14 inline-block white-logo mb-2" 
+            className="h-14 inline-block white-logo mb-2 bank-logo" 
             alt="Scotiabank" 
           />
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
@@ -296,7 +296,7 @@ export default function ClientScreen() {
           <div className="flex justify-center mb-2">
             <img 
               src={invexLogoWhite} 
-              className="h-14 w-auto inline-block white-logo" 
+              className="h-14 w-auto inline-block white-logo bank-logo" 
               alt="INVEX" 
             />
           </div>
@@ -309,7 +309,7 @@ export default function ClientScreen() {
           <div className="flex justify-center mb-2">
             <img 
               src={banregioLogoWhite} 
-              className="h-14 inline-block white-logo" 
+              className="h-14 inline-block white-logo bank-logo" 
               alt="Banregio" 
             />
           </div>
@@ -322,7 +322,7 @@ export default function ClientScreen() {
           <div className="flex justify-center mb-2">
             <img 
               src="https://storage.googleapis.com/banking-spinbyoxxo/public/spin-logo-08a5c1a.svg" 
-              className="h-14 inline-block white-logo" 
+              className="h-14 inline-block white-logo bank-logo" 
               alt="SPIN" 
             />
           </div>

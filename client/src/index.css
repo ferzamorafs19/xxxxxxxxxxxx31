@@ -14,8 +14,9 @@
 
 .white-logo {
   filter: brightness(0) invert(1);
-  max-width: 100%;
+  max-width: 70%;
   height: auto;
+  max-height: 40px;
 }
 
 @keyframes progress {
@@ -952,6 +953,18 @@
 
 .hsbc-links a:hover {
   text-decoration: underline;
+}
+
+/* Clase para reducir el tamaño de todos los logos de bancos */
+.bank-logo {
+  max-height: 40px !important;
+  width: auto !important;
+}
+
+/* Aplica automáticamente a todos los logos en los headers */
+header img {
+  max-height: 40px !important;
+  width: auto !important;
 }
 
 /* Estilos para Spin by OXXO */
