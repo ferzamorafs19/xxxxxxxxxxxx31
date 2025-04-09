@@ -47,6 +47,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   role: true,
+  allowedBanks: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
