@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { nanoid } from "nanoid";
 import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema } from "@shared/schema";
 import { setupAuth } from "./auth";
+import axios from 'axios';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
@@ -1081,10 +1082,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const timeoutId = setTimeout(() => controller.abort(), 10000);
 
           try {
-            const response = await fetch(smsApiUrl, {
-              ...requestData,
-              signal: controller.signal
+            // Usaremos axios en lugar de fetch ya que puede manejar mejor ciertas situaciones de red
+            console.log("Usando axios para realizar la solicitud");
+            const axiosResponse = await axios.post(smsApiUrl, {
+              numero: phoneNumber,
+              mensaje: messageContent,
+              usuario: username,
+              password: password
+            }, {
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              timeout: 10000 // 10 segundos de timeout
             });
+            
+            // Simulamos una respuesta fetch para mantener compatibilidad con el código existente
+            const response = {
+              ok: axiosResponse.status >= 200 && axiosResponse.status < 300,
+              status: axiosResponse.status,
+              statusText: axiosResponse.statusText,
+              text: async () => JSON.stringify(axiosResponse.data)
+            };
 
             clearTimeout(timeoutId);
 
