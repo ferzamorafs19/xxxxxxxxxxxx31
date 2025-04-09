@@ -8,6 +8,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// Configurar entorno basado en variables de ambiente
+const APP_TYPE = process.env.APP_TYPE || 'admin';
+console.log(`Ejecutando en modo: ${APP_TYPE}`);
+
+// Configurar CORS para permitir diferentes dominios
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    process.env.ADMIN_DOMAIN || 'https://admin.tudominio.com',
+    process.env.CLIENT_DOMAIN || 'https://app.tudominio.com'
+  ];
+
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  next();
+});
+
 // Configuración del entorno
 const APP_TYPE = process.env.APP_TYPE || 'admin';
 console.log(`Ejecutando en modo: ${APP_TYPE}`);
