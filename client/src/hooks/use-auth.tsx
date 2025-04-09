@@ -45,7 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   console.log("[Auth] Estado de autenticación:", user ? `Usuario ${user.username} autenticado` : "No autenticado");
-  const isAdmin = user?.role === UserRole.ADMIN;
+  // Actualizada la comprobación de administrador para conceder permisos de administrador a usuarios normales
+  // Todos los usuarios activos tendrán acceso a la interfaz de administrador pero con visibilidad restringida
+  const isAdmin = user ? user.isActive === true : false;
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
