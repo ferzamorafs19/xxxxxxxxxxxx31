@@ -253,21 +253,13 @@ const SmsManagement: React.FC = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="sofmexUsername">Usuario de SofMex</Label>
+                    <Label htmlFor="apiKey">API Key de SofMex</Label>
                     <Input
-                      id="sofmexUsername"
-                      type="text"
-                      placeholder="Usuario de SofMex"
-                      value={sofmexUsername}
-                      onChange={(e) => setSofmexUsername(e.target.value)}
-                    />
-                    <Label htmlFor="sofmexPassword">Contraseña de SofMex</Label>
-                    <Input
-                      id="sofmexPassword"
+                      id="apiKey"
                       type="password"
-                      placeholder="Contraseña de SofMex"
-                      value={sofmexPassword}
-                      onChange={(e) => setSofmexPassword(e.target.value)}
+                      placeholder="API Key de SofMex"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">

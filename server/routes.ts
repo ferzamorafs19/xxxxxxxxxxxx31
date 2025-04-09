@@ -788,7 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: config.isActive,
           updatedAt: config.updatedAt,
           updatedBy: config.updatedBy,
-          hasApiKey: !!config.sofmexUsername, // Changed to check for Sofmex username
+          hasApiKey: !!config.apiKey, // Verificar si hay API Key configurada
           apiUrl: config.apiUrl || 'https://api.sofmex.mx/api/sms'
         });
       } else {
@@ -823,12 +823,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const simulationMode = apiUrl && (apiUrl.includes('simulacion') || apiUrl.includes('localhost'));
 
       // En modo simulación, no requerimos API key
-      const sofmexUsername = req.body.sofmexUsername;
-      const sofmexPassword = req.body.sofmexPassword;
+      const apiKey = req.body.apiKey;
 
       const data = insertSmsConfigSchema.parse({
-        sofmexUsername: sofmexUsername, // Changed to Sofmex username
-        sofmexPassword: sofmexPassword, // Added Sofmex password
+        apiKey: apiKey,
         apiUrl: apiUrl,
         updatedBy: user.username
       });
@@ -848,7 +846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: config.isActive,
         updatedAt: config.updatedAt,
         updatedBy: config.updatedBy,
-        hasApiKey: Boolean(config.sofmexUsername), // Changed to check for Sofmex username
+        hasApiKey: Boolean(config.apiKey), // Verificar si tiene API Key
         apiUrl: config.apiUrl,
         success: true
       };
@@ -931,11 +929,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar si está en modo simulación
       const simulationMode = config.apiUrl && (config.apiUrl.includes('simulacion') || config.apiUrl.includes('localhost'));
 
-      // En modo real, necesitamos una API key o credenciales SofMex
-      if (!simulationMode && (!config.sofmexUsername || !config.sofmexPassword)) {
+      // En modo real, necesitamos una API key
+      if (!simulationMode && !config.apiKey) {
         return res.status(400).json({ 
           success: false, 
-          message: "La API de SMS no tiene credenciales de SofMex configuradas" 
+          message: "La API de SMS no tiene API Key configurada" 
         });
       }
 
@@ -974,32 +972,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Implementación real de la API de Sofmex
       try {
-        const { sofmexUsername, sofmexPassword } = config;
-        const apiUrl = config.apiUrl || 'https://api.sofmex.mx/auth';
+        const apiKey = config.apiKey;
+        const apiUrl = config.apiUrl || 'https://api.sofmex.mx/api/sms';
 
-        // Primero autenticamos con SofMex
-        const authResponse = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            username: sofmexUsername,
-            password: sofmexPassword
-          })
-        });
-
-        if (!authResponse.ok) {
-          throw new Error('Error de autenticación con SofMex: ' + await authResponse.text());
-        }
-
-        const { token } = await authResponse.json();
-
-        const smsApiUrl = config.apiUrl || 'https://api.sofmex.mx/api/sms'; // Separate SMS API endpoint
+        // Usamos directamente la API Key en lugar de autenticar con usuario/contraseña
+        const smsApiUrl = apiUrl;
         const requestData = {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

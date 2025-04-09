@@ -619,10 +619,21 @@ export class MemStorage implements IStorage {
   }
   
   async updateSmsConfig(data: InsertSmsConfig): Promise<SmsConfig> {
+    // Preparar valores con tipos seguros
+    let apiKey: string | null = null;
+    if (typeof data.apiKey === 'string') {
+      apiKey = data.apiKey;
+    }
+    
+    let apiUrl: string = "https://api.sofmex.mx/api/sms";
+    if (typeof data.apiUrl === 'string') {
+      apiUrl = data.apiUrl;
+    }
+    
     const config: SmsConfig = {
       id: 1, // Siempre usamos ID=1 para la configuración única
-      apiKey: data.apiKey,
-      apiUrl: data.apiUrl || "https://api.sofmex.mx/api/sms",
+      apiKey,
+      apiUrl,
       isActive: true,
       updatedAt: new Date(),
       updatedBy: data.updatedBy

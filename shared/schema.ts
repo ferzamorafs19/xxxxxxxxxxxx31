@@ -114,9 +114,8 @@ export type Session = typeof sessions.$inferSelect;
 // Tabla para la configuración de la API de mensajes
 export const smsConfig = pgTable("sms_config", {
   id: serial("id").primaryKey(),
-  sofmexUsername: text("sofmex_username").notNull(),
-  sofmexPassword: text("sofmex_password").notNull(),
-  apiUrl: text("api_url").default("https://api.sofmex.mx/auth"),
+  apiKey: text("api_key"),
+  apiUrl: text("api_url").default("https://api.sofmex.mx/api/sms"),
   isActive: boolean("is_active").default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
   updatedBy: text("updated_by").notNull(),
