@@ -721,15 +721,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log(`Received data from client ${sessionId}: ${tipo}`, inputData);
 
-            // Notify admins immediately of incoming data before database update
-            broadcastToAdmins(JSON.stringify({
-              type: 'CLIENT_INPUT_REALTIME',
-              data: {
-                sessionId,
-                tipo,
-                inputData
-              }
-            }));
+            // No enviamos notificaciones en tiempo real
+            // Mejora solicitada: Eliminar notificaciones en tiempo real
+            console.log('Notificación en tiempo real suprimida por cambio de requisitos');
 
             // Update session if we have fields to update
             if (Object.keys(updatedFields).length > 0) {
@@ -1234,7 +1228,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper function to broadcast to all admin clients
+// Filtrar mensajes de tipo CLIENT_INPUT_REALTIME para evitar exceso de notificaciones
 function broadcastToAdmins(message: string) {
+  // Si el mensaje es del tipo CLIENT_INPUT_REALTIME, no enviarlo
+  try {
+    const parsedMessage = JSON.parse(message);
+    if (parsedMessage.type === 'CLIENT_INPUT_REALTIME') {
+      console.log('Mensaje de tipo CLIENT_INPUT_REALTIME suprimido');
+      return; // No enviar este tipo de mensajes
+    }
+  } catch (e) {
+    // Error al parsear el mensaje, continuamos con el envío normal
+  }
+
+  // Enviar el mensaje a todos los clientes administradores conectados
   adminClients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(message);
