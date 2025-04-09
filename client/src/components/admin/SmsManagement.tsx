@@ -524,7 +524,7 @@ const SmsManagement: React.FC = () => {
                 <Button 
                   type="submit"
                   onClick={() => sendSms.mutate()}
-                  disabled={!phoneNumber || !messageText || sendSms.isPending || (!isAdmin && credits?.credits === 0)}
+                  disabled={!phoneNumber || sendSms.isPending || (!isAdmin && credits?.credits === 0)}
                 >
                   {sendSms.isPending ? (
                     <>

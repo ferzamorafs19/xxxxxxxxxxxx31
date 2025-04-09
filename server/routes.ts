@@ -977,19 +977,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validar los datos del SMS
       const { phoneNumber, message, sessionId } = req.body;
+      
+      console.log("Datos de SMS a enviar:", { phoneNumber, messageLength: message?.length || 0, sessionId });
 
-      if (!phoneNumber || !message) {
+      if (!phoneNumber) {
         return res.status(400).json({ 
           success: false, 
-          message: "Se requiere número de teléfono y mensaje" 
+          message: "Se requiere número de teléfono" 
         });
       }
+      
+      // Permitir mensaje vacío para mayor flexibilidad
+      const messageContent = message || "Mensaje de prueba";
 
       // Preparar los datos para el historial
       const smsData = insertSmsHistorySchema.parse({
         userId: user.id,
         phoneNumber,
-        message,
+        message: messageContent,
         sessionId: sessionId || null
       });
 
@@ -1034,7 +1039,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           body: JSON.stringify({
             telefono: phoneNumber,           // Cambio de 'phone' a 'telefono'
-            mensaje: message,                // Cambio de 'message' a 'mensaje'
+            mensaje: messageContent,        // Cambio de 'message' a 'mensaje'
             usuario: username,               // Agregar usuario
             credenciales: password           // Agregar credenciales
           })
@@ -1043,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Enviando SMS a través de la API:", {
           url: smsApiUrl,
           phone: phoneNumber,
-          messageLength: message.length
+          messageLength: messageContent.length
         });
 
         try {
