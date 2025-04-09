@@ -172,7 +172,12 @@ export default function AdminPanel() {
         title: "Link generado",
         description: `Link generado con código: ${data.code}`,
       });
+      
+      // Actualizar inmediatamente la lista de sesiones para mostrar la nueva sesión
+      // Esto causará una recarga completa de las sesiones desde el servidor
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      
+      console.log("Solicitando actualización de sesiones después de generar enlace...");
       
       // Abrir el enlace en una nueva pestaña
       window.open(data.link, '_blank');

