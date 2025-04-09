@@ -156,17 +156,26 @@ export default function AdminPanel() {
         console.log("Mensaje WebSocket recibido en AdminPanel:", data.type);
         
         if (data.type === 'INIT_SESSIONS') {
-          // Filtrar las sesiones para mostrar solo las creadas por el usuario actual
-          const filtered = Array.isArray(data.data) 
-            ? data.data.filter((session: any) => session.createdBy === user?.username)
-            : [];
-          console.log(`Filtrando sesiones para usuario ${user?.username}: ${filtered.length} sesiones encontradas`);
+          // Verificar si el usuario es administrador para mostrar todas las sesiones o solo las propias
+          let filtered;
+          if (user?.role === 'admin') {
+            // El administrador ve todas las sesiones
+            filtered = Array.isArray(data.data) ? data.data : [];
+            console.log(`Admin: Mostrando todas las sesiones (${filtered.length})`);
+          } else {
+            // Los usuarios regulares solo ven sus propias sesiones
+            filtered = Array.isArray(data.data) 
+              ? data.data.filter((session: any) => session.createdBy === user?.username)
+              : [];
+            console.log(`Usuario ${user?.username}: Mostrando ${filtered.length} sesiones propias`);
+          }
           setSessions(filtered);
         }
         else if (data.type === 'SESSION_UPDATE') {
-          // Verificar primero si la sesión actualizada pertenece al usuario actual
-          if (data.data.createdBy === user?.username) {
-            // Solo actualizar la sesión en la pestaña actual si es del usuario actual
+          const isAdmin = user?.role === 'admin';
+          // Verificar si es admin (puede ver todas) o si la sesión pertenece al usuario
+          if (isAdmin || data.data.createdBy === user?.username) {
+            // Solo actualizar la sesión en la pestaña actual
             if ((activeTab === 'current' && !data.data.saved) || 
                 (activeTab === 'saved' && data.data.saved)) {
               setSessions(prev => {

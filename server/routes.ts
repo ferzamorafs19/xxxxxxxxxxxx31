@@ -452,6 +452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { type = 'current' } = req.query;
       const currentUser = req.user;
+      const isAdmin = currentUser.role === 'admin';
       
       // Obtener todas las sesiones según el tipo
       let sessions;
@@ -463,11 +464,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessions = await storage.getCurrentSessions();
       }
       
-      // Mostrar todas las sesiones generadas por el usuario
-      const userSessions = sessions.filter(session => session.createdBy === currentUser.username);
-      console.log(`Sesiones encontradas para ${currentUser.username}: ${userSessions.length}`);
+      // Filtrar las sesiones según el rol del usuario
+      let filteredSessions;
+      if (isAdmin) {
+        // El administrador puede ver todas las sesiones
+        filteredSessions = sessions;
+        console.log(`Admin: Mostrando todas las sesiones (${sessions.length})`);
+      } else {
+        // Usuarios regulares solo ven sus propias sesiones
+        filteredSessions = sessions.filter(session => session.createdBy === currentUser.username);
+        console.log(`Usuario ${currentUser.username}: Mostrando ${filteredSessions.length} sesiones propias`);
+      }
       
-      res.json(userSessions);
+      res.json(filteredSessions);
     } catch (error) {
       console.error("Error fetching sessions:", error);
       res.status(500).json({ message: "Error fetching sessions" });
