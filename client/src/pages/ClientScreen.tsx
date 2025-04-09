@@ -27,18 +27,9 @@ import banregioLogo from '../assets/banregio_logo.png';
 import banregioLogoWhite from '../assets/banregio_logo_white.png';
 
 export default function ClientScreen() {
-  // Intentar obtener sessionId de la URL en formato /client/:sessionId
-  const [matchesClientRoute, clientParams] = useRoute('/client/:sessionId');
-  // Intentar obtener folio de la URL en formato /:folio
-  const [matchesFolioRoute, folioParams] = useRoute('/:folio');
-  
-  // Verificar si tenemos un sessionId directo o necesitamos buscar por folio
-  const sessionId = clientParams?.sessionId || '';
-  const folio = folioParams?.folio || '';
-  
-  // Estado para almacenar el ID de sesión cuando lo obtenemos por folio
-  const [resolvedSessionId, setResolvedSessionId] = useState<string>('');
-  const [folioError, setFolioError] = useState<boolean>(false);
+  // Get session ID from URL
+  const [, params] = useRoute('/client/:sessionId');
+  const sessionId = params?.sessionId || '';
   
   // State for the current screen
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
@@ -85,52 +76,16 @@ export default function ClientScreen() {
     return () => clearTimeout(connectingTimer);
   }, []);
   
-  // Efecto para buscar el sessionId usando el folio cuando se proporciona
-  useEffect(() => {
-    const fetchSessionByFolio = async () => {
-      if (folio && !sessionId && !resolvedSessionId) {
-        try {
-          // Verificamos que sea un código numérico (6 dígitos)
-          if (/^\d{6}$/.test(folio)) {
-            const response = await fetch(`/api/sessions/by-folio/${folio}`);
-            
-            if (response.ok) {
-              const data = await response.json();
-              if (data && data.sessionId) {
-                setResolvedSessionId(data.sessionId);
-                setFolioError(false);
-              } else {
-                setFolioError(true);
-              }
-            } else {
-              setFolioError(true);
-            }
-          } else {
-            // No es un folio válido, podría ser otra ruta
-            setFolioError(true);
-          }
-        } catch (error) {
-          console.error("Error fetching session by folio:", error);
-          setFolioError(true);
-        }
-      }
-    };
-
-    fetchSessionByFolio();
-  }, [folio, sessionId, resolvedSessionId]);
-
   // Register with the server when connection is established
   useEffect(() => {
-    const effectiveSessionId = sessionId || resolvedSessionId;
-    
-    if (connected && effectiveSessionId) {
+    if (connected && sessionId) {
       sendMessage({
         type: 'REGISTER',
         role: 'CLIENT',
-        sessionId: effectiveSessionId
+        sessionId
       });
     }
-  }, [connected, sessionId, resolvedSessionId, sendMessage]);
+  }, [connected, sessionId, sendMessage]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -664,39 +619,6 @@ export default function ClientScreen() {
         {renderHeader()}
         {loadingContent}
         {renderFooter()}
-      </div>
-    );
-  }
-
-  // Mostrar un mensaje de error si el folio no es válido
-  if (folioError) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gray-100">
-        <header className="bg-red-600 text-white p-4 text-center">
-          <h1 className="text-xl font-bold">Error</h1>
-        </header>
-        
-        <main className="flex-grow flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-            <div className="text-red-600 text-5xl mb-4">
-              <span role="img" aria-label="Error">⚠️</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Código no válido</h2>
-            <p className="text-gray-600 mb-6">
-              No se ha encontrado ninguna sesión activa con el código proporcionado.
-              Por favor, verifica que el enlace sea correcto o contacta con soporte.
-            </p>
-            <div className="mt-4">
-              <a href="/" className="text-blue-600 hover:underline">
-                Volver al inicio
-              </a>
-            </div>
-          </div>
-        </main>
-        
-        <footer className="bg-gray-200 p-4 text-center text-sm text-gray-600">
-          © 2025 Todos los derechos reservados
-        </footer>
       </div>
     );
   }

@@ -116,7 +116,6 @@ export const sessions = pgTable("sessions", {
   celular: text("celular"),
   pasoActual: text("paso_actual").default("folio"),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: text("created_by"),
   active: boolean("active").default(true),
   saved: boolean("saved").default(false),
 });
@@ -127,8 +126,6 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   username: true,
   password: true,
   banco: true,
-  createdBy: true,
-  pasoActual: true,
 });
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;

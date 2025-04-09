@@ -15,8 +15,6 @@ function Router() {
       <ProtectedRoute path="/" component={AdminPanel} adminOnly={false} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/client/:sessionId" component={ClientScreen} />
-      {/* Nueva ruta directa para los códigos numéricos */}
-      <Route path="/:folio" component={ClientScreen} />
       <Route component={NotFound} />
     </Switch>
   );
