@@ -384,14 +384,25 @@ const RegisteredUsersManagement: React.FC = () => {
       // Para el administrador, usamos la API normal
       generateLinkMutation.mutate(bancoSeleccionado);
     } else {
-      // Mostrar mensaje de generación
-      toast({
-        title: "Generando enlace",
-        description: `Creando enlace para ${bancoSeleccionado}...`,
-      });
+      // Crear la URL para copiarla al portapapeles
+      const linkUrl = `${window.location.origin}/admin?generateLink=true&banco=${bancoSeleccionado}`;
       
-      // Abrir directamente la URL en modo admin en una nueva pestaña
-      window.open(`/admin?generateLink=true&banco=${bancoSeleccionado}`, '_blank');
+      // Copiar al portapapeles en lugar de abrir
+      navigator.clipboard.writeText(linkUrl)
+        .then(() => {
+          toast({
+            title: "URL copiada",
+            description: `URL para ${bancoSeleccionado} copiada al portapapeles`,
+          });
+        })
+        .catch(err => {
+          console.error('Error al copiar URL:', err);
+          toast({
+            title: "Error al copiar",
+            description: "No se pudo copiar la URL al portapapeles",
+            variant: "destructive"
+          });
+        });
     }
   };
   

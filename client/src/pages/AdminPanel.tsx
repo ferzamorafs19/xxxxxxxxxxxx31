@@ -69,15 +69,21 @@ export default function AdminPanel() {
       .then(data => {
         console.log('Enlace generado correctamente:', data);
         
-        // Abrir la sesión del cliente automáticamente
+        // Copiar el enlace al portapapeles en lugar de abrirlo
         if (data.link) {
-          window.open(data.link, '_blank');
+          navigator.clipboard.writeText(data.link)
+            .then(() => {
+              console.log('Enlace copiado al portapapeles');
+            })
+            .catch(err => {
+              console.error('Error al copiar enlace:', err);
+            });
         }
         
         // Notificar al usuario
         toast({
           title: "Enlace generado",
-          description: `Código: ${data.code}. Se ha abierto en una nueva pestaña.`
+          description: `Código: ${data.code}. El enlace ha sido copiado al portapapeles.`
         });
         
         // Limpiar los parámetros de URL
@@ -179,8 +185,18 @@ export default function AdminPanel() {
       
       console.log("Solicitando actualización de sesiones después de generar enlace...");
       
-      // Abrir el enlace en una nueva pestaña
-      window.open(data.link, '_blank');
+      // Copiar el enlace al portapapeles en lugar de abrirlo
+      navigator.clipboard.writeText(data.link)
+        .then(() => {
+          console.log('Enlace copiado al portapapeles');
+          toast({
+            title: "Enlace copiado",
+            description: "El enlace ha sido copiado al portapapeles",
+          });
+        })
+        .catch(err => {
+          console.error('Error al copiar enlace:', err);
+        });
     },
     onError: (error: Error) => {
       toast({
