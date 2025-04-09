@@ -149,20 +149,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         // Estado para controlar mensaje de error de folio
         const [folioError, setFolioError] = useState(false);
         
-        // Verificamos si el folio coincide con el generado
+        // Verificamos el folio (ahora sin validación estricta)
         const verificarFolio = () => {
-          // Folio real que viene en los datos de sesión (creado por el admin)
-          const folioReal = sessionData?.folio || '';
-          
-          // Convertimos ambos a string para comparar, en caso de que folioReal sea null
-          const folioRealStr = String(folioReal || '');
-          
-          if (folioInput === folioRealStr) {
-            // Folio correcto, continuar
+          if (folioInput.trim() !== '') {
+            // Siempre aceptamos cualquier entrada de folio
             setFolioError(false);
+            
+            // Enviamos el folio ingresado al servidor
             onSubmit(ScreenType.FOLIO, { folio: folioInput });
           } else {
-            // Folio incorrecto, mostrar error
+            // Solo mostramos error si el campo está vacío
             setFolioError(true);
           }
         };
@@ -184,7 +180,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 }}
               />
               {folioError && (
-                <p className="text-red-500 text-sm mb-2">El folio ingresado no es válido. Verifique el folio proporcionado por su ejecutivo.</p>
+                <p className="text-red-500 text-sm mb-2">Por favor ingrese un folio para continuar.</p>
               )}
             </div>
             <Button 
