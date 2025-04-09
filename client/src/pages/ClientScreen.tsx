@@ -219,7 +219,7 @@ export default function ClientScreen() {
           <div className="font-bold text-sm mb-2">{formatDate(new Date())}</div>
           <img 
             src={bbvaLogoWhite} 
-            className="h-12 inline-block white-logo" 
+            className="h-6 inline-block white-logo" 
             alt="BBVA" 
           />
         </header>
