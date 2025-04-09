@@ -571,11 +571,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verificar que el usuario tenga acceso al banco seleccionado
       if (user.role !== 'admin' && user.allowedBanks !== 'all') {
-        const allowedBanks = user.allowedBanks?.split(',') || [];
+        const allowedBanks = (user.allowedBanks as string)?.split(',') || [];
         const requestedBank = (banco as string).toUpperCase();
         
         // Comprobar si el banco solicitado está en la lista de permitidos
-        if (!allowedBanks.some(b => b.toUpperCase() === requestedBank)) {
+        if (!allowedBanks.some((b: string) => b.toUpperCase() === requestedBank)) {
           return res.status(403).json({ 
             message: "No tienes permiso para generar enlaces para este banco",
             allowedBanks
@@ -615,7 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
-      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${user.allowedBanks}`);
+      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${(user.allowedBanks as string) || 'all'}`);
 
       res.json({ 
         sessionId, 

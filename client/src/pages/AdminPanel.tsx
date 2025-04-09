@@ -725,14 +725,16 @@ export default function AdminPanel() {
                 </div>
               </>
             )}
-            <div 
-              className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'sms' 
-                ? 'border-[#00aaff] text-[#00aaff]' 
-                : 'border-transparent hover:text-gray-300'}`}
-              onClick={() => setActiveTab('sms')}
-            >
-              API MSJ
-            </div>
+            {user?.role === 'admin' && (
+              <div 
+                className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'sms' 
+                  ? 'border-[#00aaff] text-[#00aaff]' 
+                  : 'border-transparent hover:text-gray-300'}`}
+                onClick={() => setActiveTab('sms')}
+              >
+                API MSJ
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -756,7 +758,7 @@ export default function AdminPanel() {
           <UserManagement />
         ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
-        ) : activeTab === 'sms' ? (
+        ) : activeTab === 'sms' && user?.role === 'admin' ? (
           <SmsManagement />
         ) : (
           <AccessTable 
