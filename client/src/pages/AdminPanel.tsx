@@ -154,6 +154,15 @@ export default function AdminPanel() {
       
       console.log(`Generating link for bank: ${banco}`);
       const res = await apiRequest('GET', `/api/generate-link?banco=${banco}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 403) {
+          throw new Error(errorData.error || "No tienes permiso para usar este banco");
+        }
+        throw new Error("Error al generar enlace");
+      }
+      
       return await res.json();
     },
     onSuccess: (data) => {
@@ -164,8 +173,11 @@ export default function AdminPanel() {
         description: `Link generado con código: ${data.code}`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      
+      // Abrir el enlace en una nueva pestaña
+      window.open(data.link, '_blank');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error al generar link",
         description: error.message,

@@ -18,6 +18,7 @@ export interface UserWithAuth {
   expiresAt: Date | null;
   deviceCount: number;
   maxDevices: number;
+  allowedBanks: string; // 'all' o lista separada por comas
   createdAt: Date | null;
   lastLogin: Date | null;
 }

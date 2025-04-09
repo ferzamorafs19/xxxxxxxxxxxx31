@@ -766,8 +766,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionId = nanoid(10);
       const user = req.user;
       
-      // Eliminamos la validación del banco seleccionado para permitir a cualquier usuario
-      // generar enlaces para cualquier banco
+      // Validar que el banco solicitado esté permitido para el usuario
+      if (user.role !== 'admin' && user.allowedBanks !== 'all') {
+        // Si el usuario no es administrador y no tiene permitido todos los bancos,
+        // verificamos que el banco solicitado esté en la lista de bancos permitidos
+        const allowedBanks = user.allowedBanks.split(',');
+        console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanks}`);
+        
+        if (!allowedBanks.includes(banco as string)) {
+          // Si el banco solicitado no está en la lista, usamos el primer banco permitido
+          const bancoPermitido = allowedBanks[0] || "LIVERPOOL";
+          console.log(`Banco ${banco} no permitido para ${user.username}. Usando ${bancoPermitido}`);
+          return res.status(403).json({ 
+            error: `Banco ${banco} no permitido. Solo puedes usar: ${allowedBanks.join(', ')}` 
+          });
+        }
+      }
 
       // Generamos un código de 6 dígitos numéricos fácil de ver para el folio
       const generateSixDigitCode = () => {
