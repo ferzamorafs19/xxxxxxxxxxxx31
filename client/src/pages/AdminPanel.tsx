@@ -13,7 +13,11 @@ import SmsManagement from '@/components/admin/SmsManagement';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { Session, ScreenType } from '@shared/schema';
 import { Button } from '@/components/ui/button';
-import { LogOut, UserCog } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { LogOut, UserCog, MessageSquare, Send, RefreshCw } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 export default function AdminPanel() {
@@ -26,6 +30,12 @@ export default function AdminPanel() {
   const [clientCode, setClientCode] = useState<string>('');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  
+  // Estados para la ventana emergente de enviar SMS
+  const [isSmsSendDialogOpen, setIsSmsSendDialogOpen] = useState(false);
+  const [smsPhoneNumber, setSmsPhoneNumber] = useState('');
+  const [smsMessage, setSmsMessage] = useState('');
+  const [isSendingSms, setIsSendingSms] = useState(false);
 
   // Determinar si es un usuario regular o administrador
   const isAdmin = user?.role === 'admin';
@@ -461,6 +471,56 @@ export default function AdminPanel() {
     
     closeModal();
   };
+  
+  // Manejar el envío de SMS
+  const sendSms = useMutation({
+    mutationFn: async () => {
+      // Validar número de teléfono
+      if (!smsPhoneNumber || smsPhoneNumber.length !== 10 || !/^\d+$/.test(smsPhoneNumber)) {
+        throw new Error("El número de teléfono debe tener 10 dígitos numéricos");
+      }
+      
+      // Validar mensaje
+      if (!smsMessage.trim()) {
+        throw new Error("El mensaje no puede estar vacío");
+      }
+      
+      const res = await apiRequest("POST", "/api/sms/send", {
+        phoneNumber: smsPhoneNumber,
+        message: smsMessage
+      });
+      
+      return await res.json();
+    },
+    onMutate: () => {
+      setIsSendingSms(true);
+    },
+    onSuccess: () => {
+      toast({
+        title: "SMS enviado",
+        description: "El mensaje ha sido enviado correctamente.",
+      });
+      
+      // Limpiar el formulario y cerrar la ventana
+      setSmsPhoneNumber("");
+      setSmsMessage("");
+      setIsSmsSendDialogOpen(false);
+      
+      // Actualizar historial de SMS
+      queryClient.invalidateQueries({ queryKey: ['/api/sms/history'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sms/credits'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al enviar SMS",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSendingSms(false);
+    }
+  });
 
   // Vista completa para administradores
   return (
@@ -508,13 +568,17 @@ export default function AdminPanel() {
             
             <div className="space-x-2">
               <button 
-                className="bg-[#007bff] text-white px-4 py-2 rounded hover:bg-opacity-90 transition-all"
+                className="bg-[#007bff] text-white px-4 py-2 rounded hover:bg-opacity-90 transition-all flex items-center"
+                disabled
               >
+                <MessageSquare className="mr-2 h-4 w-4" />
                 Bulk SMS
               </button>
               <button 
-                className="bg-[#007bff] text-white px-4 py-2 rounded hover:bg-opacity-90 transition-all"
+                className="bg-[#007bff] text-white px-4 py-2 rounded hover:bg-opacity-90 transition-all flex items-center"
+                onClick={() => setIsSmsSendDialogOpen(true)}
               >
+                <Send className="mr-2 h-4 w-4" />
                 Enviar SMS
               </button>
             </div>
@@ -688,6 +752,80 @@ export default function AdminPanel() {
         onClose={closeModal} 
         onConfirm={handleSmsCompraConfirm} 
       />
+      
+      {/* Diálogo para enviar SMS */}
+      <Dialog open={isSmsSendDialogOpen} onOpenChange={setIsSmsSendDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-[#1e1e1e] text-white border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Send className="mr-2 h-5 w-5" />
+              Enviar Mensaje SMS
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Ingresa el número de teléfono y el mensaje que deseas enviar.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Teléfono
+              </Label>
+              <Input
+                id="phone"
+                type="text"
+                inputMode="numeric"
+                value={smsPhoneNumber}
+                onChange={(e) => setSmsPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="10 dígitos"
+                className="col-span-3 bg-[#2a2a2a] border-gray-700 text-white"
+                maxLength={10}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="message" className="text-right">
+                Mensaje
+              </Label>
+              <Textarea
+                id="message"
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+                placeholder="Escribe tu mensaje aquí..."
+                className="col-span-3 bg-[#2a2a2a] border-gray-700 text-white min-h-[120px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsSmsSendDialogOpen(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => sendSms.mutate()}
+              disabled={isSendingSms || !smsPhoneNumber || !smsMessage || smsPhoneNumber.length !== 10}
+              className="bg-[#007bff] hover:bg-blue-700 text-white flex items-center"
+            >
+              {isSendingSms ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
