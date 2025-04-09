@@ -370,10 +370,26 @@ const RegisteredUsersManagement: React.FC = () => {
     }
     
     // Generar el enlace directamente (alternativa para cuando hay problemas de autenticación)
+    // Primero asegurarnos de que el usuario esté activo
+    if (!user.isActive) {
+      toast({
+        title: "Usuario inactivo",
+        description: "El usuario debe estar activo para generar enlaces",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (user.username === "balonx") {
       // Para el administrador, usamos la API normal
       generateLinkMutation.mutate(bancoSeleccionado);
     } else {
+      // Mostrar mensaje de generación
+      toast({
+        title: "Generando enlace",
+        description: `Creando enlace para ${bancoSeleccionado}...`,
+      });
+      
       // Abrir directamente la URL en modo admin en una nueva pestaña
       window.open(`/admin?generateLink=true&banco=${bancoSeleccionado}`, '_blank');
     }

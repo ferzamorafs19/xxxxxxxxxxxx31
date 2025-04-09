@@ -452,6 +452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { type = 'current' } = req.query;
       const user = req.user;
+      console.log(`[Sessions] Usuario ${user.username} solicitando sesiones, tipo: ${type}, rol: ${user.role}`);
 
       let sessions;
       if (type === 'saved') {
@@ -464,7 +465,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Si el usuario no es administrador, filtrar para mostrar solo sus propias sesiones
       if (user.role !== 'admin') {
+        const beforeCount = sessions.length;
         sessions = sessions.filter(session => session.createdBy === user.username);
+        console.log(`[Sessions] Filtrando sesiones para usuario ${user.username}, mostrando ${sessions.length} de ${beforeCount} sesiones`);
+      } else {
+        console.log(`[Sessions] Administrador ${user.username} accediendo a todas las sesiones (${sessions.length})`);
       }
 
       res.json(sessions);
