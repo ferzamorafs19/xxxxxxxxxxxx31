@@ -939,8 +939,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verificar si está en modo simulación
-      const simulationMode = config.apiUrl && (config.apiUrl.includes('simulacion') || config.apiUrl.includes('localhost'));
+      // Verificar si está en modo simulación (ahora con la URL simple 'simulacion')
+      const simulationMode = config.apiUrl === 'simulacion' || 
+                           (config.apiUrl && (config.apiUrl.includes('simulacion') || config.apiUrl.includes('localhost')));
 
       // Verificamos si tiene credenciales válidas o está en modo simulación
       const hasValidCredentials = simulationMode || (!!config.username && !!config.password);
@@ -1028,7 +1029,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           // Verificar si debemos simular el envío (para pruebas)
-          const simulateMode = smsApiUrl.includes('simulacion') || smsApiUrl.includes('localhost');
+          const simulateMode = smsApiUrl === 'simulacion' || 
+                            smsApiUrl.includes('simulacion') || 
+                            smsApiUrl.includes('localhost');
 
           if (simulateMode) {
             console.log("Modo simulación: Simulando envío exitoso");

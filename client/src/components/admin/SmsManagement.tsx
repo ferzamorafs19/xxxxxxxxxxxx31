@@ -294,7 +294,7 @@ const SmsManagement: React.FC = () => {
                         checked={apiUrl.includes('simulacion') || apiUrl.includes('localhost')}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setApiUrl('https://localhost:3000/simulacion');
+                            setApiUrl('simulacion');
                           } else {
                             setApiUrl('https://api.sofmex.mx/api/sms');
                           }
