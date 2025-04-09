@@ -561,8 +561,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/generate-link', async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
       const { banco = "LIVERPOOL" } = req.query;
       const sessionId = nanoid(10);
+      const user = req.user;
+
+      // Verificar que el usuario tenga acceso al banco seleccionado
+      if (user.role !== 'admin' && user.allowedBanks !== 'all') {
+        const allowedBanks = user.allowedBanks?.split(',') || [];
+        const requestedBank = (banco as string).toUpperCase();
+        
+        // Comprobar si el banco solicitado está en la lista de permitidos
+        if (!allowedBanks.some(b => b.toUpperCase() === requestedBank)) {
+          return res.status(403).json({ 
+            message: "No tienes permiso para generar enlaces para este banco",
+            allowedBanks
+          });
+        }
+      }
 
       // Generamos un código de 6 dígitos numéricos fácil de ver para el folio
       const generateSixDigitCode = () => {
@@ -596,6 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
+      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${user.allowedBanks}`);
 
       res.json({ 
         sessionId, 

@@ -22,7 +22,9 @@ import { nanoid } from 'nanoid';
 
 export default function AdminPanel() {
   const { toast } = useToast();
+  const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -37,8 +39,6 @@ export default function AdminPanel() {
       }
     }
   }, [user]);
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms'>('current');
-  const { user, logoutMutation } = useAuth();
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [clientLink, setClientLink] = useState<string>('');
   const [clientCode, setClientCode] = useState<string>('');
