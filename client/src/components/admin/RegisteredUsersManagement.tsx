@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building } from 'lucide-react';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -31,7 +31,11 @@ const RegisteredUsersManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [bankOptions, setBankOptions] = useState<string[]>(['all']);
+  const [generatedLink, setGeneratedLink] = useState<string>('');
+  const [generatedCode, setGeneratedCode] = useState<string>('');
+  const [selectedBank, setSelectedBank] = useState<string>('BANORTE');
   const { isMobile, isLandscape } = useDeviceInfo();
 
   // Consultar los usuarios (solo el usuario balonx puede ver esto)
@@ -236,6 +240,35 @@ const RegisteredUsersManagement: React.FC = () => {
       });
     },
   });
+  
+  // Generar enlace para usuario
+  const generateLinkMutation = useMutation({
+    mutationFn: async (banco: string) => {
+      console.log(`[RegisteredUsers] Generando enlace para el banco: ${banco}`);
+      const res = await apiRequest('GET', `/api/generate-link?banco=${banco}`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedLink(data.link);
+      setGeneratedCode(data.code);
+      setIsLinkDialogOpen(true);
+      
+      toast({
+        title: "Enlace generado",
+        description: `Enlace generado exitosamente con código: ${data.code}`,
+      });
+      
+      // Invalidar la consulta para actualizar la lista de sesiones
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al generar enlace",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   // Manejar activaciones de usuario
   const handleOpenBankOptions = (user: User) => {
@@ -320,6 +353,44 @@ const RegisteredUsersManagement: React.FC = () => {
     // Confirmación antes de eliminar
     if (window.confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"? Esta acción no se puede deshacer.`)) {
       deleteUserMutation.mutate(username);
+    }
+  };
+  
+  // Manejador para generar un nuevo enlace
+  const handleGenerateLink = (user: User) => {
+    // Determinar qué banco usar
+    let bancoSeleccionado = selectedBank;
+    
+    // Si el usuario tiene bancos específicos, usar el primero
+    if (user.allowedBanks && user.allowedBanks !== 'all') {
+      const bancos = user.allowedBanks.split(',');
+      if (bancos.length > 0) {
+        bancoSeleccionado = bancos[0].toUpperCase();
+      }
+    }
+    
+    // Generar el enlace
+    generateLinkMutation.mutate(bancoSeleccionado);
+  };
+  
+  // Función para copiar el enlace al portapapeles
+  const copyGeneratedLink = () => {
+    if (generatedLink) {
+      navigator.clipboard.writeText(generatedLink)
+        .then(() => {
+          toast({
+            title: "Enlace copiado",
+            description: "El enlace ha sido copiado al portapapeles",
+          });
+        })
+        .catch(err => {
+          console.error('Error al copiar al portapapeles:', err);
+          toast({
+            title: "Error al copiar",
+            description: "No se pudo copiar el enlace",
+            variant: "destructive",
+          });
+        });
     }
   };
 
@@ -524,6 +595,15 @@ const RegisteredUsersManagement: React.FC = () => {
                             >
                               <Building className="w-4 h-4 mr-1" /> Configurar bancos
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleGenerateLink(user)}
+                              disabled={!user.isActive || generateLinkMutation.isPending}
+                            >
+                              <LinkIcon className="w-4 h-4 mr-1" /> Generar enlace
+                            </Button>
                           </div>
                           <div className="mt-2 pt-2 border-t">
                             <Button 
@@ -677,6 +757,55 @@ const RegisteredUsersManagement: React.FC = () => {
               className="sm:w-auto w-full"
             >
               Activar Usuario
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para mostrar el enlace generado */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enlace Generado</DialogTitle>
+            <DialogDescription>
+              Se ha generado un nuevo enlace de cliente con el siguiente código.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center justify-center">
+              <span className="font-bold text-xl px-3 py-1 rounded-md bg-green-600/20 text-green-400">
+                Código: <span className="text-2xl tracking-wider">{generatedCode}</span>
+              </span>
+            </div>
+            
+            <div className="bg-muted/30 p-4 rounded-md break-all">
+              <p className="text-primary font-medium mb-2">Enlace del cliente:</p>
+              <a 
+                href={generatedLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline break-all"
+              >
+                {generatedLink}
+              </a>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsLinkDialogOpen(false)}
+              className="sm:w-auto w-full"
+            >
+              Cerrar
+            </Button>
+            <Button
+              type="button"
+              onClick={copyGeneratedLink}
+              className="sm:w-auto w-full"
+            >
+              <LinkIcon className="mr-2 h-4 w-4" />
+              Copiar Enlace
             </Button>
           </DialogFooter>
         </DialogContent>
