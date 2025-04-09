@@ -967,6 +967,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
+  
+  // Obtener todos los usuarios regulares (para agregar créditos)
+  app.get('/api/users/regular', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const currentUser = req.user;
+      // Solo administradores pueden ver la lista de usuarios
+      if (currentUser.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Solo administradores pueden ver la lista de usuarios" });
+      }
+      
+      const users = await storage.getAllUsers();
+      // Filtrar administradores y enviar solo datos básicos
+      const regularUsers = users.filter(user => user.role === UserRole.USER).map(user => ({
+        id: user.id,
+        username: user.username,
+        isActive: user.isActive,
+        expiresAt: user.expiresAt,
+        credits: 0 // El frontend tendrá que cargar los créditos aparte
+      }));
+      
+      res.json(regularUsers);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   return httpServer;
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MessageSquare, Send, Settings, RefreshCw, PlusCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { MessageSquare, Send, Settings, RefreshCw, PlusCircle, CheckCircle2, XCircle, DollarSign, Coins } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
@@ -48,12 +49,17 @@ const formatDate = (dateString: string) => {
 
 const SmsManagement: React.FC = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [apiKey, setApiKey] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [messageText, setMessageText] = useState('');
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [isAddCreditsDialogOpen, setIsAddCreditsDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [creditsAmount, setCreditsAmount] = useState<number>(10);
   
   // Consulta para obtener el estado de la API
   const { data: apiConfig, isLoading: isConfigLoading } = useQuery({
@@ -109,6 +115,43 @@ const SmsManagement: React.FC = () => {
       toast({
         title: "Error",
         description: `No se pudo actualizar la configuración: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Consulta para obtener la lista de usuarios (solo para administradores)
+  const { data: users, isLoading: isUsersLoading } = useQuery({
+    queryKey: ['/api/users/regular'],
+    queryFn: async () => {
+      if (!isAdmin) return [];
+      const res = await apiRequest('GET', '/api/users/regular');
+      return await res.json();
+    },
+    enabled: isAdmin // Solo realizar la consulta si es administrador
+  });
+  
+  // Mutación para agregar créditos a un usuario (solo administradores)
+  const addCredits = useMutation({
+    mutationFn: async () => {
+      if (!selectedUserId) throw new Error("No se ha seleccionado ningún usuario");
+      const res = await apiRequest('POST', `/api/sms/credits/${selectedUserId}`, { amount: creditsAmount });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sms/credits'] });
+      setIsAddCreditsDialogOpen(false);
+      setSelectedUserId(null);
+      setCreditsAmount(10);
+      toast({
+        title: "Créditos agregados",
+        description: `Se han agregado ${creditsAmount} créditos al usuario. Total: ${data.credits}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: `No se pudieron agregar créditos: ${error.message}`,
         variant: "destructive",
       });
     }
@@ -175,60 +218,145 @@ const SmsManagement: React.FC = () => {
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
           </Button>
-          <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="secondary">
-                <Settings className="h-4 w-4 mr-2" />
-                Configurar API
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Configuración de API de SMS</DialogTitle>
-                <DialogDescription>
-                  Configura las credenciales para la API de SofMex para enviar mensajes SMS.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">API Key de SofMex</Label>
-                  <Input
-                    id="apiKey"
-                    type="password"
-                    placeholder="Ingresa la API Key"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                  />
-                </div>
-                {apiConfig && (
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <span>Estado actual:</span>
-                    <Badge variant={apiConfig.isActive ? "default" : "outline"}>
-                      {apiConfig.isActive ? "Activo" : "Inactivo"}
-                    </Badge>
-                    {apiConfig.hasApiKey && <span>(API Key configurada)</span>}
+          {/* El botón de configuración de API solo es visible para los administradores */}
+          {isAdmin && (
+            <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Configurar API
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Configuración de API de SMS</DialogTitle>
+                  <DialogDescription>
+                    Configura las credenciales para la API de SofMex para enviar mensajes SMS.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKey">API Key de SofMex</Label>
+                    <Input
+                      id="apiKey"
+                      type="password"
+                      placeholder="Ingresa la API Key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                    />
                   </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsConfigDialogOpen(false)}
-                >
-                  Cancelar
+                  {apiConfig && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <span>Estado actual:</span>
+                      <Badge variant={apiConfig.isActive ? "default" : "outline"}>
+                        {apiConfig.isActive ? "Activo" : "Inactivo"}
+                      </Badge>
+                      {apiConfig.hasApiKey && <span>(API Key configurada)</span>}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsConfigDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit"
+                    onClick={() => updateApiConfig.mutate()}
+                    disabled={!apiKey || updateApiConfig.isPending}
+                  >
+                    {updateApiConfig.isPending ? "Guardando..." : "Guardar"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          
+          {/* Botón de Agregar Créditos - Solo visible para administradores */}
+          {isAdmin && (
+            <Dialog open={isAddCreditsDialogOpen} onOpenChange={setIsAddCreditsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary">
+                  <Coins className="h-4 w-4 mr-2" />
+                  Agregar Créditos
                 </Button>
-                <Button 
-                  type="submit"
-
-                  onClick={() => updateApiConfig.mutate()}
-                  disabled={!apiKey || updateApiConfig.isPending}
-                >
-                  {updateApiConfig.isPending ? "Guardando..." : "Guardar"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Agregar Créditos SMS</DialogTitle>
+                  <DialogDescription>
+                    Agrega créditos a un usuario para el envío de mensajes SMS.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="userId">Usuario</Label>
+                    <Select 
+                      value={selectedUserId?.toString() || ''} 
+                      onValueChange={(value) => setSelectedUserId(value ? parseInt(value) : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar usuario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isUsersLoading ? (
+                          <SelectItem value="-1" disabled>Cargando usuarios...</SelectItem>
+                        ) : users && Array.isArray(users) && users.length > 0 ? (
+                          users.map((user) => (
+                            <SelectItem key={user.id} value={user.id.toString()}>
+                              {user.username}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="-1" disabled>No hay usuarios disponibles</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="creditsAmount">Cantidad de Créditos</Label>
+                    <Input
+                      id="creditsAmount"
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={creditsAmount}
+                      onChange={(e) => setCreditsAmount(parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsAddCreditsDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit"
+                    onClick={() => addCredits.mutate()}
+                    disabled={!selectedUserId || creditsAmount <= 0 || addCredits.isPending}
+                  >
+                    {addCredits.isPending ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Agregando...
+                      </>
+                    ) : (
+                      <>
+                        <Coins className="h-4 w-4 mr-2" />
+                        Agregar
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
           
           <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
             <DialogTrigger asChild>
