@@ -924,15 +924,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enviar un SMS
   app.post('/api/sms/send', async (req, res) => {
     try {
+      console.log("Recibida solicitud de envío de SMS");
+      
       if (!req.isAuthenticated()) {
+        console.log("Error: Usuario no autenticado");
         return res.status(401).json({ message: "No autenticado" });
       }
 
       const user = req.user;
+      console.log(`Usuario: ${user.username}, Role: ${user.role}`);
+      
       const config = await storage.getSmsConfig();
+      console.log("Configuración SMS:", config);
 
       // Verificar si la API está configurada
       if (!config || !config.isActive) {
+        console.log("Error: API no configurada o inactiva");
         return res.status(400).json({ 
           success: false, 
           message: "La API de SMS no está configurada o está inactiva" 

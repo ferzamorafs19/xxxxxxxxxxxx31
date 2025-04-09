@@ -172,27 +172,52 @@ const SmsManagement: React.FC = () => {
   // Mutación para enviar SMS
   const sendSms = useMutation({
     mutationFn: async () => {
-      const payload = {
-        phoneNumber,
-        message: messageText,
-        sessionId: selectedSession
-      };
-      const res = await apiRequest('POST', '/api/sms/send', payload);
-      return await res.json();
+      try {
+        console.log("Preparando envío de SMS:", { phoneNumber, messageLength: messageText.length, sessionId: selectedSession });
+        
+        const payload = {
+          phoneNumber,
+          message: messageText,
+          sessionId: selectedSession
+        };
+        
+        console.log("Enviando solicitud a /api/sms/send:", payload);
+        const res = await apiRequest('POST', '/api/sms/send', payload);
+        
+        console.log("Respuesta recibida del servidor:", { status: res.status, statusText: res.statusText });
+        const data = await res.json();
+        console.log("Datos de respuesta:", data);
+        
+        if (!res.ok) {
+          throw new Error(data.message || 'Error al enviar el SMS');
+        }
+        
+        return data;
+      } catch (error: any) {
+        console.error("Error en envío de SMS:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("SMS enviado exitosamente:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/sms/history'] });
       queryClient.invalidateQueries({ queryKey: ['/api/sms/credits'] });
       setIsSendDialogOpen(false);
       setPhoneNumber('');
       setMessageText('');
       setSelectedSession(null);
+      
+      // Mensajes diferentes para modo simulación
+      const isSimulated = data.simulated;
       toast({
-        title: "Mensaje enviado",
-        description: "El SMS ha sido enviado correctamente",
+        title: isSimulated ? "Mensaje simulado" : "Mensaje enviado",
+        description: isSimulated 
+          ? "El SMS ha sido simulado correctamente (sin envío real)" 
+          : "El SMS ha sido enviado correctamente",
       });
     },
     onError: (error: Error) => {
+      console.error("Error al enviar SMS:", error);
       toast({
         title: "Error",
         description: `No se pudo enviar el SMS: ${error.message}`,
