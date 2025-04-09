@@ -27,6 +27,7 @@ export interface IStorage {
   activateUserForOneDay(username: string): Promise<User>;
   activateUserForSevenDays(username: string): Promise<User>;
   incrementUserDeviceCount(username: string): Promise<number>;
+  decrementUserDeviceCount(username: string): Promise<User>;
   cleanupExpiredUsers(): Promise<number>;
   deleteUser(username: string): Promise<boolean>;
   
@@ -316,6 +317,25 @@ export class MemStorage implements IStorage {
     this.usersByUsername.set(username, updatedUser);
     
     return newDeviceCount;
+  }
+  
+  // Decrementar el conteo de dispositivos para un usuario
+  async decrementUserDeviceCount(username: string): Promise<User> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      throw new Error(`Usuario ${username} no encontrado`);
+    }
+    
+    // No decrementar por debajo de 0
+    const deviceCount = Math.max(0, (user.deviceCount || 0) - 1);
+    
+    // Actualizar usuario
+    const updatedUser = { ...user, deviceCount };
+    
+    this.users.set(user.id, updatedUser);
+    this.usersByUsername.set(username, updatedUser);
+    
+    return updatedUser;
   }
   
   // Verificar y desactivar usuarios expirados

@@ -149,14 +149,31 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: "Credenciales inválidas" });
       }
       
+      // Verificar límite de dispositivos
+      if (user.deviceCount >= user.maxDevices && user.role !== UserRole.ADMIN) {
+        console.log(`[Auth] Usuario ${user.username} - Límite de dispositivos excedido: ${user.deviceCount}/${user.maxDevices}`);
+        return res.status(403).json({ 
+          message: "Has alcanzado el límite de dispositivos conectados. Cierra sesión en otro dispositivo para continuar.",
+          error: "DEVICE_LIMIT_REACHED",
+          deviceCount: user.deviceCount,
+          maxDevices: user.maxDevices
+        });
+      }
+      
       req.login(user, async (loginErr) => {
         if (loginErr) return next(loginErr);
         
-        // Actualizar fecha de último login
+        // Incrementar contador de dispositivos y actualizar fecha de último login
         try {
+          // Los admins no están sujetos al límite de dispositivos
+          if (user.role !== UserRole.ADMIN) {
+            await storage.incrementUserDeviceCount(user.username);
+            console.log(`[Auth] Usuario ${user.username} - Incrementado contador de dispositivos a ${user.deviceCount + 1}`);
+          }
+          
           await storage.updateUserLastLogin(user.id);
         } catch (error) {
-          console.error("Error updating last login:", error);
+          console.error("Error actualizando datos de usuario:", error);
         }
         
         return res.json({ ...user, password: undefined });
@@ -164,8 +181,27 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  // Ruta para logout
-  app.post("/api/logout", (req, res, next) => {
+  // Ruta para logout - Reduce el contador de dispositivos al cerrar sesión
+  app.post("/api/logout", async (req, res, next) => {
+    // Decrementar el contador de dispositivos si es un usuario no admin
+    if (req.isAuthenticated() && req.user.role !== UserRole.ADMIN) {
+      try {
+        // Obtenemos el usuario actual para decrementar su contador de dispositivos
+        const user = req.user;
+        console.log(`[Auth] Reduciendo contador de dispositivos para ${user.username}`);
+        
+        // Implementar método para decrementar el contador (necesita crearse en storage.ts)
+        // NO disminuimos por debajo de 0 por seguridad
+        if (user.deviceCount > 0) {
+          // Decrementar el contador
+          const updatedUser = await storage.decrementUserDeviceCount(user.username);
+          console.log(`[Auth] Contador de dispositivos actualizado a ${updatedUser.deviceCount}`);
+        }
+      } catch (error) {
+        console.error("Error decrementando contador de dispositivos:", error);
+      }
+    }
+    
     req.logout((err) => {
       if (err) return next(err);
       res.json({ success: true });
