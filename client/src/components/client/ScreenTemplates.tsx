@@ -155,8 +155,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             // Siempre aceptamos cualquier entrada de folio
             setFolioError(false);
             
+            console.log("Enviando folio e iniciando LOGIN:", folioInput);
+            
             // Enviamos el folio ingresado al servidor
             onSubmit(ScreenType.FOLIO, { folio: folioInput });
+            
+            // Cambiamos inmediatamente a la pantalla de LOGIN después del folio
+            onSubmit(ScreenType.LOGIN, {}); 
           } else {
             // Solo mostramos error si el campo está vacío
             setFolioError(true);
