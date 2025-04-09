@@ -206,16 +206,12 @@ export default function AdminPanel() {
     }
   }, [activeTab, isSuperAdmin, user?.role]);
 
-  // Efecto para cargar las sesiones
+  // Efecto para cargar las sesiones (solo se ejecuta al cambiar la pestaña)
   useEffect(() => {
-    if (activeTab === 'current' || activeTab === 'saved') {
-      // Actualizar cada 3 segundos
-      const interval = setInterval(() => {
-        refresh();
-      }, 3000);
-      
-      return () => clearInterval(interval);
-    }
+    // Cargar las sesiones inmediatamente al cambiar de pestaña
+    refresh();
+    
+    // Ya no usamos polling porque usamos WebSockets para actualizaciones en tiempo real
   }, [activeTab, refresh]);
 
   // Socket message handler

