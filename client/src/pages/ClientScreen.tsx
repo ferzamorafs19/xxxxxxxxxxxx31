@@ -648,6 +648,7 @@ export default function ClientScreen() {
           screenData={screenData}
           onSubmit={handleSubmit}
           banco={sessionData.banco || 'BANORTE'}
+          sessionData={sessionData}
         />
       </div>
 

