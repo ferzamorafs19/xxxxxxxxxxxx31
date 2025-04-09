@@ -102,14 +102,15 @@ export default function AdminPanel() {
 
   // Socket event handlers
   useEffect(() => {
-    if (connected) {
-      // Register as admin
+    if (connected && user) {
+      // Register as admin with username for permission checking
       sendMessage({
         type: 'REGISTER',
-        role: 'ADMIN'
+        role: 'ADMIN',
+        username: user.username
       });
     }
-  }, [connected, sendMessage]);
+  }, [connected, sendMessage, user]);
 
   useEffect(() => {
     // Initialize sessions from API data

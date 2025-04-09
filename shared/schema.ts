@@ -118,6 +118,7 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow(),
   active: boolean("active").default(true),
   saved: boolean("saved").default(false),
+  createdBy: text("created_by"), // Añadimos el campo para saber qué usuario creó la sesión
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -126,6 +127,8 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   username: true,
   password: true,
   banco: true,
+  pasoActual: true,
+  createdBy: true,
 });
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;
