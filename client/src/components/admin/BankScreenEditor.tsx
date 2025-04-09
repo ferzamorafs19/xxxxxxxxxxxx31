@@ -447,7 +447,7 @@ const BankScreenEditor: React.FC = () => {
           Personaliza la apariencia de las pantallas de los clientes para cada banco
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="max-h-[70vh] overflow-y-auto">
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <div className="space-y-4">
