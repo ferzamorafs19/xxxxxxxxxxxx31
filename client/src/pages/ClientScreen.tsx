@@ -27,16 +27,9 @@ import banregioLogo from '../assets/banregio_logo.png';
 import banregioLogoWhite from '../assets/banregio_logo_white.png';
 
 export default function ClientScreen() {
-  // Get session ID from URL - compatibilidad con ambos formatos de ruta
-  // En el dominio de cliente: /:sessionId
-  // En el dominio de admin: /client/:sessionId
-  const [matchClient, paramsClient] = useRoute('/:sessionId');
-  const [matchAdmin, paramsAdmin] = useRoute('/client/:sessionId');
-  
-  // Usar el parámetro de cualquiera de las dos rutas que haya coincidido
-  const sessionId = (matchClient && paramsClient?.sessionId) || 
-                    (matchAdmin && paramsAdmin?.sessionId) || 
-                    '';
+  // Get session ID from URL
+  const [, params] = useRoute('/client/:sessionId');
+  const sessionId = params?.sessionId || '';
   
   // State for the current screen
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
@@ -59,14 +52,7 @@ export default function ClientScreen() {
   const [showInitialMessage, setShowInitialMessage] = useState<boolean>(true);
   
   // WebSocket connection
-  // Determinar el dominio para la conexión WebSocket
-  const isLocalOrDevDomain = window.location.hostname === 'localhost' || 
-                             window.location.hostname.includes('.repl.co');
-  
-  // En producción, siempre conectamos al dominio de administrador para WebSocket
-  const wsEndpoint = isLocalOrDevDomain ? '/ws' : 'wss://panel.aclaracion.info/ws';
-  
-  const { socket, connected, sendMessage } = useWebSocket(wsEndpoint);
+  const { socket, connected, sendMessage } = useWebSocket('/ws');
 
   // Efecto para mostrar los mensajes iniciales
   useEffect(() => {
