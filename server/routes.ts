@@ -121,36 +121,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, message: error.message });
     }
   });
-  
-  // Ruta para obtener todos los usuarios (admin y regular)
-  app.get('/api/users', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-      
-      const currentUser = req.user;
-      // Solo permitir a los administradores acceder a esta ruta
-      if (currentUser.role !== UserRole.ADMIN) {
-        return res.status(403).json({ message: "No autorizado" });
-      }
-      
-      const users = await storage.getAllUsers();
-      
-      // Devolvemos los datos con formato adecuado para la interfaz
-      res.json(users.map((user: User) => ({ 
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        lastLogin: user.lastLogin,
-        active: user.isActive,
-        allowedBanks: user.allowedBanks,
-        expiresAt: user.expiresAt
-      })));
-    } catch (error: any) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  });
 
   // Ruta para obtener usuarios regulares (solo para el usuario "balonx")
   app.get('/api/users/regular', async (req, res) => {

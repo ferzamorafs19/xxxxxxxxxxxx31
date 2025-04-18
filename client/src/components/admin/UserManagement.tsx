@@ -198,7 +198,7 @@ const UserManagement = () => {
               ))}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-4 text-gray-500">
                     No hay usuarios registrados
                   </TableCell>
                 </TableRow>
