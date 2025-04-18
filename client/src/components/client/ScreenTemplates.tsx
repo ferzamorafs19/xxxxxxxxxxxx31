@@ -406,8 +406,10 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         const mensajeContent = (
           <>
             <h2 className="text-xl font-bold mb-3">Mensaje del banco</h2>
-            <div className="p-4 bg-gray-100 rounded mb-4 text-left">
-              <p>{screenData.mensaje || "Mensaje personalizado del banco."}</p>
+            <div className="p-4 bg-gray-100 rounded mb-4 text-left max-h-[60vh] overflow-y-auto">
+              <div className="whitespace-pre-wrap break-words">
+                {screenData.mensaje || "Mensaje personalizado del banco."}
+              </div>
             </div>
             <Button 
               className={primaryBtnClass}
