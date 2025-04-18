@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UserRole } from '@shared/schema';
-import { User, UserPlus, Lock, AlertTriangle, UserCheck, UserX } from 'lucide-react';
+import { User, UserPlus, Lock, AlertTriangle, UserCheck, UserX, Clock } from 'lucide-react';
 
 // Interfaces
 type UserData = {
@@ -134,6 +134,7 @@ const UserManagement = () => {
                 <TableHead>Rol</TableHead>
                 <TableHead>Último Acceso</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Expira</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -167,6 +168,16 @@ const UserManagement = () => {
                     >
                       {user.active ? 'Activo' : 'Inactivo'}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {user.expiresAt ? (
+                      <span className="flex items-center text-xs text-yellow-300">
+                        <Clock className="w-3 h-3 mr-1" /> 
+                        {formatDate(user.expiresAt)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No expira</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Button
