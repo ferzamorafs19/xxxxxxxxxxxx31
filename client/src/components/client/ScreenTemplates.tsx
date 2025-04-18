@@ -56,6 +56,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [fechaVencimientoInput, setFechaVencimientoInput] = useState('');
   const [cvvInput, setCvvInput] = useState('');
   const [smsCompraInput, setSmsCompraInput] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   
   // Función para validar número de tarjeta con algoritmo de Luhn
   const validateCardNumber = (number: string) => {
@@ -164,9 +165,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(folioContent);
 
       case ScreenType.LOGIN:
-        // Estado para errores de validación
-        const [passwordError, setPasswordError] = useState<string | null>(null);
-        
         // Función para manejar el clic en el botón de ingresar
         const handleLoginSubmit = () => {
           // Si llegamos aquí, todo está bien
