@@ -9,6 +9,7 @@ import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download } from 'lucide-react';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface AccessTableProps {
   sessions: Session[];
@@ -32,6 +33,10 @@ const AccessTable: React.FC<AccessTableProps> = ({
   
   // Estado para resaltar campos específicos que han sido actualizados
   const [highlightedFields, setHighlightedFields] = useState<Record<string, Record<string, boolean>>>({});
+  
+  // Estado para el diálogo de confirmación de eliminación
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   
   // Mutation para guardar una sesión
   const saveSessionMutation = useMutation({
@@ -257,8 +262,23 @@ const AccessTable: React.FC<AccessTableProps> = ({
     );
   }
 
+  // Función para eliminar una sesión
+  const handleDeleteSession = () => {
+    if (sessionToDelete) {
+      deleteSessionMutation.mutate(sessionToDelete.sessionId);
+    }
+  };
+  
   return (
     <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
+      {/* Diálogo de confirmación de eliminación */}
+      <DeleteConfirmDialog 
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={handleDeleteSession}
+        session={sessionToDelete}
+      />
+      
       {/* Botón de exportación */}
       {filteredSessions.length > 0 && (
         <div className="mb-3 flex justify-end">
