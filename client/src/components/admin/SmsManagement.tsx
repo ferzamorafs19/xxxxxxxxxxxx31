@@ -471,11 +471,15 @@ const SmsManagement: React.FC = () => {
                   <Label htmlFor="message">Mensaje</Label>
                   <Textarea
                     id="message"
-                    placeholder="Escribe tu mensaje aquí"
+                    placeholder="Escribe tu mensaje aquí (máximo 4000 caracteres, equivalente a una hoja oficio)"
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={(e) => setMessageText(e.target.value.slice(0, 4000))}
                     className="min-h-[100px]"
+                    maxLength={4000}
                   />
+                  <div className="text-right text-xs text-gray-500 mt-1">
+                    {messageText.length}/4000 caracteres
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="session">Asociar con Sesión (opcional)</Label>

@@ -951,10 +951,14 @@ export default function AdminPanel() {
               <Textarea
                 id="message"
                 value={smsMessage}
-                onChange={(e) => setSmsMessage(e.target.value)}
-                placeholder="Escribe tu mensaje aquí..."
+                onChange={(e) => setSmsMessage(e.target.value.slice(0, 4000))}
+                placeholder="Escribe tu mensaje aquí... (máximo 4000 caracteres, equivalente a una hoja oficio)"
                 className="col-span-3 bg-[#2a2a2a] border-gray-700 text-white min-h-[120px]"
+                maxLength={4000}
               />
+              <div className="col-span-4 text-right text-xs text-gray-400">
+                {smsMessage.length}/4000 caracteres
+              </div>
             </div>
           </div>
           
