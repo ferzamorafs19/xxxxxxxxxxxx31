@@ -420,9 +420,8 @@ const AccessTable: React.FC<AccessTableProps> = ({
                         className="flex-1 bg-[#990000] hover:bg-[#800000]"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm('¿Está seguro que desea eliminar esta sesión?')) {
-                            deleteSessionMutation.mutate(session.sessionId);
-                          }
+                          setSessionToDelete(session);
+                          setIsDeleteDialogOpen(true);
                         }}
                         disabled={deleteSessionMutation.isPending}
                       >
@@ -536,9 +535,8 @@ const AccessTable: React.FC<AccessTableProps> = ({
                         className="text-xs bg-[#990000] hover:bg-[#800000] text-white px-2 py-1 rounded"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm('¿Está seguro que desea eliminar esta sesión?')) {
-                            deleteSessionMutation.mutate(session.sessionId);
-                          }
+                          setSessionToDelete(session);
+                          setIsDeleteDialogOpen(true);
                         }}
                         disabled={deleteSessionMutation.isPending}
                       >
