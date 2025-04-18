@@ -1676,16 +1676,17 @@ function broadcastToAdmins(message: string, targetUsername?: string) {
     console.log(`[Broadcast] Enviando mensaje (formato no JSON)`);
   }
 
-  // Si se especifica un usuario objetivo, enviamos el mensaje solo a ese usuario y al superadmin (balonx)
+  // Si se especifica un usuario objetivo, enviamos el mensaje solo a ese usuario y a todos los administradores
   let sentCount = 0;
   
   if (targetUsername) {
-    // Buscar el cliente del usuario objetivo y del superadmin
+    // Buscar el cliente del usuario objetivo y los administradores
     const entries = Array.from(adminClients.entries());
     for (let i = 0; i < entries.length; i++) {
       const [username, client] = entries[i];
-      // Enviar al usuario objetivo o al superadmin (balonx)
-      if ((username === targetUsername || username === 'balonx') && client.readyState === WebSocket.OPEN) {
+      
+      // Consideramos que cualquier usuario que está conectado como admin debe ser un admin, y también envíamos al usuario que creó
+      if ((username === targetUsername || username === 'balonx' || username === 'yako') && client.readyState === WebSocket.OPEN) {
         client.send(message);
         sentCount++;
         console.log(`[Broadcast] Mensaje enviado específicamente a ${username}`);
