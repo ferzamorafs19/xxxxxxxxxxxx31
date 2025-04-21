@@ -81,7 +81,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-xl font-bold mb-3">Escanea el código QR de tu tarjeta</h2>
+      <h2 className="text-xl font-bold mb-3">Escanea el QR de tu tarjeta para identificarte</h2>
       <p className="mb-4">Posiciona el código QR dentro del recuadro para escanearlo</p>
 
       {error && (
