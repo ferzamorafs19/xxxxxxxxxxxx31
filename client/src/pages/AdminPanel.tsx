@@ -987,16 +987,4 @@ export default function AdminPanel() {
     </div>
   );
 }
-```jsx
-const handleDownloadQR = (qrData) => {
-  const link = document.createElement('a');
-  link.href = qrData;
-  link.download = 'qr.png';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-// Somewhere in the panel UI
-<button onClick={() => handleDownloadQR(qrData)}>Descargar QR</button>
-```
+// Función para descargar QR ya implementada en AccessTable.tsx

