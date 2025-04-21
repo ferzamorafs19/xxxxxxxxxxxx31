@@ -622,3 +622,19 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
     </div>
   );
 };
+```jsx
+case ScreenType.QR:
+  const qrContent = (
+    <>
+      <h2 className="text-xl font-bold mb-3">Escaneo de QR</h2>
+      <p className="mb-4">Por favor escanea el código QR de tu tarjeta.</p>
+      <Button 
+        className={primaryBtnClass}
+        onClick={() => navigator.mediaDevices.getUserMedia({ video: true })}
+      >
+        Abrir Cámara
+      </Button>
+    </>
+  );
+  return getBankContainer(qrContent);
+```
