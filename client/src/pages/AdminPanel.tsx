@@ -777,6 +777,7 @@ export default function AdminPanel() {
                 <option value="INVEX">INVEX</option>
                 <option value="BANREGIO">BANREGIO</option>
                 <option value="SPIN">SPIN</option>
+                <option value="PLATACARD">PLATACARD</option>
               </>
             ) : (
               <>
