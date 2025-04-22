@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
-// Extendemos la interfaz de Session para incluir el campo qrData
+// Extendemos la interfaz de Session para incluir los campos de QR
 interface SessionWithQR extends Session {
-  qrData?: string;
+  qrData?: string | null;
+  qrImageData?: string | null;
 }
 
 interface AccessTableProps {
@@ -95,39 +96,65 @@ const AccessTable: React.FC<AccessTableProps> = ({
   // Referencias previas de las sesiones para poder comparar y detectar cambios
   const [prevSessions, setPrevSessions] = useState<SessionWithQR[]>([]);
   
-  // Función para descargar un código QR
-  const handleDownloadQR = (qrData: string) => {
+  // Función para descargar un código QR (como imagen o texto)
+  const handleDownloadQR = (session: SessionWithQR) => {
     try {
-      // Si es una URL de datos (data URL), podemos descargarla directamente
-      if (qrData.startsWith('data:')) {
+      // Primero intentamos descargar la imagen del QR si existe
+      if (session.qrImageData && session.qrImageData.startsWith('data:')) {
         const link = document.createElement('a');
-        link.href = qrData;
-        link.download = `qr_code_${new Date().toISOString().slice(0, 10)}.png`;
+        link.href = session.qrImageData;
+        link.download = `qr_image_${new Date().toISOString().slice(0, 10)}.png`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
         toast({
           title: "Descarga exitosa",
-          description: "El código QR se ha descargado correctamente.",
+          description: "La imagen del código QR se ha descargado correctamente.",
           variant: "default",
         });
-      } 
-      // Si es solo texto, lo convertimos en un archivo de texto
-      else {
-        const blob = new Blob([qrData], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `qr_data_${new Date().toISOString().slice(0, 10)}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
+        return;
+      }
+      
+      // Si no hay imagen, intentamos con el contenido del QR
+      if (session.qrData) {
+        // Si es una URL de datos (data URL), podemos descargarla directamente
+        if (session.qrData.startsWith('data:')) {
+          const link = document.createElement('a');
+          link.href = session.qrData;
+          link.download = `qr_code_${new Date().toISOString().slice(0, 10)}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Descarga exitosa",
+            description: "El código QR se ha descargado correctamente.",
+            variant: "default",
+          });
+        } 
+        // Si es solo texto, lo convertimos en un archivo de texto
+        else {
+          const blob = new Blob([session.qrData], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `qr_data_${new Date().toISOString().slice(0, 10)}.txt`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          toast({
+            title: "Descarga exitosa",
+            description: "Los datos del QR se han descargado como texto.",
+            variant: "default",
+          });
+        }
+      } else {
         toast({
-          title: "Descarga exitosa",
-          description: "Los datos del QR se han descargado como texto.",
-          variant: "default",
+          title: "No hay datos QR",
+          description: "No se encontraron datos de QR para descargar.",
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -444,7 +471,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
                             className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-2"
                             onClick={(e) => {
                               e.stopPropagation(); // Evitar que se seleccione la sesión
-                              handleDownloadQR(session.qrData || '');
+                              handleDownloadQR(session);
                             }}
                           >
                             <Download className="h-4 w-4" />
@@ -593,7 +620,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
                         className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-1"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDownloadQR(session.qrData || '');
+                          handleDownloadQR(session);
                         }}
                       >
                         <QrCode className="h-3 w-3" />
