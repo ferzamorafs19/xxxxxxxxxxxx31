@@ -4,16 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Session } from '@shared/schema';
 import { Trash2, QrCode, Download } from 'lucide-react';
 
-// Extendemos la interfaz de Session para incluir el campo qrData
-interface SessionWithQR extends Session {
-  qrData?: string;
-}
-
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  session: SessionWithQR | null;
+  session: Session | null;
 }
 
 export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({

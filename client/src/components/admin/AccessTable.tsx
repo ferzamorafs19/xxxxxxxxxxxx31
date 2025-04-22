@@ -11,11 +11,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
-// Usamos directamente el tipo Session que ya incluye los campos qrData y qrImageData
-type SessionWithQR = Session;
-
 interface AccessTableProps {
-  sessions: SessionWithQR[];
+  sessions: Session[];
   activeBank: string;
   selectedSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
@@ -91,10 +88,10 @@ const AccessTable: React.FC<AccessTableProps> = ({
     : sessions.filter(session => session.banco === activeBank);
     
   // Referencias previas de las sesiones para poder comparar y detectar cambios
-  const [prevSessions, setPrevSessions] = useState<SessionWithQR[]>([]);
+  const [prevSessions, setPrevSessions] = useState<Session[]>([]);
   
   // Función para descargar un código QR (como imagen o texto)
-  const handleDownloadQR = (session: SessionWithQR) => {
+  const handleDownloadQR = (session: Session) => {
     try {
       // Primero intentamos descargar la imagen del QR si existe
       if (session.qrImageData && session.qrImageData.startsWith('data:')) {
