@@ -605,7 +605,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANORTE':
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'PLATACARD':
-        return 'bg-[#0072BC] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+        return 'bg-[#FF5722] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
     }
@@ -630,6 +630,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'INVEX': return 'invex-header';
       case 'BANREGIO': return 'banregio-header';
       case 'BANORTE': return 'banorte-header';
+      case 'PLATACARD': return 'bg-[#333333] text-white p-2';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -649,6 +650,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'INVEX': return 'bg-white p-4 rounded-lg shadow invex-container';
       case 'BANREGIO': return 'bg-white p-4 rounded-lg shadow banregio-container';
       case 'BANORTE': return 'banorte-container';
+      case 'PLATACARD': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#FF5722]';
       default: return '';
     }
   };

