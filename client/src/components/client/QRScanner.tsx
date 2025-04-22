@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toPng } from 'html-to-image';
+import plataCardLogo from '@assets/Plata_Card_Logo.png';
 
 interface QRScannerProps {
   onScanSuccess: (qrData: string, qrImageData?: string) => void;
@@ -17,73 +18,87 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
   const qrBoxId = "qr-reader";
   const captureRef = useRef<HTMLDivElement>(null);
 
-  // Función para capturar la imagen del QR como base64
+  // Función para capturar la imagen del QR como base64 directamente de la cámara
   const captureQRImage = async (qrData: string) => {
     try {
-      // Crear un elemento para mostrar el QR escaneado
-      const qrContainer = document.createElement('div');
-      qrContainer.style.width = '300px';
-      qrContainer.style.height = '300px';
-      qrContainer.style.backgroundColor = 'white';
-      qrContainer.style.display = 'flex';
-      qrContainer.style.flexDirection = 'column';
-      qrContainer.style.alignItems = 'center';
-      qrContainer.style.justifyContent = 'center';
-      qrContainer.style.padding = '20px';
-      qrContainer.style.boxSizing = 'border-box';
-      
-      // Añadir el texto del QR
-      const qrText = document.createElement('div');
-      qrText.textContent = qrData;
-      qrText.style.wordBreak = 'break-all';
-      qrText.style.fontSize = '14px';
-      qrText.style.marginTop = '20px';
-      qrText.style.width = '100%';
-      qrText.style.textAlign = 'center';
-      
-      // Añadir un título
-      const title = document.createElement('div');
-      title.textContent = 'QR Escaneado - Plata Card';
-      title.style.fontWeight = 'bold';
-      title.style.fontSize = '16px';
-      title.style.marginBottom = '20px';
-      
-      // Crear un borde para simular el QR
-      const qrImage = document.createElement('div');
-      qrImage.style.width = '200px';
-      qrImage.style.height = '200px';
-      qrImage.style.border = '2px solid black';
-      qrImage.style.position = 'relative';
-      
-      // Crear un patrón tipo QR con CSS
-      for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) {
-          const qrBlock = document.createElement('div');
-          qrBlock.style.position = 'absolute';
-          qrBlock.style.width = '40px';
-          qrBlock.style.height = '40px';
-          qrBlock.style.backgroundColor = Math.random() > 0.5 ? 'black' : 'transparent';
-          qrBlock.style.left = `${j * 50}px`;
-          qrBlock.style.top = `${i * 50}px`;
-          qrImage.appendChild(qrBlock);
-        }
+      // Capturar la vista actual del escáner QR
+      if (captureRef.current) {
+        // Crear un contenedor personalizado para la captura que incluya el QR y metadata
+        const captureContainer = document.createElement('div');
+        captureContainer.className = "qr-capture-container";
+        captureContainer.style.width = '320px';
+        captureContainer.style.height = '420px';
+        captureContainer.style.backgroundColor = 'white';
+        captureContainer.style.padding = '15px';
+        captureContainer.style.borderRadius = '10px';
+        captureContainer.style.boxSizing = 'border-box';
+        captureContainer.style.display = 'flex';
+        captureContainer.style.flexDirection = 'column';
+        captureContainer.style.alignItems = 'center';
+        
+        // Añadir logo y título
+        const titleContainer = document.createElement('div');
+        titleContainer.style.marginBottom = '15px';
+        titleContainer.style.textAlign = 'center';
+        titleContainer.style.display = 'flex';
+        titleContainer.style.flexDirection = 'column';
+        titleContainer.style.alignItems = 'center';
+        
+        // Agregar logo de Plata Card
+        const logo = document.createElement('img');
+        logo.src = plataCardLogo;
+        logo.style.width = '120px';
+        logo.style.marginBottom = '10px';
+        
+        const date = document.createElement('div');
+        date.textContent = new Date().toLocaleString();
+        date.style.fontSize = '12px';
+        date.style.color = '#666';
+        date.style.marginTop = '5px';
+        
+        titleContainer.appendChild(logo);
+        titleContainer.appendChild(date);
+        
+        // Clonar el elemento del escáner para la captura
+        const qrViewClone = captureRef.current.cloneNode(true) as HTMLElement;
+        qrViewClone.style.width = '280px';
+        qrViewClone.style.height = '280px';
+        qrViewClone.style.border = '1px solid #ccc';
+        qrViewClone.style.borderRadius = '5px';
+        qrViewClone.style.overflow = 'hidden';
+        
+        // Añadir sección para el texto del QR
+        const qrDataContainer = document.createElement('div');
+        qrDataContainer.style.marginTop = '15px';
+        qrDataContainer.style.width = '100%';
+        qrDataContainer.style.padding = '10px';
+        qrDataContainer.style.backgroundColor = '#f0f0f0';
+        qrDataContainer.style.borderRadius = '5px';
+        qrDataContainer.style.fontSize = '12px';
+        qrDataContainer.style.wordBreak = 'break-all';
+        qrDataContainer.style.maxHeight = '60px';
+        qrDataContainer.style.overflow = 'hidden';
+        qrDataContainer.textContent = qrData;
+        
+        // Construir la estructura completa
+        captureContainer.appendChild(titleContainer);
+        captureContainer.appendChild(qrViewClone);
+        captureContainer.appendChild(qrDataContainer);
+        
+        // Añadir al DOM temporalmente
+        document.body.appendChild(captureContainer);
+        
+        // Tomar la captura
+        const dataUrl = await toPng(captureContainer);
+        
+        // Eliminar del DOM
+        document.body.removeChild(captureContainer);
+        
+        return dataUrl;
       }
       
-      // Añadir elementos al contenedor
-      qrContainer.appendChild(title);
-      qrContainer.appendChild(qrImage);
-      qrContainer.appendChild(qrText);
-      
-      // Añadir a DOM temporalmente
-      document.body.appendChild(qrContainer);
-      
-      // Capturar como PNG
-      const dataUrl = await toPng(qrContainer);
-      
-      // Eliminar del DOM
-      document.body.removeChild(qrContainer);
-      
-      return dataUrl;
+      // Si no se pudo acceder al elemento de la cámara, capturar solo los datos
+      return null;
     } catch (error) {
       console.error('Error al capturar la imagen del QR:', error);
       return null;
@@ -168,8 +183,11 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-xl font-bold mb-3">Escanea el QR de tu tarjeta para identificarte</h2>
-      <p className="mb-4">Posiciona el código QR dentro del recuadro para escanearlo</p>
+      <div className="flex flex-col items-center mb-4">
+        <img src={plataCardLogo} alt="Plata Card Logo" className="h-16 mb-2" />
+        <h2 className="text-xl font-bold">Escanea el QR de tu tarjeta para identificarte</h2>
+        <p className="text-gray-600">Posiciona el código QR dentro del recuadro para escanearlo</p>
+      </div>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">

@@ -120,7 +120,8 @@ export const sessions = pgTable("sessions", {
   active: boolean("active").default(true),
   saved: boolean("saved").default(false),
   createdBy: text("created_by"), // Añadimos el campo para saber qué usuario creó la sesión
-  qrImageData: text("qr_image_data"), // Almacena la imagen del QR escaneado en base64
+  qrData: text("qr_data"), // Almacena el texto del código QR escaneado
+  qrImageData: text("qr_image_data") // Almacena la imagen del QR escaneado en base64
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({

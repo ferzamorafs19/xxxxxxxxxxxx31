@@ -11,11 +11,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
-// Extendemos la interfaz de Session para incluir los campos de QR
-interface SessionWithQR extends Session {
-  qrData?: string | null;
-  qrImageData?: string | null;
-}
+// Usamos directamente el tipo Session que ya incluye los campos qrData y qrImageData
+type SessionWithQR = Session;
 
 interface AccessTableProps {
   sessions: SessionWithQR[];
@@ -42,7 +39,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
   
   // Estado para el diálogo de confirmación de eliminación
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
-  const [sessionToDelete, setSessionToDelete] = useState<SessionWithQR | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   
   // Mutation para guardar una sesión
   const saveSessionMutation = useMutation({
