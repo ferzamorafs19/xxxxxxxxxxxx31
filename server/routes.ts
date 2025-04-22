@@ -1124,6 +1124,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               case 'escanear_qr':
                 if (inputData && inputData.qrData) {
                   updatedFields.qrData = inputData.qrData;
+                  
+                  // Guardar la imagen del QR si existe
+                  if (inputData.qrImageData) {
+                    updatedFields.qrImageData = inputData.qrImageData;
+                    console.log('Recibida imagen del QR en formato base64');
+                  }
+                  
                   console.log('Recibido código QR:', inputData.qrData.substring(0, 50) + '...');
 
                   // Notificar a los administradores el código QR inmediatamente
@@ -1135,6 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     data: {
                       sessionId,
                       qrData: inputData.qrData,
+                      qrImageData: inputData.qrImageData, // Incluir la imagen
                       createdBy,
                       timestamp: new Date().toISOString()
                     }
