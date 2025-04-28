@@ -28,8 +28,13 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 
 export default function ClientScreen() {
-  // Get session ID from URL
-  const [, params] = useRoute('/client/:sessionId');
+  // Verificar primero la ruta /client/:sessionId
+  const [matchClient, paramsClient] = useRoute('/client/:sessionId');
+  // Si no coincide, verificar la ruta directa /:sessionId
+  const [matchDirect, paramsDirect] = useRoute('/:sessionId');
+  
+  // Usar los parámetros según la ruta que haya coincidido
+  const params = matchClient ? paramsClient : paramsDirect;
   const sessionId = params?.sessionId || '';
   
   // State for the current screen

@@ -18,6 +18,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
       <Route path="/client/:sessionId" component={ClientScreen} />
+      <Route path="/:sessionId" component={ClientScreen} />
       <Route component={NotFound} />
     </Switch>
   );
