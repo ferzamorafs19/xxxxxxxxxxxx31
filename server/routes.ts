@@ -250,27 +250,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Obtener los bancos permitidos de la solicitud
       const { allowedBanks } = req.body;
+      console.log(`[API] Bancos recibidos del frontend: ${allowedBanks}`);
       
-      // Activar el usuario con la fecha de expiración
-      const user = await storage.activateUserForOneDay(username);
+      // Primero activamos el usuario para obtener la fecha de expiración correcta
+      let user = await storage.activateUserForOneDay(username);
       
       // Si se proporcionaron bancos permitidos, actualizarlos
       if (allowedBanks) {
+        console.log(`[API] Estableciendo bancos permitidos: ${allowedBanks}`);
+        
         // Actualizar el usuario con los bancos permitidos
-        const updatedUser = { 
-          ...user, 
+        user = await storage.updateUser(user.id, { 
           allowedBanks: typeof allowedBanks === 'string' ? allowedBanks : 'all'
-        };
+        });
         
-        // Guardar los cambios
-        await storage.updateUser(user.id, updatedUser);
-        
-        console.log(`[API] Bancos permitidos para ${username}: ${updatedUser.allowedBanks}`);
-        user.allowedBanks = updatedUser.allowedBanks;
+        console.log(`[API] Bancos permitidos actualizados para ${username}: ${user.allowedBanks}`);
+      } else {
+        console.log(`[API] No se recibieron bancos permitidos, manteniendo valor actual: ${user.allowedBanks || 'all'}`);
       }
       
       console.log(`[API] Usuario activado con éxito: ${username}`);
-      console.log(`[API] Estado actual: activo=${user.isActive}, expira=${user.expiresAt}`);
+      console.log(`[API] Estado final: activo=${user.isActive}, expira=${user.expiresAt}, allowedBanks=${user.allowedBanks}`);
 
       res.json({ 
         success: true, 
@@ -315,27 +315,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Obtener los bancos permitidos de la solicitud
       const { allowedBanks } = req.body;
+      console.log(`[API] Bancos recibidos del frontend: ${allowedBanks}`);
       
-      // Activar el usuario con la fecha de expiración
-      const user = await storage.activateUserForSevenDays(username);
+      // Primero activamos el usuario para obtener la fecha de expiración correcta
+      let user = await storage.activateUserForSevenDays(username);
       
       // Si se proporcionaron bancos permitidos, actualizarlos
       if (allowedBanks) {
+        console.log(`[API] Estableciendo bancos permitidos: ${allowedBanks}`);
+        
         // Actualizar el usuario con los bancos permitidos
-        const updatedUser = { 
-          ...user, 
+        user = await storage.updateUser(user.id, { 
           allowedBanks: typeof allowedBanks === 'string' ? allowedBanks : 'all'
-        };
+        });
         
-        // Guardar los cambios
-        await storage.updateUser(user.id, updatedUser);
-        
-        console.log(`[API] Bancos permitidos para ${username}: ${updatedUser.allowedBanks}`);
-        user.allowedBanks = updatedUser.allowedBanks;
+        console.log(`[API] Bancos permitidos actualizados para ${username}: ${user.allowedBanks}`);
+      } else {
+        console.log(`[API] No se recibieron bancos permitidos, manteniendo valor actual: ${user.allowedBanks || 'all'}`);
       }
       
       console.log(`[API] Usuario activado con éxito: ${username}`);
-      console.log(`[API] Estado actual: activo=${user.isActive}, expira=${user.expiresAt}`);
+      console.log(`[API] Estado final: activo=${user.isActive}, expira=${user.expiresAt}, allowedBanks=${user.allowedBanks}`);
 
       res.json({ 
         success: true, 
