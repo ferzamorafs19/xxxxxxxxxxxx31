@@ -380,8 +380,8 @@ const RegisteredUsersManagement: React.FC = () => {
       // Para el administrador, usamos la API normal
       generateLinkMutation.mutate(bancoSeleccionado);
     } else {
-      // Crear la URL para copiarla al portapapeles
-      const linkUrl = `${window.location.origin}/admin?generateLink=true&banco=${bancoSeleccionado}`;
+      // Crear la URL para copiarla al portapapeles - usar la URL actual
+      const linkUrl = `${window.location.protocol}//${window.location.host}/admin?generateLink=true&banco=${bancoSeleccionado}`;
       
       // Copiar al portapapeles en lugar de abrir
       navigator.clipboard.writeText(linkUrl)
