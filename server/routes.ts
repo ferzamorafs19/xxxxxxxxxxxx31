@@ -811,9 +811,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
       
       // Armamos los enlaces para ambos dominios
-      // Usamos el formato numérico directamente (sin "client/") en la URL
+      // En Replit, usamos la ruta /client/CODIGO para que sea compatible con el enrutamiento existente
       const clientLink = isReplit 
-        ? `https://${process.env.REPL_SLUG}.replit.dev/${sessionId}` 
+        ? `https://${process.env.REPL_SLUG}.replit.dev/client/${sessionId}` 
         : `https://${clientDomain}/${sessionId}`;
       const adminLink = isReplit 
         ? `https://${process.env.REPL_SLUG}.replit.dev` 
