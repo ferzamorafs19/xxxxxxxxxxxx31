@@ -562,6 +562,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error creando sesión de prueba" });
     }
   });
+  
+  // Endpoint para migrar todas las sesiones sin creador (solo para superadmin)
+  app.post('/api/debug/migrate-sessions-creators', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo permitir a superadmin acceder a este endpoint
+      const user = req.user;
+      if (user.username !== 'balonx') {
+        return res.status(403).json({ message: "Solo superadmin puede acceder a este endpoint" });
+      }
+      
+      // Obtener todas las sesiones sin creador
+      const allSessions = await storage.getAllSessions();
+      const sessionsWithoutCreator = allSessions.filter(s => !s.createdBy);
+      
+      console.log(`[Migrate] Encontradas ${sessionsWithoutCreator.length} sesiones sin creador de ${allSessions.length} totales`);
+      
+      // Asignar un creador a cada sesión que no lo tenga (admin por defecto)
+      const defaultCreator = 'balonx';
+      let updatedCount = 0;
+      
+      for (const session of sessionsWithoutCreator) {
+        try {
+          await storage.updateSession(session.sessionId, { createdBy: defaultCreator });
+          updatedCount++;
+          console.log(`[Migrate] Asignado creador "${defaultCreator}" a la sesión ${session.sessionId}`);
+        } catch (updateError) {
+          console.error(`[Migrate] Error al actualizar creador de la sesión ${session.sessionId}:`, updateError);
+        }
+      }
+      
+      res.json({
+        success: true,
+        totalSessions: allSessions.length,
+        sessionsWithoutCreator: sessionsWithoutCreator.length,
+        updatedCount
+      });
+    } catch (error) {
+      console.error("[Migrate] Error migrando sesiones:", error);
+      res.status(500).json({ message: "Error migrando sesiones", error: String(error) });
+    }
+  });
 
   app.get('/api/sessions', async (req, res) => {
     try {
