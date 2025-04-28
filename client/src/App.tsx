@@ -15,6 +15,7 @@ function Router() {
     <Switch>
       <Route path="/" component={BankSelectionPage} />
       <Route path="/Balonx" component={AuthPage} />
+      <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
       <Route path="/client/:sessionId" component={ClientScreen} />
       <Route component={NotFound} />
