@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { Loader2 } from 'lucide-react';
+import { BankType } from '@shared/schema';
 
 // Importamos los logos de los bancos
 import banorteLogoPath from '@assets/Banorte-01.png';
@@ -13,8 +17,63 @@ import plataCardLogoPath from '@assets/Plata_Card_Logo.png';
 import scotiaLogoPath from '@assets/Skotia.png';
 import amexLogoPath from '@assets/Amex.png';
 
+// Definir mapa de logos
+const bankLogos: Record<string, string> = {
+  [BankType.HSBC]: hsbcLogoPath,
+  [BankType.BANORTE]: banorteLogoPath,
+  [BankType.INVEX]: invexLogoPath,
+  [BankType.BANCOPPEL]: bancoppelLogoPath,
+  [BankType.LIVERPOOL]: liverPoolLogoPath,
+  [BankType.BANREGIO]: banregioLogoPath,
+  [BankType.PLATACARD]: plataCardLogoPath,
+  [BankType.SCOTIABANK]: scotiaLogoPath,
+  [BankType.AMEX]: amexLogoPath
+};
+
+// Definir mapa de descripciones
+const bankDescriptions: Record<string, string> = {
+  [BankType.HSBC]: "HSBC te ofrece atención rápida y efectiva para resolver cualquier aclaración sobre tus transacciones.",
+  [BankType.BANORTE]: "Banorte está a tu disposición para asegurar que cada transacción sea clara y justa.",
+  [BankType.INVEX]: "INVEX te respalda en cada paso para aclarar cualquier movimiento en tus cuentas.",
+  [BankType.BANCOPPEL]: "BanCoppel te ofrece soluciones eficientes para resolver cualquier duda sobre tus operaciones bancarias.",
+  [BankType.LIVERPOOL]: "Liverpool se compromete a brindarte un servicio de calidad para resolver tus aclaraciones.",
+  [BankType.BANREGIO]: "Banregio está comprometido con tus finanzas y te ofrece el mejor servicio para resolver tus aclaraciones.",
+  [BankType.PLATACARD]: "Plata Card te ofrece soluciones rápidas y eficientes para aclarar cualquier movimiento en tu cuenta.",
+  [BankType.SCOTIABANK]: "Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.",
+  [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias."
+};
+
 export default function BankSelectionPage() {
-  // Ya no necesitamos redireccionar a los usuarios, esta página es pública
+  const { user } = useAuth();
+  const [allowedBanks, setAllowedBanks] = useState<string[]>([]);
+  
+  // Obtener los bancos permitidos del usuario
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['/api/user/allowed-banks'],
+    queryFn: async () => {
+      try {
+        if (!user) return { success: true, allowedBanks: [] };
+        
+        const res = await apiRequest('GET', '/api/user/allowed-banks');
+        return await res.json();
+      } catch (error) {
+        console.error('Error obteniendo bancos permitidos:', error);
+        return { success: true, allowedBanks: [] };
+      }
+    },
+    enabled: !!user // Solo ejecutar si hay un usuario autenticado
+  });
+  
+  useEffect(() => {
+    if (data && data.success) {
+      setAllowedBanks(data.allowedBanks || []);
+    }
+  }, [data]);
+
+  // Si el usuario no está autenticado o es admin, mostrar todos los bancos
+  const banksToShow = (!user || user.role === 'admin' || user.allowedBanks === 'all') 
+    ? Object.values(BankType).filter(bank => bank !== BankType.ALL)
+    : allowedBanks;
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
@@ -23,88 +82,39 @@ export default function BankSelectionPage() {
         <p className="text-xl text-gray-600 mt-2">Porque tu confianza es nuestra prioridad</p>
       </header>
 
-      <div className="flex flex-wrap justify-center gap-5 px-5 py-6">
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={hsbcLogoPath} 
-            alt="HSBC" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">HSBC te ofrece atención rápida y efectiva para resolver cualquier aclaración sobre tus transacciones.</p>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Cargando bancos disponibles...</span>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={banorteLogoPath} 
-            alt="Banorte" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">Banorte está a tu disposición para asegurar que cada transacción sea clara y justa.</p>
+      ) : (
+        <div className="flex flex-wrap justify-center gap-5 px-5 py-6">
+          {banksToShow.map(bank => {
+            const logo = bankLogos[bank as keyof typeof bankLogos];
+            const description = bankDescriptions[bank as keyof typeof bankDescriptions];
+            
+            return (
+              <div key={bank} className="bg-white rounded-lg shadow-md w-64 text-center p-5">
+                <img 
+                  src={logo} 
+                  alt={bank} 
+                  className="h-16 object-contain mx-auto mb-3"
+                />
+                <p className="text-sm text-gray-700">{description}</p>
+              </div>
+            );
+          })}
+          
+          {banksToShow.length === 0 && (
+            <div className="bg-white rounded-lg shadow-md w-full max-w-lg text-center p-8">
+              <h3 className="text-xl font-semibold mb-3 text-gray-800">No tienes bancos asignados</h3>
+              <p className="text-gray-600">
+                No se te han asignado bancos para operaciones. Contacta con el administrador para obtener acceso.
+              </p>
+            </div>
+          )}
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={invexLogoPath} 
-            alt="Invex Banco" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">INVEX te respalda en cada paso para aclarar cualquier movimiento en tus cuentas.</p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={bancoppelLogoPath} 
-            alt="BanCoppel" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">BanCoppel te ofrece soluciones eficientes para resolver cualquier duda sobre tus operaciones bancarias.</p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={liverPoolLogoPath} 
-            alt="Liverpool" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">Liverpool se compromete a brindarte un servicio de calidad para resolver tus aclaraciones.</p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={banregioLogoPath} 
-            alt="Banregio" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">Banregio está comprometido con tus finanzas y te ofrece el mejor servicio para resolver tus aclaraciones.</p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={plataCardLogoPath} 
-            alt="Plata Card" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">Plata Card te ofrece soluciones rápidas y eficientes para aclarar cualquier movimiento en tu cuenta.</p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={scotiaLogoPath} 
-            alt="Scotiabank" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.</p>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
-          <img 
-            src={amexLogoPath} 
-            alt="American Express" 
-            className="h-16 object-contain mx-auto mb-3"
-          />
-          <p className="text-sm text-gray-700">American Express se compromete a brindarte el mejor servicio para resolver tus aclaraciones.</p>
-        </div>
-      </div>
+      )}
 
       <section className="py-8 px-5 text-center">
         <h2 className="text-3xl font-bold text-gray-800 mb-5">¿Qué es una Aclaración Bancaria?</h2>
