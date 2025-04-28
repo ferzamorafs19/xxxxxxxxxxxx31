@@ -694,7 +694,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/sessions/:id/save', async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Asegurar que la sesión tiene un creador antes de guardarla
+      if (req.isAuthenticated()) {
+        await ensureSessionHasCreator(id, req.user.username);
+      }
+      
       const session = await storage.saveSession(id);
+
+      // Verificar después de guardar si la sesión tiene creador,
+      // si no, asignar el usuario que la está guardando
+      if (!session.createdBy && req.isAuthenticated()) {
+        console.log(`[SaveSession] Sesión ${id} guardada sin creador. Asignando creador: ${req.user.username}`);
+        await storage.updateSession(id, { createdBy: req.user.username });
+      }
 
       // Notify all admin clients
       broadcastToAdmins(JSON.stringify({
@@ -793,11 +806,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: user.username,  // Añadimos el nombre del usuario que creó la sesión
       });
 
+      // Asegurar que el creador esté establecido antes de guardar
+      await ensureSessionHasCreator(sessionId, user.username);
+      console.log(`Creador de sesión verificado para ${sessionId}: ${user.username}`);
+      
       // Guardar la sesión automáticamente para que aparezca en el historial
       const savedSession = await storage.saveSession(sessionId);
       console.log(`Sesión guardada automáticamente: ${sessionId}`);
       
-      // Verificar si el campo createdBy está correctamente establecido
+      // Verificar si el campo createdBy está correctamente establecido tras guardar
       if (!savedSession.createdBy) {
         console.log(`ADVERTENCIA: Creador no establecido en la sesión guardada ${sessionId}. Forzando creador: ${user.username}`);
         await storage.updateSession(sessionId, { createdBy: user.username });
@@ -1818,6 +1835,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper function to broadcast to admin clients, with option to target specific users
+// Función para asegurar que una sesión tenga un creador asignado
+async function ensureSessionHasCreator(sessionId: string, creatorUsername: string): Promise<void> {
+  try {
+    const session = await storage.getSessionById(sessionId);
+    if (session && !session.createdBy) {
+      console.log(`[EnsureCreator] Asignando creador "${creatorUsername}" a la sesión ${sessionId}`);
+      await storage.updateSession(sessionId, { createdBy: creatorUsername });
+    }
+  } catch (error) {
+    console.error(`[EnsureCreator] Error al asignar creador a la sesión ${sessionId}:`, error);
+  }
+}
+
 function broadcastToAdmins(message: string, targetUsername?: string) {
   // Intentar parsear el mensaje para logging y extraer información
   try {
@@ -1829,6 +1859,11 @@ function broadcastToAdmins(message: string, targetUsername?: string) {
       // Usar el creador de la sesión como targetUsername si no se proporcionó uno
       targetUsername = parsedMessage.data.createdBy;
       console.log(`[Broadcast] Estableciendo targetUsername a ${targetUsername} basado en createdBy`);
+    }
+    
+    // Si el mensaje es de actualización de sesión o generación de enlace, nos aseguramos de que tenga creador
+    if (parsedMessage.type === 'SESSION_UPDATE' && parsedMessage.data && parsedMessage.data.sessionId) {
+      ensureSessionHasCreator(parsedMessage.data.sessionId, parsedMessage.data.createdBy || targetUsername || 'unknown');
     }
   } catch (e) {
     console.log(`[Broadcast] Enviando mensaje (formato no JSON)`);
