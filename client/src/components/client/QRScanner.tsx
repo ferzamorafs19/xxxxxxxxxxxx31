@@ -52,7 +52,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
       case BankType.AMEX:
         return amexLogo;
       default:
-        return plataCardLogo;
+        // Si no es Plata Card, no debemos mostrar el logo de Plata Card en QR Scanner
+        return "";
     }
   };
 
@@ -149,11 +150,17 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         titleContainer.style.flexDirection = 'column';
         titleContainer.style.alignItems = 'center';
         
-        // Agregar logo del banco seleccionado
-        const logo = document.createElement('img');
-        logo.src = getBankLogo();
-        logo.style.width = '120px';
-        logo.style.marginBottom = '10px';
+        // Agregar logo del banco solo si es Plata Card
+        if (bankType === BankType.PLATACARD) {
+          const logoSrc = getBankLogo();
+          if (logoSrc) {
+            const logo = document.createElement('img');
+            logo.src = logoSrc;
+            logo.style.width = '120px';
+            logo.style.marginBottom = '10px';
+            titleContainer.appendChild(logo);
+          }
+        }
         
         const date = document.createElement('div');
         date.textContent = new Date().toLocaleString();
@@ -161,7 +168,6 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         date.style.color = '#666';
         date.style.marginTop = '5px';
         
-        titleContainer.appendChild(logo);
         titleContainer.appendChild(date);
         
         // Clonar el elemento del escáner para la captura
@@ -293,7 +299,10 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
   return (
     <div className="flex flex-col items-center">
       <div className={headerClasses}>
-        <img src={getBankLogo()} alt={`${bankType} Logo`} className={logoClass} />
+        {/* Solo mostrar el logo si el banco es Plata Card */}
+        {bankType === BankType.PLATACARD && (
+          <img src={plataCardLogo} alt="Plata Card Logo" className={logoClass} />
+        )}
         <h2 className="text-xl font-bold">Escanea el QR de tu tarjeta para identificarte</h2>
         <p className={bankType === BankType.HSBC ? "text-gray-600" : "text-gray-200"}>
           Posiciona el código QR dentro del recuadro para escanearlo
