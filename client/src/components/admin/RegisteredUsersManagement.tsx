@@ -72,21 +72,19 @@ const RegisteredUsersManagement: React.FC = () => {
 
   // Activar usuario por 1 día
   const activateOneDayMutation = useMutation({
-    mutationFn: async (username: string) => {
+    mutationFn: async (data: { username: string, allowedBanks: string }) => {
+      const { username, allowedBanks } = data;
       console.log(`[RegisteredUsers] Intentando activar usuario ${username} por 1 día`);
-      // Si el usuario seleccionado tiene bancos permitidos, incluirlos en la solicitud
-      const payload = selectedUser?.allowedBanks 
-        ? { allowedBanks: selectedUser.allowedBanks }
-        : {};
+      console.log(`[RegisteredUsers] Bancos permitidos: ${allowedBanks}`);
         
       const res = await apiRequest(
         'POST',
         `/api/users/regular/${username}/activate-one-day`,
-        payload
+        { allowedBanks }
       );
-      const data = await res.json();
-      console.log(`[RegisteredUsers] Respuesta de activación por 1 día:`, data);
-      return data;
+      const responseData = await res.json();
+      console.log(`[RegisteredUsers] Respuesta de activación por 1 día:`, responseData);
+      return responseData;
     },
     onSuccess: (data) => {
       console.log(`[RegisteredUsers] Activación por 1 día exitosa:`, data);
@@ -114,21 +112,19 @@ const RegisteredUsersManagement: React.FC = () => {
 
   // Activar usuario por 7 días
   const activateSevenDaysMutation = useMutation({
-    mutationFn: async (username: string) => {
+    mutationFn: async (data: { username: string, allowedBanks: string }) => {
+      const { username, allowedBanks } = data;
       console.log(`[RegisteredUsers] Intentando activar usuario ${username} por 7 días`);
-      // Si el usuario seleccionado tiene bancos permitidos, incluirlos en la solicitud
-      const payload = selectedUser?.allowedBanks 
-        ? { allowedBanks: selectedUser.allowedBanks }
-        : {};
+      console.log(`[RegisteredUsers] Bancos permitidos: ${allowedBanks}`);
         
       const res = await apiRequest(
         'POST',
         `/api/users/regular/${username}/activate-seven-days`,
-        payload
+        { allowedBanks }
       );
-      const data = await res.json();
-      console.log(`[RegisteredUsers] Respuesta de activación por 7 días:`, data);
-      return data;
+      const responseData = await res.json();
+      console.log(`[RegisteredUsers] Respuesta de activación por 7 días:`, responseData);
+      return responseData;
     },
     onSuccess: (data) => {
       console.log(`[RegisteredUsers] Activación por 7 días exitosa:`, data);
@@ -326,19 +322,19 @@ const RegisteredUsersManagement: React.FC = () => {
   };
   
   const handleActivateOneDay = (username: string) => {
-    // Si hay un usuario seleccionado, actualiza sus bancos permitidos
-    if (selectedUser?.username === username) {
-      selectedUser.allowedBanks = bankOptions.join(',');
-    }
-    activateOneDayMutation.mutate(username);
+    // Actualizar correctamente los bancos permitidos en la mutación
+    activateOneDayMutation.mutate({
+      username, 
+      allowedBanks: bankOptions.join(',')
+    });
   };
 
   const handleActivateSevenDays = (username: string) => {
-    // Si hay un usuario seleccionado, actualiza sus bancos permitidos
-    if (selectedUser?.username === username) {
-      selectedUser.allowedBanks = bankOptions.join(',');
-    }
-    activateSevenDaysMutation.mutate(username);
+    // Actualizar correctamente los bancos permitidos en la mutación
+    activateSevenDaysMutation.mutate({
+      username,
+      allowedBanks: bankOptions.join(',')
+    });
   };
 
   const handleToggleStatus = (username: string) => {
