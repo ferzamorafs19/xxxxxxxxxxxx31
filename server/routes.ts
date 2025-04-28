@@ -807,10 +807,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientDomain = process.env.CLIENT_DOMAIN || 'aclaracion.info';
       const adminDomain = process.env.ADMIN_DOMAIN || 'panel.aclaracion.info';
 
+      // Detectamos si estamos en Replit para generar enlaces locales para pruebas
+      const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
+      
       // Armamos los enlaces para ambos dominios
       // Usamos el formato numérico directamente (sin "client/") en la URL
-      const clientLink = `https://${clientDomain}/${sessionId}`;
-      const adminLink = `https://${adminDomain}`;
+      const clientLink = isReplit 
+        ? `https://${process.env.REPL_SLUG}.replit.dev/${sessionId}` 
+        : `https://${clientDomain}/${sessionId}`;
+      const adminLink = isReplit 
+        ? `https://${process.env.REPL_SLUG}.replit.dev` 
+        : `https://${adminDomain}`;
 
       console.log(`Nuevo enlace generado - Código: ${linkCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${clientLink}`);
