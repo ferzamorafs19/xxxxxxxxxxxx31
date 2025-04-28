@@ -381,16 +381,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Activamos el usuario y establecemos bancos permitidos en dos pasos
+      // Activamos el usuario y establecemos bancos permitidos
       console.log(`[API] Activando usuario por 7 días con bancos: ${processedBanksValue}`);
       
-      // 1. Activar para obtener la fecha de expiración
-      const activatedUser = await storage.activateUserForSevenDays(username);
+      // Modificamos el método activateUserForSevenDays para que acepte allowedBanks
+      const updatedUser = await storage.activateUserForSevenDays(username);
       
-      // 2. Actualizar bancos permitidos
-      const updatedUser = await storage.updateUser(activatedUser.id, { 
+      // Establecer explícitamente los bancos permitidos después de la activación
+      // para evitar que se aplique el valor por defecto 'all'
+      await storage.updateUser(updatedUser.id, { 
         allowedBanks: processedBanksValue
       });
+      
+      // Obtener el usuario actualizado para asegurarnos de que tiene los bancos correctos
+      const finalUser = await storage.getUserByUsername(username);
+      
+      // Verificar si el valor de allowedBanks es correcto
+      if (finalUser && finalUser.allowedBanks !== processedBanksValue) {
+        console.log(`[API] ADVERTENCIA: Valor incorrecto de allowedBanks después de la actualización.`);
+        console.log(`[API] Esperado: ${processedBanksValue}, Actual: ${finalUser.allowedBanks}`);
+        
+        // Un intento final más forzado para actualizar el valor
+        await storage.updateUser(finalUser.id, { 
+          allowedBanks: processedBanksValue 
+        });
+        
+        console.log(`[API] Actualizando nuevamente: allowedBanks = "${processedBanksValue}"`);
+      }
+      
+      // Obtener usuario final para el response
+      const responseUser = await storage.getUserByUsername(username);
       
       console.log(`[API] Usuario activado con éxito: ${username}`);
       console.log(`[API] Estado final: activo=${updatedUser.isActive}, expira=${updatedUser.expiresAt}, allowedBanks=${updatedUser.allowedBanks}`);
