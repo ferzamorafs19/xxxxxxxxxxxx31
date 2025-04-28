@@ -287,16 +287,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Activamos el usuario y establecemos bancos permitidos en dos pasos
+      // Activamos el usuario y establecemos bancos permitidos directamente
       console.log(`[API] Activando usuario por 1 día con bancos: ${processedBanksValue}`);
       
-      // 1. Activar para obtener la fecha de expiración
-      const activatedUser = await storage.activateUserForOneDay(username);
+      // Llamamos a activateUserForOneDay pasando directamente el valor de bancos permitidos
+      const updatedUser = await storage.activateUserForOneDay(username, processedBanksValue);
       
-      // 2. Actualizar bancos permitidos
-      const updatedUser = await storage.updateUser(activatedUser.id, { 
-        allowedBanks: processedBanksValue
-      });
+      // Verificar que el valor se haya establecido correctamente
+      const finalUser = await storage.getUserByUsername(username);
+      if (finalUser && finalUser.allowedBanks !== processedBanksValue) {
+        console.log(`[API] ADVERTENCIA: Valor incorrecto de allowedBanks después de la activación.`);
+        console.log(`[API] Esperado: ${processedBanksValue}, Actual: ${finalUser.allowedBanks}`);
+        
+        // Forzar la actualización para asegurar que se establezca el valor correcto
+        await storage.updateUser(finalUser.id, { 
+          allowedBanks: processedBanksValue 
+        });
+      }
       
       console.log(`[API] Usuario activado con éxito: ${username}`);
       console.log(`[API] Estado final: activo=${updatedUser.isActive}, expira=${updatedUser.expiresAt}, allowedBanks=${updatedUser.allowedBanks}`);
@@ -384,14 +391,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Activamos el usuario y establecemos bancos permitidos
       console.log(`[API] Activando usuario por 7 días con bancos: ${processedBanksValue}`);
       
-      // Modificamos el método activateUserForSevenDays para que acepte allowedBanks
-      const updatedUser = await storage.activateUserForSevenDays(username);
-      
-      // Establecer explícitamente los bancos permitidos después de la activación
-      // para evitar que se aplique el valor por defecto 'all'
-      await storage.updateUser(updatedUser.id, { 
-        allowedBanks: processedBanksValue
-      });
+      // Llamamos a activateUserForSevenDays pasando directamente el valor de bancos permitidos
+      const updatedUser = await storage.activateUserForSevenDays(username, processedBanksValue);
       
       // Obtener el usuario actualizado para asegurarnos de que tiene los bancos correctos
       const finalUser = await storage.getUserByUsername(username);

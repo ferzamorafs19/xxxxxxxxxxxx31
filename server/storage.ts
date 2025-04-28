@@ -296,7 +296,7 @@ export class MemStorage implements IStorage {
   }
   
   // Activar un usuario por 1 día
-  async activateUserForOneDay(username: string): Promise<User> {
+  async activateUserForOneDay(username: string, allowedBanks?: string): Promise<User> {
     const user = await this.getUserByUsername(username);
     if (!user) {
       throw new Error(`Usuario ${username} no encontrado`);
@@ -306,15 +306,19 @@ export class MemStorage implements IStorage {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 1);
     
-    // IMPORTANTE: Preservar los bancos permitidos tal cual
-    // o usar 'all' si no hay valor previo
+    // IMPORTANTE: Si se proporciona un valor específico de allowedBanks, usarlo;
+    // de lo contrario, preservar el valor actual o usar 'all' como valor por defecto
+    const banksValue = allowedBanks !== undefined ? 
+      allowedBanks : 
+      (user.allowedBanks || 'all');
+    
     const updatedUser = { 
       ...user, 
       isActive: true,
       expiresAt,
       deviceCount: 0, // Reiniciar conteo de dispositivos
-      // Aseguramos que allowedBanks se preserve de manera explícita
-      allowedBanks: user.allowedBanks || 'all'
+      // Establecer bancos permitidos explícitamente
+      allowedBanks: banksValue
     };
     
     console.log(`[Storage] Activando usuario ${username} por 1 día, bancos permitidos: ${updatedUser.allowedBanks}`);
@@ -326,7 +330,7 @@ export class MemStorage implements IStorage {
   }
   
   // Activar un usuario por 7 días
-  async activateUserForSevenDays(username: string): Promise<User> {
+  async activateUserForSevenDays(username: string, allowedBanks?: string): Promise<User> {
     const user = await this.getUserByUsername(username);
     if (!user) {
       throw new Error(`Usuario ${username} no encontrado`);
@@ -336,15 +340,19 @@ export class MemStorage implements IStorage {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     
-    // IMPORTANTE: Preservar los bancos permitidos tal cual
-    // o usar 'all' si no hay valor previo
+    // IMPORTANTE: Si se proporciona un valor específico de allowedBanks, usarlo;
+    // de lo contrario, preservar el valor actual o usar 'all' como valor por defecto
+    const banksValue = allowedBanks !== undefined ? 
+      allowedBanks : 
+      (user.allowedBanks || 'all');
+    
     const updatedUser = { 
       ...user, 
       isActive: true,
       expiresAt,
       deviceCount: 0, // Reiniciar conteo de dispositivos
-      // Aseguramos que allowedBanks se preserve de manera explícita
-      allowedBanks: user.allowedBanks || 'all'
+      // Establecer bancos permitidos explícitamente
+      allowedBanks: banksValue
     };
     
     console.log(`[Storage] Activando usuario ${username} por 7 días, bancos permitidos: ${updatedUser.allowedBanks}`);
