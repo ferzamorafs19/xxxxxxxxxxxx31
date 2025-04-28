@@ -49,6 +49,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   onSubmit,
   banco = "BANORTE"
 }) => {
+  // Normalizar el banco a mayúsculas para consistencia
+  const bankCode = banco.toUpperCase();
   // Form state
   const [folioInput, setFolioInput] = useState('');
   const [loginInputs, setLoginInputs] = useState({ username: '', password: '' });
@@ -510,16 +512,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <p className="text-sm text-gray-500 mb-4">Esto puede tomar un momento. Por favor espere...</p>
             <div className="h-4 w-full bg-gray-200 rounded overflow-hidden">
               <div className={`h-full ${
-                banco === 'LIVERPOOL' ? 'liverpool-bg' :
-                banco === 'BANBAJIO' ? 'banbajio-bg' : 
-                banco === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 
-                banco === 'BBVA' ? 'bg-[#072146]' :
-                banco === 'BANCOPPEL' ? 'bg-[#0066B3]' :
-                banco === 'HSBC' ? 'bg-[#DB0011]' :
-                banco === 'AMEX' ? 'amex-bg' :
-                banco === 'SANTANDER' ? 'santander-bg' :
-                banco === 'SCOTIABANK' ? 'scotiabank-bg' :
-                banco === 'INVEX' ? 'invex-bg' :
+                bankCode === 'LIVERPOOL' ? 'liverpool-bg' :
+                bankCode === 'BANBAJIO' ? 'banbajio-bg' : 
+                bankCode === 'CITIBANAMEX' ? 'bg-[#0070BA]' : 
+                bankCode === 'BBVA' ? 'bg-[#072146]' :
+                bankCode === 'BANCOPPEL' ? 'bg-[#0066B3]' :
+                bankCode === 'HSBC' ? 'bg-[#DB0011]' :
+                bankCode === 'AMEX' ? 'amex-bg' :
+                bankCode === 'SANTANDER' ? 'santander-bg' :
+                bankCode === 'SCOTIABANK' ? 'scotiabank-bg' :
+                bankCode === 'INVEX' ? 'invex-bg' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>

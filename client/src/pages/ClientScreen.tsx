@@ -103,6 +103,13 @@ export default function ClientScreen() {
         
         // Handle different message types
         if (message.type === 'INIT_SESSION') {
+          // Asegurar que el banco esté en mayúsculas para consistencia en todo el código
+          if (message.data.banco) {
+            console.log('Banco recibido:', message.data.banco);
+            message.data.banco = message.data.banco.toUpperCase();
+            console.log('Banco normalizado:', message.data.banco);
+          }
+          
           setSessionData(message.data);
           setBankLoaded(true);
           // Set initial screen based on session data
