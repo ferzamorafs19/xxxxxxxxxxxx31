@@ -845,12 +845,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar siempre si el allowedBanks es undefined o null para evitar errores
       const userBanks = user.allowedBanks || 'all';
       
-      // Si es administrador, puede ver todos los bancos sin importar su configuración
-      if (user.role === UserRole.ADMIN) {
-        console.log('[API] Usuario es admin, devolviendo lista completa independientemente de su configuración');
+      // Si es el superadmin "balonx", puede ver todos los bancos sin importar su configuración
+      if (user.username === "balonx") {
+        console.log('[API] Usuario es superadmin (balonx), devolviendo lista completa independientemente de su configuración');
         // Devolver todos los valores de BankType excepto 'all'
         allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
       } 
+      // Si es administrador pero no es balonx, verificar sus restricciones específicas de bancos
+      else if (user.role === UserRole.ADMIN) {
+        console.log(`[API] Usuario es admin (${user.username}), verificando restricciones específicas de bancos`);
+        console.log(`[API] allowedBanks del admin: ${userBanks}`);
+        
+        // Verificar si tiene valor 'all' o bancos específicos
+        if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+          console.log('[API] Admin tiene permiso para todos los bancos (all)');
+          allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
+        } else if (userBanks && userBanks !== '') {
+          console.log(`[API] Admin tiene bancos específicos: ${userBanks}`);
+          // Dividir la cadena por comas y procesar
+          allowedBanks = userBanks
+            .split(',')
+            .map(b => b.trim())
+            .filter(b => b.length > 0);
+          
+          console.log(`[API] Bancos de admin procesados: [${allowedBanks.join(', ')}]`);
+        } else {
+          console.log('[API] Admin sin bancos definidos');
+        }
+      }
       // Si el usuario tiene "all" explícitamente asignado, mostrar todos los bancos
       else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
         console.log('[API] Usuario tiene todos los bancos permitidos (all), devolviendo lista completa');
