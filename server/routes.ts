@@ -824,27 +824,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar siempre si el allowedBanks es undefined o null para evitar errores
       const userBanks = user.allowedBanks || 'all';
       
-      // Si es administrador o tiene explícitamente todos los bancos permitidos
-      if (user.role === UserRole.ADMIN || userBanks === 'all' || userBanks.toLowerCase() === 'all') {
-        console.log('[API] Usuario es admin o tiene todos los bancos permitidos, devolviendo lista completa');
+      // Si es administrador, puede ver todos los bancos sin importar su configuración
+      if (user.role === UserRole.ADMIN) {
+        console.log('[API] Usuario es admin, devolviendo lista completa independientemente de su configuración');
         // Devolver todos los valores de BankType excepto 'all'
         allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
       } 
-      // Si tiene bancos específicos permitidos
+      // Si el usuario tiene "all" explícitamente asignado, mostrar todos los bancos
+      else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+        console.log('[API] Usuario tiene todos los bancos permitidos (all), devolviendo lista completa');
+        // Devolver todos los valores de BankType excepto 'all'
+        allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
+      } 
+      // Si tiene bancos específicos permitidos (lista separada por comas)
       else if (userBanks && userBanks !== '') {
         console.log(`[API] Usuario tiene bancos específicos permitidos: ${userBanks}`);
-        allowedBanks = userBanks.split(',').map(b => b.trim());
-        console.log(`[API] Bancos después de procesamiento:`, allowedBanks);
+        // Dividir la cadena por comas, limpiar espacios en blanco y filtrar valores vacíos
+        allowedBanks = userBanks
+          .split(',')
+          .map(b => b.trim())
+          .filter(b => b.length > 0);
+        
+        console.log(`[API] Bancos después de procesamiento: [${allowedBanks.join(', ')}]`);
+        
+        // Verificar que todos los bancos en la lista sean válidos
+        const invalidBanks = allowedBanks.filter(bank => !Object.values(BankType).includes(bank as BankType));
+        if (invalidBanks.length > 0) {
+          console.log(`[API] ADVERTENCIA: Se encontraron bancos inválidos en la lista: ${invalidBanks.join(', ')}`);
+        }
       } else {
         console.log('[API] Usuario no tiene bancos permitidos definidos o el valor está vacío');
       }
       
-      console.log(`[API] Devolviendo ${allowedBanks.length} bancos permitidos`);
-      allowedBanks.forEach(bank => console.log(`[API] - Banco: ${bank}`));
+      console.log(`[API] Devolviendo ${allowedBanks.length} bancos permitidos:`);
+      allowedBanks.forEach(bank => console.log(`[API] - Banco permitido: ${bank}`));
       
       res.json({
         success: true,
-        allowedBanks
+        allowedBanks,
+        userRole: user.role,
+        userAllowedBanksRaw: userBanks // Para depuración
       });
     } catch (error: any) {
       console.log(`[API] Error obteniendo bancos permitidos: ${error.message}`);
@@ -862,19 +881,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user;
       
       // Validar que el banco solicitado esté permitido para el usuario
-      if (user.role !== 'admin' && user.allowedBanks !== 'all') {
-        // Si el usuario no es administrador y no tiene permitido todos los bancos,
-        // verificamos que el banco solicitado esté en la lista de bancos permitidos
-        const allowedBanks = user.allowedBanks.split(',');
-        console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanks}`);
+      if (user.role !== 'admin') {
+        // Si el usuario no es administrador, verificamos sus permisos de banco
+        const userBanks = user.allowedBanks || 'all';
         
-        if (!allowedBanks.includes(banco as string)) {
-          // Si el banco solicitado no está en la lista, devolvemos un error claro
-          console.log(`Banco ${banco} no permitido para ${user.username}. Bancos permitidos: ${allowedBanks.join(', ')}`);
-          return res.status(403).json({ 
-            error: `Banco ${banco} no permitido. Solo puedes usar: ${allowedBanks.join(', ')}` 
-          });
+        // Si no tiene "all", verificamos que el banco solicitado esté en la lista
+        if (userBanks !== 'all' && userBanks.toLowerCase() !== 'all') {
+          const allowedBanks = userBanks.split(',').map(b => b.trim());
+          console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanks.join(', ')}`);
+          
+          if (!allowedBanks.includes(banco as string)) {
+            // Si el banco solicitado no está en la lista, devolvemos un error claro
+            console.log(`Banco ${banco} no permitido para ${user.username}. Bancos permitidos: ${allowedBanks.join(', ')}`);
+            return res.status(403).json({ 
+              error: `Banco ${banco} no permitido. Solo puedes usar: ${allowedBanks.join(', ')}` 
+            });
+          }
+        } else {
+          console.log(`Usuario ${user.username} tiene acceso a todos los bancos (all)`);
         }
+      } else {
+        console.log(`Usuario administrador ${user.username} tiene acceso a todos los bancos`);
       }
 
       // Generamos un código de 8 dígitos numéricos que usaremos tanto para el ID como para el folio
