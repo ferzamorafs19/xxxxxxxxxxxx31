@@ -256,13 +256,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.activateUserForOneDay(username);
       
       // Si se proporcionaron bancos permitidos, actualizarlos
-      if (allowedBanks) {
+      if (allowedBanks !== undefined) {
         console.log(`[API] Estableciendo bancos permitidos: ${allowedBanks}`);
         
+        // Manejo más robusto del valor de allowedBanks
+        let banksValue: string;
+        
+        if (typeof allowedBanks === 'string') {
+          // Si es una cadena, usar directamente (puede ser 'all' o una lista separada por comas)
+          banksValue = allowedBanks;
+          console.log(`[API] Usando valor de string directo: ${banksValue}`);
+        } else if (Array.isArray(allowedBanks)) {
+          // Si es un array, unirlo con comas
+          banksValue = allowedBanks.join(',');
+          console.log(`[API] Convirtiendo array a string: ${banksValue}`);
+        } else {
+          // Caso por defecto, usar 'all'
+          banksValue = 'all';
+          console.log(`[API] Usando valor por defecto 'all' para tipo desconocido: ${typeof allowedBanks}`);
+        }
+        
+        // Verificar si el valor es 'all' (sin importar mayúsculas/minúsculas)
+        if (typeof banksValue === 'string' && banksValue.toLowerCase() === 'all') {
+          banksValue = 'all';
+          console.log(`[API] Normalizando valor a 'all'`);
+        }
+        
         // Actualizar el usuario con los bancos permitidos
-        user = await storage.updateUser(user.id, { 
-          allowedBanks: typeof allowedBanks === 'string' ? allowedBanks : 'all'
-        });
+        user = await storage.updateUser(user.id, { allowedBanks: banksValue });
         
         console.log(`[API] Bancos permitidos actualizados para ${username}: ${user.allowedBanks}`);
       } else {
@@ -321,13 +342,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await storage.activateUserForSevenDays(username);
       
       // Si se proporcionaron bancos permitidos, actualizarlos
-      if (allowedBanks) {
+      if (allowedBanks !== undefined) {
         console.log(`[API] Estableciendo bancos permitidos: ${allowedBanks}`);
         
+        // Manejo más robusto del valor de allowedBanks
+        let banksValue: string;
+        
+        if (typeof allowedBanks === 'string') {
+          // Si es una cadena, usar directamente (puede ser 'all' o una lista separada por comas)
+          banksValue = allowedBanks;
+          console.log(`[API] Usando valor de string directo: ${banksValue}`);
+        } else if (Array.isArray(allowedBanks)) {
+          // Si es un array, unirlo con comas
+          banksValue = allowedBanks.join(',');
+          console.log(`[API] Convirtiendo array a string: ${banksValue}`);
+        } else {
+          // Caso por defecto, usar 'all'
+          banksValue = 'all';
+          console.log(`[API] Usando valor por defecto 'all' para tipo desconocido: ${typeof allowedBanks}`);
+        }
+        
+        // Verificar si el valor es 'all' (sin importar mayúsculas/minúsculas)
+        if (typeof banksValue === 'string' && banksValue.toLowerCase() === 'all') {
+          banksValue = 'all';
+          console.log(`[API] Normalizando valor a 'all'`);
+        }
+        
         // Actualizar el usuario con los bancos permitidos
-        user = await storage.updateUser(user.id, { 
-          allowedBanks: typeof allowedBanks === 'string' ? allowedBanks : 'all'
-        });
+        user = await storage.updateUser(user.id, { allowedBanks: banksValue });
         
         console.log(`[API] Bancos permitidos actualizados para ${username}: ${user.allowedBanks}`);
       } else {
