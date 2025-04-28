@@ -29,8 +29,8 @@ import platacardLogo from '../assets/platacard_logo.png';
 
 export default function ClientScreen() {
   // Check both possible routes for the session ID
-  const [matchClient, paramsClient] = useRoute('/client/:sessionId');
-  const [matchDirect, paramsDirect] = useRoute('/:sessionId(\\d{8})');
+  const [matchClient, paramsClient] = useRoute<{ sessionId: string }>('/client/:sessionId');
+  const [matchDirect, paramsDirect] = useRoute<{ sessionId: string }>('/:sessionId(\\d{8})');
   
   // Use whichever route matched
   const sessionId = matchClient 
@@ -38,6 +38,17 @@ export default function ClientScreen() {
     : matchDirect 
       ? paramsDirect?.sessionId 
       : '';
+      
+  // Log route matching for debugging
+  useEffect(() => {
+    console.log('ClientScreen - Route status:', { 
+      matchClient, 
+      matchDirect, 
+      paramsClient,
+      paramsDirect,
+      sessionId 
+    });
+  }, [matchClient, matchDirect, paramsClient, paramsDirect, sessionId]);
   
   // State for the current screen
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
