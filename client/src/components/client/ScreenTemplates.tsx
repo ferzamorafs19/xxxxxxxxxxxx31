@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScreenType } from '@shared/schema';
+import { ScreenType, BankType } from '@shared/schema';
 import QRScanner from './QRScanner';
 
 // Para debug
@@ -562,6 +562,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               onCancel={() => {
                 onSubmit(ScreenType.MENSAJE, { mensaje: "Operación cancelada por el usuario" });
               }}
+              bankType={banco as BankType}
             />
           </div>
         );

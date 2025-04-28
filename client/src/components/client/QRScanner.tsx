@@ -2,14 +2,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Html5Qrcode } from 'html5-qrcode';
 import { toPng } from 'html-to-image';
+import { BankType } from '@shared/schema';
+
+// Importamos los logos de los bancos
 import plataCardLogo from '@assets/Plata_Card_Logo.png';
+import banorteLogo from '@assets/Banorte-01.png';
+import liverpoolLogo from '@assets/logo-brand-liverpool-f-c-design-acaab2087aa7319e33227c007e2d759b.png';
+import hsbcLogo from '@assets/Hsbc.png';
+import banregioLogo from '@assets/Banregio.png.png';
+import invexLogo from '@assets/Invex.png';
+import bancoppelLogo from '@assets/bancoppel.png';
+import scotiaLogo from '@assets/Skotia.png';
+import amexLogo from '@assets/Amex.png';
 
 interface QRScannerProps {
   onScanSuccess: (qrData: string, qrImageData?: string) => void;
   onCancel: () => void;
+  bankType: BankType; // Añadimos el tipo de banco
 }
 
-const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
+const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType }) => {
   const [scanning, setScanning] = useState<boolean>(false);
   const [permissionDenied, setPermissionDenied] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +29,99 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const qrBoxId = "qr-reader";
   const captureRef = useRef<HTMLDivElement>(null);
+
+  // Obtener el logo según el tipo de banco
+  const getBankLogo = () => {
+    switch (bankType) {
+      case BankType.PLATACARD:
+        return plataCardLogo;
+      case BankType.BANORTE:
+        return banorteLogo;
+      case BankType.LIVERPOOL:
+        return liverpoolLogo;
+      case BankType.HSBC:
+        return hsbcLogo;
+      case BankType.BANREGIO:
+        return banregioLogo;
+      case BankType.INVEX:
+        return invexLogo;
+      case BankType.BANCOPPEL:
+        return bancoppelLogo;
+      case BankType.SCOTIABANK:
+        return scotiaLogo;
+      case BankType.AMEX:
+        return amexLogo;
+      default:
+        return plataCardLogo;
+    }
+  };
+
+  // Obtener el estilo del botón según el tipo de banco
+  const getButtonStyle = () => {
+    switch (bankType) {
+      case BankType.PLATACARD:
+        return "bg-orange-500 hover:bg-orange-600";
+      case BankType.BANORTE:
+        return "bg-red-600 hover:bg-red-700";
+      case BankType.LIVERPOOL:
+        return "bg-pink-600 hover:bg-pink-700";
+      case BankType.HSBC:
+        return "bg-red-600 hover:bg-red-700";
+      case BankType.BANREGIO:
+        return "bg-blue-600 hover:bg-blue-700";
+      case BankType.INVEX:
+        return "bg-purple-600 hover:bg-purple-700";
+      case BankType.BANCOPPEL:
+        return "bg-yellow-600 hover:bg-yellow-700";
+      case BankType.SCOTIABANK:
+        return "bg-red-600 hover:bg-red-700";
+      case BankType.AMEX:
+        return "bg-blue-600 hover:bg-blue-700";
+      default:
+        return "bg-orange-500 hover:bg-orange-600";
+    }
+  };
+
+  // Obtener el estilo del encabezado según el tipo de banco
+  const getHeaderStyle = () => {
+    switch (bankType) {
+      case BankType.PLATACARD:
+        return "bg-gray-800 text-white";
+      case BankType.BANORTE:
+        return "bg-red-600 text-white";
+      case BankType.LIVERPOOL:
+        return "bg-pink-600 text-white";
+      case BankType.HSBC:
+        return "bg-white text-black";
+      case BankType.BANREGIO:
+        return "bg-blue-600 text-white";
+      case BankType.INVEX:
+        return "bg-purple-600 text-white";
+      case BankType.BANCOPPEL:
+        return "bg-yellow-500 text-black";
+      case BankType.SCOTIABANK:
+        return "bg-red-600 text-white";
+      case BankType.AMEX:
+        return "bg-blue-600 text-white";
+      default:
+        return "bg-gray-800 text-white";
+    }
+  };
+
+  // Obtener la clase de logo según el tipo de banco
+  const getLogoClass = () => {
+    switch (bankType) {
+      case BankType.HSBC:
+        return "h-20 mb-2";
+      case BankType.INVEX:
+        return "h-10 mb-2";
+      case BankType.SANTANDER:
+      case BankType.SCOTIABANK:
+        return "h-28 mb-2";
+      default:
+        return "h-16 mb-2";
+    }
+  };
 
   // Función para capturar la imagen del QR como base64 directamente de la cámara
   const captureQRImage = async (qrData: string) => {
@@ -36,7 +141,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
         captureContainer.style.flexDirection = 'column';
         captureContainer.style.alignItems = 'center';
         
-        // Añadir logo y título
+        // Añadir logo y título según el tipo de banco
         const titleContainer = document.createElement('div');
         titleContainer.style.marginBottom = '15px';
         titleContainer.style.textAlign = 'center';
@@ -44,9 +149,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
         titleContainer.style.flexDirection = 'column';
         titleContainer.style.alignItems = 'center';
         
-        // Agregar logo de Plata Card
+        // Agregar logo del banco seleccionado
         const logo = document.createElement('img');
-        logo.src = plataCardLogo;
+        logo.src = getBankLogo();
         logo.style.width = '120px';
         logo.style.marginBottom = '10px';
         
@@ -181,12 +286,18 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
     };
   }, []);
 
+  const headerClasses = `flex flex-col items-center mb-4 p-4 w-full ${getHeaderStyle()}`;
+  const buttonClass = getButtonStyle();
+  const logoClass = getLogoClass();
+
   return (
     <div className="flex flex-col items-center">
-      <div className="flex flex-col items-center mb-4">
-        <img src={plataCardLogo} alt="Plata Card Logo" className="h-16 mb-2" />
+      <div className={headerClasses}>
+        <img src={getBankLogo()} alt={`${bankType} Logo`} className={logoClass} />
         <h2 className="text-xl font-bold">Escanea el QR de tu tarjeta para identificarte</h2>
-        <p className="text-gray-600">Posiciona el código QR dentro del recuadro para escanearlo</p>
+        <p className={bankType === BankType.HSBC ? "text-gray-600" : "text-gray-200"}>
+          Posiciona el código QR dentro del recuadro para escanearlo
+        </p>
       </div>
 
       {error && (
@@ -226,7 +337,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel }) => {
       <div className="flex space-x-4">
         {!scanning ? (
           <Button 
-            className="bg-orange-500 hover:bg-orange-600" 
+            className={buttonClass}
             onClick={startScanner}
           >
             Iniciar cámara
