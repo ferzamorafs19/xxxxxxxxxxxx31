@@ -1037,46 +1037,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Más información para diagnóstico de conexiones
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     const url = req.url || 'unknown';
-    console.log(`Nueva conexión WebSocket desde IP: ${ip}, URL: ${url}`);
-
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    
+    console.log(`[WebSocket] Nueva conexión desde IP: ${ip}, URL: ${url}`);
+    
+    // Establecer tiempo máximo de inactividad para terminar conexiones muertas
+    // @ts-ignore - Añadimos propiedad isAlive que no existe en la definición
+    ws.isAlive = true;
+    
+    // Variables para identificar este socket después
+    let socketRole: 'CLIENT' | 'ADMIN' | 'UNKNOWN' = 'UNKNOWN';
+    let socketSessionId: string | null = null;
+    let socketUsername: string | null = null;
+    let lastPingTime: number = Date.now();
+    let pingCount: number = 0;
+    
     // Añadir ping periódico para mantener la conexión activa
     const pingInterval = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.ping();
+      // @ts-ignore - Verificamos isAlive
+      if (ws.isAlive === false) {
+        console.log(`[WebSocket] Terminando conexión inactiva: ${socketRole} - ${socketSessionId || socketUsername || 'desconocido'}`);
+        clearInterval(pingInterval);
+        return ws.terminate();
       }
-    }, 30000); // 30 segundos
+      
+      // @ts-ignore - Reseteamos isAlive y esperamos pong
+      ws.isAlive = false;
+      
+      // Enviar ping usando protocolo WebSocket nativo
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.ping();
+          pingCount++;
+          
+          // También enviar un ping como mensaje JSON (adicional al ping WebSocket nativo)
+          if (pingCount % 2 === 0) { // Cada 2 pings nativos, enviar uno como mensaje
+            ws.send(JSON.stringify({
+              type: 'PING',
+              timestamp: Date.now(),
+              serverInfo: {
+                uptime: process.uptime(),
+                pingCount
+              }
+            }));
+          }
+        } catch (e) {
+          console.error(`[WebSocket] Error enviando ping:`, e);
+        }
+      }
+    }, 15000); // Cada 15 segundos (más frecuente para mejor respuesta)
 
+    // Manejar pongs del protocolo WebSocket
+    ws.on('pong', () => {
+      // @ts-ignore - Marcamos que el socket sigue vivo
+      ws.isAlive = true;
+      lastPingTime = Date.now();
+    });
+    
     // Manejar cierre de conexión
     ws.on('close', (code, reason) => {
       clearInterval(pingInterval);
-      console.log(`Conexión WebSocket cerrada: ${code}, razón: ${reason || 'No especificada'}`);
+      
+      // @ts-ignore - Asegurar que el socket se marca como inactivo
+      ws.isAlive = false;
+      
+      // Eliminar de los mapas según su rol
+      if (socketRole === 'CLIENT' && socketSessionId) {
+        clients.delete(socketSessionId);
+        console.log(`[WebSocket] Cliente desconectado - Sesión: ${socketSessionId}`);
+      } else if (socketRole === 'ADMIN' && socketUsername) {
+        adminClients.delete(socketUsername);
+        console.log(`[WebSocket] Admin desconectado - Usuario: ${socketUsername}`);
+      }
+      
+      console.log(`[WebSocket] Conexión cerrada: Código ${code}, Razón: ${reason || 'No especificada'}`);
     });
 
     // Manejar errores de WebSocket
     ws.on('error', (error) => {
-      console.error('Error en conexión WebSocket:', error);
+      console.error('[WebSocket] Error en conexión:', error);
     });
 
-    // Manejar pings para mantener conexión activa
-    ws.on('pong', () => {
-      // Conexión sigue activa
-    });
-
-    // Handle client/admin identification
+    // Handle client/admin identification and messages
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
         
         // No loguear mensajes de PING para reducir ruido en logs
         if (data.type !== 'PING') {
-          console.log('Mensaje WebSocket recibido:', data.type);
+          console.log('[WebSocket] Mensaje recibido:', data.type);
         }
+        
+        // Actualizar siempre el estado isAlive con cada mensaje recibido
+        // @ts-ignore
+        ws.isAlive = true;
         
         // Manejar pings del cliente para mantener la conexión activa
         if (data.type === 'PING') {
+          // Registrar información de diagnóstico del cliente
+          if (data.clientInfo) {
+            // Solo logueamos la primera vez para evitar ruido
+            if (pingCount === 0) {
+              console.log(`[WebSocket] Info de cliente: URL=${data.clientInfo.url}, UA=${data.clientInfo.userAgent || 'N/A'}`);
+            }
+          }
+          
+          // Responder con un PONG
           ws.send(JSON.stringify({
             type: 'PONG',
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            serverInfo: {
+              connectionType: socketRole,
+              sessionId: socketSessionId,
+              username: socketUsername,
+              uptime: process.uptime()
+            }
           }));
           return;
         }
@@ -1099,9 +1174,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Guardar el cliente en el Map con su username como clave
             adminClients.set(userName, ws);
-            console.log(`Admin client registered: ${userName}`);
             
-            console.log(`WebSocket: Usuario ${userName} (rol: ${user.role}) autenticado, obteniendo sesiones...`);
+            // Actualizar variables de identificación para este socket
+            socketRole = 'ADMIN';
+            socketUsername = userName;
+            
+            console.log(`[WebSocket] Admin registrado: ${userName} (rol: ${user.role})`);
+            console.log(`[WebSocket] Usuario ${userName} (rol: ${user.role}) autenticado, obteniendo sesiones...`);
             
             // NUEVA IMPLEMENTACIÓN UNIFICADA PARA TODOS LOS USUARIOS
             if (false) { // Este bloque nunca se ejecuta, solo se mantiene para referencia
