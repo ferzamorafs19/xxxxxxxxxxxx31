@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Clock, AlertCircle, Calendar } from 'lucide-react';
+import { Check, X, Clock, AlertCircle, Calendar, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useQuery } from '@tanstack/react-query';
-import { getQueryFn } from '@/lib/queryClient';
+import { getQueryFn, queryClient } from '@/lib/queryClient';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 interface SubscriptionData {
   isActive: boolean;
@@ -89,13 +90,31 @@ const SubscriptionInfo: React.FC = () => {
     );
   }
   
+  // Función para refrescar manualmente la información
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/user/subscription'] });
+  };
+  
   return (
     <Card className={isExpiringSoon ? 'border-orange-300' : (data.isPaid ? 'border-green-200' : 'border-red-200')}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Estado de Suscripción</CardTitle>
-        <CardDescription>
-          {data.isPaid ? 'Suscripción activa' : 'Suscripción inactiva'}
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-base">Estado de Suscripción</CardTitle>
+            <CardDescription>
+              {data.isPaid ? 'Suscripción activa' : 'Suscripción inactiva'}
+            </CardDescription>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleRefresh}
+            className="h-8 w-8 p-0"
+            title="Actualizar información"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -132,6 +151,12 @@ const SubscriptionInfo: React.FC = () => {
           <div className={`text-sm mt-2 ${isExpiringSoon ? 'text-orange-500' : (data.isPaid ? 'text-green-600' : 'text-red-500')}`}>
             {data.message}
           </div>
+          
+          {!data.isPaid && (
+            <div className="mt-3 text-sm text-blue-500">
+              Contacta al administrador en Telegram: @BalonxSistema para renovar tu suscripción
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

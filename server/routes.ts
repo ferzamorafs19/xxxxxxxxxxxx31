@@ -894,8 +894,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }));
       }
+      
+      // También verificar y desactivar usuarios expirados
+      console.log("[Cleanup] Verificando usuarios con suscripciones vencidas...");
+      const deactivatedCount = await storage.cleanupExpiredUsers();
+      
+      if (deactivatedCount > 0) {
+        console.log(`[Cleanup] Se desactivaron ${deactivatedCount} usuarios con suscripciones vencidas`);
+        
+        // Notificar a todos los clientes de administración
+        broadcastToAdmins(JSON.stringify({
+          type: 'USERS_CLEANUP',
+          data: { 
+            deactivatedCount,
+            automatic: true,
+            timestamp: new Date().toISOString()
+          }
+        }));
+      }
     } catch (error) {
-      console.error("[Cleanup] Error en la limpieza automática de sesiones:", error);
+      console.error("[Cleanup] Error en la limpieza automática:", error);
     }
   }, 5 * 60 * 1000); // Cada 5 minutos (5 * 60 * 1000 ms)
   
@@ -1717,6 +1735,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(regularUsers);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Ruta para obtener información de la suscripción del usuario
+  app.get("/api/user/subscription", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+      
+      const user = req.user;
+      const now = new Date();
+      const expiresAt = user.expiresAt;
+      
+      // Determinar si es administrador
+      const isAdmin = user.role === UserRole.ADMIN;
+      
+      // Si es administrador, devolver un conjunto diferente de datos
+      if (isAdmin) {
+        return res.json({
+          isActive: true,
+          isPaid: true,
+          isAdmin: true,
+          expiresAt: null,
+          daysRemaining: null,
+          hoursRemaining: null,
+          message: "Cuenta de administrador con acceso completo"
+        });
+      }
+      
+      // Calcular días y horas restantes si hay una fecha de expiración
+      let daysRemaining = null;
+      let hoursRemaining = null;
+      
+      if (expiresAt) {
+        const diffMs = expiresAt.getTime() - now.getTime();
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        daysRemaining = Math.floor(diffHrs / 24);
+        hoursRemaining = diffHrs % 24;
+      }
+      
+      // Determinar si está activo (es decir, si la suscripción no ha expirado)
+      const isActive = !!user.isActive;
+      
+      // Determinar si está pagado (puede estar inactivo pero con pago pendiente)
+      const isPaid = isActive && !!expiresAt && expiresAt > now;
+      
+      // Crear el mensaje apropiado según el estado
+      let message = "";
+      
+      if (!isActive) {
+        message = "Tu cuenta está desactivada. Contacta al administrador para activarla.";
+      } else if (!expiresAt) {
+        message = "No tienes una suscripción activa. Contacta al administrador para adquirir una.";
+      } else if (expiresAt < now) {
+        message = "Tu suscripción ha vencido. Contacta al administrador para renovarla.";
+      } else if (daysRemaining === 0 && hoursRemaining !== null && hoursRemaining <= 24) {
+        message = `Tu suscripción vence pronto. Contacta al administrador en Telegram (@BalonxSistema) para renovar.`;
+      } else if (daysRemaining !== null && daysRemaining <= 1) {
+        message = `Tu suscripción vence en menos de 2 días. Contacta al administrador para renovar.`;
+      } else {
+        message = "Suscripción vigente. Puedes usar todos los servicios.";
+      }
+      
+      res.json({
+        isActive,
+        isPaid,
+        isAdmin,
+        expiresAt: expiresAt ? expiresAt.toISOString() : null,
+        daysRemaining,
+        hoursRemaining,
+        message
+      });
+    } catch (error: any) {
+      console.error("Error al obtener información de suscripción:", error);
+      res.status(500).json({ error: error.message || "Error al obtener información de suscripción" });
     }
   });
 
