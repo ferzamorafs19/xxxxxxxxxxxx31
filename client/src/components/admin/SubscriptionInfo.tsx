@@ -23,7 +23,7 @@ const SubscriptionInfo: React.FC = () => {
   // Consultar la información de suscripción
   const { data, isLoading, error } = useQuery<SubscriptionData>({
     queryKey: ['/api/user/subscription'],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     refetchInterval: 3600000, // Refrescar cada hora (3600000 ms)
   });
   

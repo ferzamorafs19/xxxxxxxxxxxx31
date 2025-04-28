@@ -10,6 +10,7 @@ import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
 import SmsManagement from '@/components/admin/SmsManagement';
+import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { Session, ScreenType } from '@shared/schema';
 import { Button } from '@/components/ui/button';
@@ -727,6 +728,11 @@ export default function AdminPanel() {
           </div>
         </div>
 
+        {/* Subscription Info Panel */}
+        <div className="mx-6 mt-6">
+          <SubscriptionInfo />
+        </div>
+        
         {/* Link Panel */}
         <div className="mx-6 mt-6 bg-[#1e1e1e] p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center space-x-2">
