@@ -143,7 +143,7 @@ export function setupAuth(app: Express) {
   // Ruta para registro de usuarios
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, role = UserRole.USER } = req.body;
+      const { username, password, role = UserRole.USER, allowedBanks = 'all' } = req.body;
       
       // Validar datos
       if (!username || !password) {
@@ -156,12 +156,21 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
       
+      // Normalizar el allowedBanks si es 'all' (sin importar mayúsculas/minúsculas)
+      const normalizedAllowedBanks = 
+        typeof allowedBanks === 'string' && allowedBanks.toLowerCase() === 'all' 
+          ? 'all' 
+          : allowedBanks;
+      
+      console.log(`[Auth] Creando usuario ${username} con bancos permitidos: ${normalizedAllowedBanks}`);
+      
       // Crear nuevo usuario con contraseña hasheada
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username,
         password: hashedPassword,
         role,
+        allowedBanks: normalizedAllowedBanks,
       });
       
       // Iniciar sesión automáticamente
