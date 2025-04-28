@@ -563,6 +563,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para crear manualmente una sesión sin creador (para pruebas)
+  app.post('/api/debug/create-session-no-creator', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      // Solo permitir a superadmin acceder a este endpoint
+      const user = req.user;
+      if (user.username !== 'balonx') {
+        return res.status(403).json({ message: "Solo superadmin puede acceder a este endpoint" });
+      }
+      
+      // Crear sesión sin campo createdBy
+      const sessionId = "99999999"; // ID fijo para pruebas
+      
+      // Crear sesión manualmente
+      const session = await storage.createSession({ 
+        sessionId, 
+        banco: "BBVA",
+        folio: sessionId,
+        pasoActual: ScreenType.FOLIO
+        // Sin incluir createdBy
+      });
+      
+      console.log(`[Debug] Creada sesión de prueba ${sessionId} sin creador`);
+      
+      // Guardar la sesión sin establecer el creador
+      await storage.saveSession(sessionId);
+      
+      // Verificar que no tiene creador
+      const sessionCreated = await storage.getSessionById(sessionId);
+      console.log(`[Debug] Verificación: Sesión ${sessionId} creador=${sessionCreated?.createdBy || 'null'}`);
+      
+      res.json({ 
+        success: true, 
+        session: sessionCreated
+      });
+    } catch (error) {
+      console.error("Error creando sesión de prueba sin creador:", error);
+      res.status(500).json({ message: "Error creando sesión de prueba" });
+    }
+  });
+  
   // Endpoint para migrar todas las sesiones sin creador (solo para superadmin)
   app.post('/api/debug/migrate-sessions-creators', async (req, res) => {
     try {
