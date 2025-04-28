@@ -11,7 +11,6 @@ import invexLogoPath from '@assets/Invex.png';
 import bancoppelLogoPath from '@assets/bancoppel.png';
 import plataCardLogoPath from '@assets/Plata_Card_Logo.png';
 import scotiaLogoPath from '@assets/Skotia.png';
-import amexLogoPath from '@assets/Amex.png';
 
 export default function BankSelectionPage() {
   const [, setLocation] = useLocation();
@@ -109,7 +108,7 @@ export default function BankSelectionPage() {
         
         <div className="bg-white rounded-lg shadow-md w-64 text-center p-5">
           <img 
-            src={amexLogoPath} 
+            src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo_%282018%29.svg" 
             alt="American Express" 
             className="h-16 object-contain mx-auto mb-3"
           />
