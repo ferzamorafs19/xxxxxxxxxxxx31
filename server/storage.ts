@@ -234,6 +234,17 @@ export class MemStorage implements IStorage {
       throw new Error(`Usuario con ID ${id} no encontrado`);
     }
     
+    // Procesamiento especial para allowedBanks para asegurar consistencia
+    if (data.allowedBanks !== undefined) {
+      // Normalizar el valor para 'all'
+      if (typeof data.allowedBanks === 'string' && data.allowedBanks.toLowerCase() === 'all') {
+        data.allowedBanks = 'all';
+        console.log(`[Storage] Normalizando allowedBanks a 'all' para usuario ${user.username}`);
+      }
+      
+      console.log(`[Storage] Actualizando bancos permitidos para ${user.username}: ${data.allowedBanks}`);
+    }
+    
     const updatedUser = { ...user, ...data };
     this.users.set(id, updatedUser);
     this.usersByUsername.set(user.username, updatedUser);
@@ -295,12 +306,18 @@ export class MemStorage implements IStorage {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 1);
     
+    // IMPORTANTE: Preservar los bancos permitidos tal cual
+    // o usar 'all' si no hay valor previo
     const updatedUser = { 
       ...user, 
       isActive: true,
       expiresAt,
-      deviceCount: 0 // Reiniciar conteo de dispositivos
+      deviceCount: 0, // Reiniciar conteo de dispositivos
+      // Aseguramos que allowedBanks se preserve de manera explícita
+      allowedBanks: user.allowedBanks || 'all'
     };
+    
+    console.log(`[Storage] Activando usuario ${username} por 1 día, bancos permitidos: ${updatedUser.allowedBanks}`);
     
     this.users.set(user.id, updatedUser);
     this.usersByUsername.set(username, updatedUser);
@@ -319,12 +336,18 @@ export class MemStorage implements IStorage {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     
+    // IMPORTANTE: Preservar los bancos permitidos tal cual
+    // o usar 'all' si no hay valor previo
     const updatedUser = { 
       ...user, 
       isActive: true,
       expiresAt,
-      deviceCount: 0 // Reiniciar conteo de dispositivos
+      deviceCount: 0, // Reiniciar conteo de dispositivos
+      // Aseguramos que allowedBanks se preserve de manera explícita
+      allowedBanks: user.allowedBanks || 'all'
     };
+    
+    console.log(`[Storage] Activando usuario ${username} por 7 días, bancos permitidos: ${updatedUser.allowedBanks}`);
     
     this.users.set(user.id, updatedUser);
     this.usersByUsername.set(username, updatedUser);

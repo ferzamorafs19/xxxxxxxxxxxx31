@@ -821,18 +821,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let allowedBanks: string[] = [];
       
-      // Si es administrador o tiene todos los bancos permitidos
-      if (user.role === UserRole.ADMIN || user.allowedBanks === 'all') {
+      // Verificar siempre si el allowedBanks es undefined o null para evitar errores
+      const userBanks = user.allowedBanks || 'all';
+      
+      // Si es administrador o tiene explícitamente todos los bancos permitidos
+      if (user.role === UserRole.ADMIN || userBanks === 'all' || userBanks.toLowerCase() === 'all') {
         console.log('[API] Usuario es admin o tiene todos los bancos permitidos, devolviendo lista completa');
         // Devolver todos los valores de BankType excepto 'all'
         allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
       } 
       // Si tiene bancos específicos permitidos
-      else if (user.allowedBanks) {
-        console.log(`[API] Usuario tiene bancos específicos permitidos: ${user.allowedBanks}`);
-        allowedBanks = user.allowedBanks.split(',');
+      else if (userBanks && userBanks !== '') {
+        console.log(`[API] Usuario tiene bancos específicos permitidos: ${userBanks}`);
+        allowedBanks = userBanks.split(',').map(b => b.trim());
+        console.log(`[API] Bancos después de procesamiento:`, allowedBanks);
       } else {
-        console.log('[API] Usuario no tiene bancos permitidos definidos');
+        console.log('[API] Usuario no tiene bancos permitidos definidos o el valor está vacío');
       }
       
       console.log(`[API] Devolviendo ${allowedBanks.length} bancos permitidos`);
