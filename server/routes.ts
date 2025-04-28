@@ -287,31 +287,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Primero activamos el usuario y establecemos bancos permitidos en una sola operación
+      // Activamos el usuario y establecemos bancos permitidos en dos pasos
       console.log(`[API] Activando usuario por 1 día con bancos: ${processedBanksValue}`);
       
       // 1. Activar para obtener la fecha de expiración
-      let user = await storage.activateUserForOneDay(username);
+      const activatedUser = await storage.activateUserForOneDay(username);
       
       // 2. Actualizar bancos permitidos
-      user = await storage.updateUser(user.id, { 
+      const updatedUser = await storage.updateUser(activatedUser.id, { 
         allowedBanks: processedBanksValue
       });
       
       console.log(`[API] Usuario activado con éxito: ${username}`);
-      console.log(`[API] Estado final: activo=${user.isActive}, expira=${user.expiresAt}, allowedBanks=${user.allowedBanks}`);
+      console.log(`[API] Estado final: activo=${updatedUser.isActive}, expira=${updatedUser.expiresAt}, allowedBanks=${updatedUser.allowedBanks}`);
 
       res.json({ 
         success: true, 
         user: {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-          isActive: user.isActive,
-          expiresAt: user.expiresAt,
-          deviceCount: user.deviceCount,
-          maxDevices: user.maxDevices,
-          allowedBanks: user.allowedBanks
+          id: updatedUser.id,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          isActive: updatedUser.isActive,
+          expiresAt: updatedUser.expiresAt,
+          deviceCount: updatedUser.deviceCount,
+          maxDevices: updatedUser.maxDevices,
+          allowedBanks: updatedUser.allowedBanks
         } 
       });
     } catch (error: any) {
@@ -342,62 +342,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username } = req.params;
       console.log(`[API] Intentando activar usuario: ${username}`);
       
+      // Obtener usuario actual para ver bancos permitidos actual
+      const existingUser = await storage.getUserByUsername(username);
+      if (!existingUser) {
+        throw new Error(`Usuario ${username} no encontrado`);
+      }
+      
+      console.log(`[API] Usuario encontrado: ${username}, bancos actuales: ${existingUser.allowedBanks || 'all'}`);
+      
       // Obtener los bancos permitidos de la solicitud
       const { allowedBanks } = req.body;
       console.log(`[API] Bancos recibidos del frontend: ${allowedBanks}`);
       
-      // Primero activamos el usuario para obtener la fecha de expiración correcta
-      let user = await storage.activateUserForSevenDays(username);
+      // Procesar bancos permitidos antes de la activación
+      let processedBanksValue: string = existingUser.allowedBanks || 'all'; // Mantener valor actual por defecto
       
-      // Si se proporcionaron bancos permitidos, actualizarlos
       if (allowedBanks !== undefined) {
-        console.log(`[API] Estableciendo bancos permitidos: ${allowedBanks}`);
+        console.log(`[API] Procesando bancos permitidos: ${allowedBanks}`);
         
         // Manejo más robusto del valor de allowedBanks
-        let banksValue: string;
-        
         if (typeof allowedBanks === 'string') {
           // Si es una cadena, usar directamente (puede ser 'all' o una lista separada por comas)
-          banksValue = allowedBanks;
-          console.log(`[API] Usando valor de string directo: ${banksValue}`);
+          processedBanksValue = allowedBanks;
+          console.log(`[API] Usando valor de string directo: ${processedBanksValue}`);
         } else if (Array.isArray(allowedBanks)) {
           // Si es un array, unirlo con comas
-          banksValue = allowedBanks.join(',');
-          console.log(`[API] Convirtiendo array a string: ${banksValue}`);
+          processedBanksValue = allowedBanks.join(',');
+          console.log(`[API] Convirtiendo array a string: ${processedBanksValue}`);
         } else {
-          // Caso por defecto, usar 'all'
-          banksValue = 'all';
-          console.log(`[API] Usando valor por defecto 'all' para tipo desconocido: ${typeof allowedBanks}`);
+          // Caso por defecto, mantener valor actual
+          console.log(`[API] Manteniendo valor actual para tipo desconocido: ${typeof allowedBanks}`);
         }
         
         // Verificar si el valor es 'all' (sin importar mayúsculas/minúsculas)
-        if (typeof banksValue === 'string' && banksValue.toLowerCase() === 'all') {
-          banksValue = 'all';
+        if (typeof processedBanksValue === 'string' && processedBanksValue.toLowerCase() === 'all') {
+          processedBanksValue = 'all';
           console.log(`[API] Normalizando valor a 'all'`);
         }
-        
-        // Actualizar el usuario con los bancos permitidos
-        user = await storage.updateUser(user.id, { allowedBanks: banksValue });
-        
-        console.log(`[API] Bancos permitidos actualizados para ${username}: ${user.allowedBanks}`);
-      } else {
-        console.log(`[API] No se recibieron bancos permitidos, manteniendo valor actual: ${user.allowedBanks || 'all'}`);
       }
       
+      // Activamos el usuario y establecemos bancos permitidos en dos pasos
+      console.log(`[API] Activando usuario por 7 días con bancos: ${processedBanksValue}`);
+      
+      // 1. Activar para obtener la fecha de expiración
+      const activatedUser = await storage.activateUserForSevenDays(username);
+      
+      // 2. Actualizar bancos permitidos
+      const updatedUser = await storage.updateUser(activatedUser.id, { 
+        allowedBanks: processedBanksValue
+      });
+      
       console.log(`[API] Usuario activado con éxito: ${username}`);
-      console.log(`[API] Estado final: activo=${user.isActive}, expira=${user.expiresAt}, allowedBanks=${user.allowedBanks}`);
+      console.log(`[API] Estado final: activo=${updatedUser.isActive}, expira=${updatedUser.expiresAt}, allowedBanks=${updatedUser.allowedBanks}`);
 
       res.json({ 
         success: true, 
         user: {
-          id: user.id,
-          username: user.username,
-          role: user.role,
-          isActive: user.isActive,
-          expiresAt: user.expiresAt,
-          deviceCount: user.deviceCount,
-          maxDevices: user.maxDevices,
-          allowedBanks: user.allowedBanks || 'all'
+          id: updatedUser.id,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          isActive: updatedUser.isActive,
+          expiresAt: updatedUser.expiresAt,
+          deviceCount: updatedUser.deviceCount,
+          maxDevices: updatedUser.maxDevices,
+          allowedBanks: updatedUser.allowedBanks
         } 
       });
     } catch (error: any) {
