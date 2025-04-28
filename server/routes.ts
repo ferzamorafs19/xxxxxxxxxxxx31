@@ -1026,7 +1026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usamos el formato numérico directamente (sin "client/") en la URL
       const clientLink = isReplit 
         ? `${protocol}://${baseUrl}/${sessionId}` 
-        : `https://${clientDomain}/${sessionId}`;
+        : `https://aclaracion.info/${sessionId}`;
       const adminLink = isReplit 
         ? `${protocol}://${baseUrl}` 
         : `https://${adminDomain}`;
