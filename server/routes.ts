@@ -917,12 +917,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
       
       // Armamos los enlaces para ambos dominios
-      // En Replit, usamos la ruta /client/CODIGO para que sea compatible con el enrutamiento existente
+      // En Replit, usamos la URL actual de la solicitud para construir los enlaces
+      // Esto asegura que funcione en cualquier entorno de Replit, incluso si cambia el dominio
+      const hostWithProtocol = req.headers.host 
+        ? `${req.protocol}://${req.headers.host}` 
+        : isReplit 
+          ? `https://${process.env.REPL_SLUG}.replit.dev`
+          : `https://${clientDomain}`;
+      
+      // Construimos los enlaces usando la URL base detectada
+      // Para simplificar, usamos directamente el código numérico como ruta en el entorno de Replit
       const clientLink = isReplit 
-        ? `https://${process.env.REPL_SLUG}.replit.dev/client/${sessionId}` 
+        ? `${hostWithProtocol}/${sessionId}` 
         : `https://${clientDomain}/${sessionId}`;
       const adminLink = isReplit 
-        ? `https://${process.env.REPL_SLUG}.replit.dev` 
+        ? hostWithProtocol
         : `https://${adminDomain}`;
 
       console.log(`Nuevo enlace generado - Código: ${linkCode}, Banco: ${banco}`);

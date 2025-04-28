@@ -17,7 +17,10 @@ function Router() {
       <Route path="/Balonx" component={AuthPage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
+      {/* Ruta principal para la pantalla del cliente usando el sessionId */}
       <Route path="/client/:sessionId" component={ClientScreen} />
+      {/* Ruta adicional para permitir acceso directo a través del código en la URL principal */}
+      <Route path="/:sessionId(\d{8})" component={ClientScreen} />
       <Route component={NotFound} />
     </Switch>
   );
