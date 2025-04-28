@@ -169,7 +169,8 @@ export class MemStorage implements IStorage {
       expiresAt: null,
       deviceCount: 0,
       maxDevices: 3,
-      allowedBanks: 'all', // Por defecto, todos los bancos están permitidos
+      // Usar el valor proporcionado o 'all' por defecto
+      allowedBanks: data.allowedBanks || 'all',
       createdAt: new Date(),
       lastLogin: null
     };

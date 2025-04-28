@@ -924,27 +924,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user;
       
       // Validar que el banco solicitado esté permitido para el usuario
-      if (user.role !== 'admin') {
-        // Si el usuario no es administrador, verificamos sus permisos de banco
-        const userBanks = user.allowedBanks || 'all';
+      const userBanks = user.allowedBanks || 'all';
+      let hasBankAccess = false;
+      
+      // Si es superadmin (balonx), tiene acceso a todos los bancos
+      if (user.username === "balonx") {
+        hasBankAccess = true;
+        console.log(`Superadmin ${user.username} tiene acceso a todos los bancos`);
+      }
+      // Si tiene valor "all", tiene acceso a todos los bancos
+      else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+        hasBankAccess = true;
+        console.log(`Usuario ${user.username} tiene acceso a todos los bancos (all)`);
+      }
+      // Si tiene bancos específicos, debe estar en la lista
+      else if (userBanks && userBanks !== '') {
+        const allowedBanksList = userBanks.split(',').map(b => b.trim());
+        console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanksList.join(', ')}`);
         
-        // Si no tiene "all", verificamos que el banco solicitado esté en la lista
-        if (userBanks !== 'all' && userBanks.toLowerCase() !== 'all') {
-          const allowedBanks = userBanks.split(',').map(b => b.trim());
-          console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanks.join(', ')}`);
-          
-          if (!allowedBanks.includes(banco as string)) {
-            // Si el banco solicitado no está en la lista, devolvemos un error claro
-            console.log(`Banco ${banco} no permitido para ${user.username}. Bancos permitidos: ${allowedBanks.join(', ')}`);
-            return res.status(403).json({ 
-              error: `Banco ${banco} no permitido. Solo puedes usar: ${allowedBanks.join(', ')}` 
-            });
-          }
+        if (allowedBanksList.includes(banco as string)) {
+          hasBankAccess = true;
+          console.log(`Banco ${banco} permitido para ${user.username}`);
         } else {
-          console.log(`Usuario ${user.username} tiene acceso a todos los bancos (all)`);
+          console.log(`Banco ${banco} NO permitido para ${user.username}. Bancos permitidos: ${allowedBanksList.join(', ')}`);
         }
-      } else {
-        console.log(`Usuario administrador ${user.username} tiene acceso a todos los bancos`);
+      }
+      
+      // Si no tiene acceso, devolver error claro
+      if (!hasBankAccess) {
+        const bancos = userBanks === 'all' ? 'todos los bancos' : userBanks.split(',').map(b => b.trim()).join(', ');
+        return res.status(403).json({ 
+          error: `Banco ${banco} no permitido. Solo puedes usar: ${bancos}` 
+        });
       }
 
       // Generamos un código de 8 dígitos numéricos que usaremos tanto para el ID como para el folio
