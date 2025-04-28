@@ -323,17 +323,31 @@ const RegisteredUsersManagement: React.FC = () => {
   
   const handleActivateOneDay = (username: string) => {
     // Actualizar correctamente los bancos permitidos en la mutación
+    console.log(`[RegisteredUsers] Activando por 1 día: ${username}, bancos:`, bankOptions);
+    
+    // Si hemos seleccionado "todos los bancos", usamos "all" como valor
+    const allowedBanksValue = bankOptions.includes('all') ? 'all' : bankOptions.join(',');
+    
+    console.log(`[RegisteredUsers] Valor final de allowedBanks: ${allowedBanksValue}`);
+    
     activateOneDayMutation.mutate({
       username, 
-      allowedBanks: bankOptions.join(',')
+      allowedBanks: allowedBanksValue
     });
   };
 
   const handleActivateSevenDays = (username: string) => {
     // Actualizar correctamente los bancos permitidos en la mutación
+    console.log(`[RegisteredUsers] Activando por 7 días: ${username}, bancos:`, bankOptions);
+    
+    // Si hemos seleccionado "todos los bancos", usamos "all" como valor
+    const allowedBanksValue = bankOptions.includes('all') ? 'all' : bankOptions.join(',');
+    
+    console.log(`[RegisteredUsers] Valor final de allowedBanks: ${allowedBanksValue}`);
+    
     activateSevenDaysMutation.mutate({
       username,
-      allowedBanks: bankOptions.join(',')
+      allowedBanks: allowedBanksValue
     });
   };
 

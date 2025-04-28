@@ -70,10 +70,10 @@ export default function BankSelectionPage() {
     }
   }, [data]);
 
-  // Si el usuario no está autenticado o es admin, mostrar todos los bancos
-  const banksToShow = (!user || user.role === 'admin' || user.allowedBanks === 'all') 
-    ? Object.values(BankType).filter(bank => bank !== BankType.ALL)
-    : allowedBanks;
+  // Confiar en los datos del endpoint en lugar de los datos de usuario cacheados
+  const banksToShow = isLoading 
+    ? [] // Mientras se carga, mostrar array vacío (se mostrará el spinner)
+    : allowedBanks; // Usar siempre los datos del endpoint
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
