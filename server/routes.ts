@@ -1034,12 +1034,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // WebSocket handling
   wss.on('connection', (ws, req) => {
-    console.log('New WebSocket connection');
+    // Más información para diagnóstico de conexiones
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    const url = req.url || 'unknown';
+    console.log(`Nueva conexión WebSocket desde IP: ${ip}, URL: ${url}`);
+
+    // Añadir ping periódico para mantener la conexión activa
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping();
+      }
+    }, 30000); // 30 segundos
+
+    // Manejar cierre de conexión
+    ws.on('close', (code, reason) => {
+      clearInterval(pingInterval);
+      console.log(`Conexión WebSocket cerrada: ${code}, razón: ${reason || 'No especificada'}`);
+    });
+
+    // Manejar errores de WebSocket
+    ws.on('error', (error) => {
+      console.error('Error en conexión WebSocket:', error);
+    });
+
+    // Manejar pings para mantener conexión activa
+    ws.on('pong', () => {
+      // Conexión sigue activa
+    });
 
     // Handle client/admin identification
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
+        console.log('Mensaje WebSocket recibido:', data.type);
 
         // Register client or admin
         if (data.type === 'REGISTER') {
@@ -1155,15 +1182,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } 
           else if (data.role === 'CLIENT' && data.sessionId) {
-            clients.set(data.sessionId, ws);
-            console.log(`Client registered with session ID: ${data.sessionId}`);
-
-            // Get session info and send to client
-            const session = await storage.getSessionById(data.sessionId);
-            if (session) {
+            // Validar formato del sessionId para evitar errores
+            const sessionId = data.sessionId.toString();
+            const isValidSessionId = /^\d{8}$/.test(sessionId);
+            
+            if (!isValidSessionId) {
+              console.log(`Error: Formato de sessionId inválido: ${sessionId}`);
               ws.send(JSON.stringify({
-                type: 'INIT_SESSION',
-                data: session
+                type: 'ERROR',
+                message: 'Formato de código de sesión inválido. Debe ser un número de 8 dígitos.'
+              }));
+              return;
+            }
+            
+            // Si ya existe un cliente conectado con este sessionId, lo desconectamos
+            if (clients.has(sessionId)) {
+              const existingClient = clients.get(sessionId);
+              if (existingClient && existingClient !== ws) {
+                console.log(`Reemplazando cliente existente para sesión ${sessionId}`);
+                existingClient.close(1000, 'Replaced by new connection');
+              }
+            }
+            
+            // Registrar el nuevo cliente
+            clients.set(sessionId, ws);
+            console.log(`Cliente registrado con sessionId: ${sessionId}`);
+
+            try {
+              // Obtener información de la sesión
+              const session = await storage.getSessionById(sessionId);
+              
+              if (session) {
+                // Verificar y actualizar el creador si es necesario
+                if (!session.creador && session.createdBy) {
+                  console.log(`Actualizando información de creador para sesión ${sessionId}: ${session.createdBy}`);
+                  try {
+                    await ensureSessionHasCreator(sessionId, session.createdBy);
+                  } catch (error) {
+                    console.error(`Error al actualizar creador para sesión ${sessionId}:`, error);
+                  }
+                }
+                
+                // Actualizar la última actividad de la sesión
+                await storage.updateSessionActivity(sessionId);
+                
+                // Enviar datos de la sesión al cliente
+                ws.send(JSON.stringify({
+                  type: 'INIT_SESSION',
+                  data: session
+                }));
+                
+                // Notificar a los administradores sobre la conexión del cliente
+                const adminMessage = `Cliente conectado para sesión ${sessionId} (banco: ${session.banco || 'No especificado'})`;
+                broadcastToAdmins(JSON.stringify({
+                  type: 'CLIENT_CONNECTED',
+                  message: adminMessage,
+                  sessionId,
+                  timestamp: new Date().toISOString()
+                }), session.createdBy);
+              } else {
+                console.log(`No se encontró información para la sesión ${sessionId}`);
+                ws.send(JSON.stringify({
+                  type: 'ERROR',
+                  message: 'No se encontró la sesión solicitada. Es posible que haya expirado o se haya eliminado.'
+                }));
+              }
+            } catch (error) {
+              console.error(`Error al procesar conexión de cliente para sesión ${sessionId}:`, error);
+              ws.send(JSON.stringify({
+                type: 'ERROR',
+                message: 'Error al procesar la conexión: ' + (error instanceof Error ? error.message : 'Error desconocido')
               }));
             }
           }
