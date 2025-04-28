@@ -368,19 +368,7 @@ const RegisteredUsersManagement: React.FC = () => {
   
   // Manejador para generar un nuevo enlace
   const handleGenerateLink = (user: User) => {
-    // Determinar qué banco usar
-    let bancoSeleccionado = selectedBank;
-    
-    // Si el usuario tiene bancos específicos, usar el primero
-    if (user.allowedBanks && user.allowedBanks !== 'all') {
-      const bancos = user.allowedBanks.split(',');
-      if (bancos.length > 0) {
-        bancoSeleccionado = bancos[0].toUpperCase();
-      }
-    }
-    
-    // Generar el enlace directamente (alternativa para cuando hay problemas de autenticación)
-    // Primero asegurarnos de que el usuario esté activo
+    // Verificar si el usuario está activo
     if (!user.isActive) {
       toast({
         title: "Usuario inactivo",
@@ -390,30 +378,39 @@ const RegisteredUsersManagement: React.FC = () => {
       return;
     }
     
-    if (user.username === "balonx") {
-      // Para el administrador, usamos la API normal
-      generateLinkMutation.mutate(bancoSeleccionado);
-    } else {
-      // Crear la URL para copiarla al portapapeles - usar la URL actual
-      const linkUrl = `${window.location.protocol}//${window.location.host}/admin?generateLink=true&banco=${bancoSeleccionado}`;
+    // Determinar qué banco usar
+    let bancoSeleccionado = selectedBank;
+    
+    // Verificar las restricciones de bancos del usuario
+    if (user.allowedBanks && user.allowedBanks !== 'all') {
+      const bancosPermitidos = user.allowedBanks.split(',').map(b => b.trim());
+      console.log(`[RegisteredUsers] Bancos permitidos para ${user.username}:`, bancosPermitidos);
       
-      // Copiar al portapapeles en lugar de abrir
-      navigator.clipboard.writeText(linkUrl)
-        .then(() => {
+      // Verificar si el banco seleccionado está permitido para el usuario
+      if (!bancosPermitidos.includes(bancoSeleccionado)) {
+        // Si el banco seleccionado no está permitido, usar el primero disponible
+        if (bancosPermitidos.length > 0) {
+          bancoSeleccionado = bancosPermitidos[0].toUpperCase();
           toast({
-            title: "URL copiada",
-            description: `URL para ${bancoSeleccionado} copiada al portapapeles`,
+            title: "Banco cambiado",
+            description: `Banco seleccionado no disponible para este usuario. Usando ${bancoSeleccionado} en su lugar.`,
           });
-        })
-        .catch(err => {
-          console.error('Error al copiar URL:', err);
+        } else {
           toast({
-            title: "Error al copiar",
-            description: "No se pudo copiar la URL al portapapeles",
+            title: "Error",
+            description: "Este usuario no tiene bancos permitidos configurados.",
             variant: "destructive"
           });
-        });
+          return;
+        }
+      }
     }
+    
+    console.log(`[RegisteredUsers] Generando enlace para ${user.username} con banco ${bancoSeleccionado}`);
+    
+    // Para cualquier usuario (incluido el superadmin), usamos la API normal
+    // que ya tiene la lógica para verificar restricciones de bancos
+    generateLinkMutation.mutate(bancoSeleccionado);
   };
   
   // Función para copiar el enlace al portapapeles
