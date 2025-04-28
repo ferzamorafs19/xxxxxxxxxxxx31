@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
 
@@ -758,17 +758,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = req.user;
-      let allowedBanks = [];
+      console.log(`[API] Solicitud de bancos permitidos para usuario ${user.username}`);
+      console.log(`[API] Role: ${user.role}, allowedBanks: ${user.allowedBanks || 'no definido'}`);
+      
+      let allowedBanks: string[] = [];
       
       // Si es administrador o tiene todos los bancos permitidos
       if (user.role === UserRole.ADMIN || user.allowedBanks === 'all') {
+        console.log('[API] Usuario es admin o tiene todos los bancos permitidos, devolviendo lista completa');
         // Devolver todos los valores de BankType excepto 'all'
-        allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL);
+        allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
       } 
       // Si tiene bancos específicos permitidos
       else if (user.allowedBanks) {
+        console.log(`[API] Usuario tiene bancos específicos permitidos: ${user.allowedBanks}`);
         allowedBanks = user.allowedBanks.split(',');
+      } else {
+        console.log('[API] Usuario no tiene bancos permitidos definidos');
       }
+      
+      console.log(`[API] Devolviendo ${allowedBanks.length} bancos permitidos`);
+      allowedBanks.forEach(bank => console.log(`[API] - Banco: ${bank}`));
       
       res.json({
         success: true,

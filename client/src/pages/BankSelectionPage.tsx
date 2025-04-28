@@ -66,7 +66,9 @@ export default function BankSelectionPage() {
   
   useEffect(() => {
     if (data && data.success) {
+      console.log('[BankSelection] Datos de bancos permitidos recibidos:', data);
       setAllowedBanks(data.allowedBanks || []);
+      console.log('[BankSelection] Bancos permitidos actualizados:', data.allowedBanks || []);
     }
   }, [data]);
 
@@ -74,6 +76,15 @@ export default function BankSelectionPage() {
   const banksToShow = isLoading 
     ? [] // Mientras se carga, mostrar array vacío (se mostrará el spinner)
     : allowedBanks; // Usar siempre los datos del endpoint
+    
+  // Mostrar información de depuración
+  useEffect(() => {
+    console.log('[BankSelection] Bancos a mostrar:', banksToShow);
+    console.log('[BankSelection] Usuario actual:', user);
+    if (user) {
+      console.log('[BankSelection] Bancos permitidos en usuario:', user.allowedBanks || 'no disponible');
+    }
+  }, [banksToShow, user]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
