@@ -1396,6 +1396,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Endpoint de diagnóstico para problemas de conexión
+  app.get('/api/healthcheck', (req, res) => {
+    const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
+    
+    // Información básica del servidor para diagnóstico
+    const serverInfo = {
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development',
+      isReplit: !!isReplit,
+      replSlug: process.env.REPL_SLUG,
+      host: req.headers.host,
+      protocol: req.protocol,
+      wsConnections: {
+        activeClients: clients.size,
+        activeAdminClients: adminClients.size
+      }
+    };
+    
+    res.json(serverInfo);
+  });
+  
   // === API de SMS ===
 
   // Obtener la configuración actual de la API de SMS

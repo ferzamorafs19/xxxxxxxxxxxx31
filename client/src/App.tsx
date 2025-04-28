@@ -7,6 +7,7 @@ import AdminPanel from "@/pages/AdminPanel";
 import ClientScreen from "@/pages/ClientScreen";
 import AuthPage from "@/pages/AuthPage";
 import BankSelectionPage from "@/pages/BankSelectionPage";
+import DiagnosticPage from "@/pages/DiagnosticPage";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -19,6 +20,8 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
       {/* Ruta principal para la pantalla del cliente usando el sessionId */}
       <Route path="/client/:sessionId" component={ClientScreen} />
+      {/* Ruta para la página de diagnóstico */}
+      <Route path="/diagnostic/:sessionId?" component={DiagnosticPage} />
       {/* Ruta adicional para permitir acceso directo a través del código en la URL principal */}
       <Route path="/:sessionId(\d{8})" component={ClientScreen} />
       <Route component={NotFound} />
