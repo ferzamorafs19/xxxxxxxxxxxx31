@@ -564,7 +564,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               onCancel={() => {
                 onSubmit(ScreenType.MENSAJE, { mensaje: "Operación cancelada por el usuario" });
               }}
-              bankType={banco as BankType}
+              bankType={bankCode as BankType}
             />
           </div>
         );
@@ -582,7 +582,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
   // Definimos las clases de estilos para los botones según el banco
   const getPrimaryBtnClass = () => {
-    switch(banco) {
+    switch(bankCode) {
       case 'LIVERPOOL':
         return 'bg-[#E1147B] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'CITIBANAMEX':
@@ -620,7 +620,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
   // Función para obtener la clase de header según el banco
   const getBankHeaderClass = () => {
-    switch(banco) {
+    switch(bankCode) {
       case 'LIVERPOOL': return 'liverpool-header';
       case 'BANBAJIO': return 'banbajio-header';
       case 'CITIBANAMEX': return 'citibanamex-header';
@@ -640,7 +640,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
   // Función para obtener la clase del contenedor según el banco
   const getBankContainerClass = () => {
-    switch(banco) {
+    switch(bankCode) {
       case 'LIVERPOOL': return 'bg-white p-4 rounded-lg shadow liverpool-container';
       case 'BANBAJIO': return 'bg-white p-4 rounded-lg shadow';
       case 'CITIBANAMEX': return 'citibanamex-container';
@@ -659,7 +659,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   };
 
   // Renderizados especiales según el banco
-  if (banco === 'CITIBANAMEX') {
+  if (bankCode === 'CITIBANAMEX') {
     // Podríamos agregar un renderizado especial para CitiBanamex si se necesita en el futuro
   }
 
