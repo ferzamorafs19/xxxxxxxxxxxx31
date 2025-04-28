@@ -1066,7 +1066,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
-        console.log('Mensaje WebSocket recibido:', data.type);
+        
+        // No loguear mensajes de PING para reducir ruido en logs
+        if (data.type !== 'PING') {
+          console.log('Mensaje WebSocket recibido:', data.type);
+        }
+        
+        // Manejar pings del cliente para mantener la conexión activa
+        if (data.type === 'PING') {
+          ws.send(JSON.stringify({
+            type: 'PONG',
+            timestamp: Date.now()
+          }));
+          return;
+        }
 
         // Register client or admin
         if (data.type === 'REGISTER') {
@@ -2047,10 +2060,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Función para asegurar que una sesión tenga un creador asignado
 async function ensureSessionHasCreator(sessionId: string, creatorUsername: string): Promise<void> {
   try {
+    if (!creatorUsername || typeof creatorUsername !== 'string' || creatorUsername.trim() === '') {
+      console.error(`[EnsureCreator] Nombre de usuario inválido para asignar como creador: "${creatorUsername}"`);
+      return;
+    }
+    
     const session = await storage.getSessionById(sessionId);
-    if (session && !session.createdBy) {
-      console.log(`[EnsureCreator] Asignando creador "${creatorUsername}" a la sesión ${sessionId}`);
+    
+    if (!session) {
+      console.error(`[EnsureCreator] No se encontró la sesión ${sessionId}`);
+      return;
+    }
+    
+    // Verificar si no tiene creador o si el creador es vacío/inválido
+    if (!session.createdBy || typeof session.createdBy !== 'string' || session.createdBy.trim() === '') {
+      console.log(`[EnsureCreator] Asignando creador "${creatorUsername}" a la sesión ${sessionId} (previo: ${session.createdBy || 'ninguno'})`);
       await storage.updateSession(sessionId, { createdBy: creatorUsername });
+    } else {
+      console.log(`[EnsureCreator] Sesión ${sessionId} ya tiene creador: ${session.createdBy}`);
     }
   } catch (error) {
     console.error(`[EnsureCreator] Error al asignar creador a la sesión ${sessionId}:`, error);

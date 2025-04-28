@@ -98,13 +98,36 @@ export default function ClientScreen() {
   // Register with the server when connection is established
   useEffect(() => {
     if (connected && sessionId) {
-      sendMessage({
+      console.log(`Registrando cliente con sessionId: ${sessionId}`);
+      
+      // Intentar registrarse múltiples veces para garantizar éxito
+      const registerMessage = {
         type: 'REGISTER',
         role: 'CLIENT',
         sessionId
-      });
+      };
+      
+      // Enviar mensaje de registro inicial
+      sendMessage(registerMessage);
+      
+      // Configurar reintentos para asegurar el registro
+      const retryRegistration = setInterval(() => {
+        if (socket?.readyState === WebSocket.OPEN) {
+          console.log(`Reintentando registro de cliente: ${sessionId}`);
+          sendMessage(registerMessage);
+        }
+      }, 2000);
+      
+      // Limpiar el intervalo después de algunos intentos
+      setTimeout(() => {
+        clearInterval(retryRegistration);
+      }, 10000);
+      
+      return () => {
+        clearInterval(retryRegistration);
+      };
     }
-  }, [connected, sessionId, sendMessage]);
+  }, [connected, sessionId, sendMessage, socket]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -112,16 +135,48 @@ export default function ClientScreen() {
 
     const handleMessage = (event: MessageEvent) => {
       try {
+        console.log("WebSocket mensaje recibido (raw):", event.data);
         const message = JSON.parse(event.data);
+        console.log("WebSocket mensaje procesado:", message);
         
-        // Handle different message types
+        // Handle PONG from server (response to our PING)
+        if (message.type === 'PONG') {
+          console.log("PONG recibido del servidor:", message);
+          return;
+        }
+        
+        // Handle session init from server
         if (message.type === 'INIT_SESSION') {
+          console.log("INIT_SESSION recibido, datos:", message.data);
+          
+          if (!message.data) {
+            console.error("INIT_SESSION sin datos, solicitando nuevamente...");
+            // Intentar registrarse de nuevo si no hay datos
+            if (sessionId) {
+              sendMessage({
+                type: 'REGISTER',
+                role: 'CLIENT',
+                sessionId
+              });
+            }
+            return;
+          }
+          
+          // Guardar datos de sesión
           setSessionData(message.data);
           setBankLoaded(true);
+          
           // Set initial screen based on session data
           if (message.data.pasoActual) {
+            console.log(`Estableciendo pantalla inicial a: ${message.data.pasoActual}`);
             setCurrentScreen(message.data.pasoActual as ScreenType);
+          } else {
+            console.log("No hay pasoActual en datos de sesión, usando FOLIO por defecto");
+            setCurrentScreen(ScreenType.FOLIO);
           }
+          
+          // Detener la animación de carga después de recibir datos
+          setShowInitialMessage(false);
         }
         else if (message.type === 'SCREEN_CHANGE') {
           const { tipo, ...data } = message.data;
@@ -161,6 +216,11 @@ export default function ClientScreen() {
           
           // Update screen-specific data
           setScreenData(data);
+          
+          // Asegurarse de que no estemos en modo de mensaje inicial
+          setShowInitialMessage(false);
+        } else {
+          console.log(`Mensaje tipo desconocido: ${message.type}`, message);
         }
       } catch (error) {
         console.error("Error processing WebSocket message:", error);
@@ -168,8 +228,19 @@ export default function ClientScreen() {
     };
 
     socket.addEventListener('message', handleMessage);
+    
+    // Solicitar datos de sesión inmediatamente si tenemos sessionId
+    if (socket.readyState === WebSocket.OPEN && sessionId) {
+      console.log("Solicitando datos de sesión al conectar WebSocket");
+      sendMessage({
+        type: 'REGISTER',
+        role: 'CLIENT',
+        sessionId
+      });
+    }
+    
     return () => socket.removeEventListener('message', handleMessage);
-  }, [socket]);
+  }, [socket, sessionId, sendMessage]);
 
   // Handle form submissions
   const handleSubmit = (screen: ScreenType, formData: Record<string, any>) => {
