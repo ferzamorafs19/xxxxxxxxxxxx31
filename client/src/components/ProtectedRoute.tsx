@@ -32,7 +32,7 @@ export function ProtectedRoute({
         }
 
         if (!user) {
-          return <Redirect to="/auth" />;
+          return <Redirect to="/Balonx" />;
         }
 
         // Verificar permisos de administrador general

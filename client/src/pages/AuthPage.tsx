@@ -28,8 +28,8 @@ export default function AuthPage() {
   // Usar useEffect para el redireccionamiento cuando el usuario ya está autenticado
   useEffect(() => {
     if (user) {
-      console.log('Usuario ya autenticado, redirigiendo a la página principal');
-      setLocation('/');
+      console.log('Usuario ya autenticado, redirigiendo al panel de administración');
+      setLocation('/admin');
     }
   }, [user, setLocation]);
 

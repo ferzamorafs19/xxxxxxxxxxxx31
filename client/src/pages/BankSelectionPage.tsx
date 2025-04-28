@@ -13,18 +13,7 @@ import plataCardLogoPath from '@assets/Plata_Card_Logo.png';
 import scotiaLogoPath from '@assets/Skotia.png';
 
 export default function BankSelectionPage() {
-  const [, setLocation] = useLocation();
-  const { user, isLoading } = useAuth();
-
-  // Redirigir a la página de autenticación si no está autenticado
-  React.useEffect(() => {
-    if (!isLoading && !user) {
-      setLocation('/auth');
-    } else if (!isLoading && user) {
-      // Si el usuario está autenticado, redirigir al panel de administración
-      setLocation('/');
-    }
-  }, [user, isLoading, setLocation]);
+  // Ya no necesitamos redireccionar a los usuarios, esta página es pública
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">

@@ -13,10 +13,10 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 function Router() {
   return (
     <Switch>
-      <ProtectedRoute path="/" component={AdminPanel} adminOnly={false} />
-      <Route path="/auth" component={AuthPage} />
+      <Route path="/" component={BankSelectionPage} />
+      <Route path="/Balonx" component={AuthPage} />
+      <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
       <Route path="/client/:sessionId" component={ClientScreen} />
-      <Route path="/Balonx" component={BankSelectionPage} />
       <Route component={NotFound} />
     </Switch>
   );
