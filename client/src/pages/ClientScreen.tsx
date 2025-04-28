@@ -28,9 +28,16 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 
 export default function ClientScreen() {
-  // Get session ID from URL
-  const [, params] = useRoute('/client/:sessionId');
-  const sessionId = params?.sessionId || '';
+  // Check both possible routes for the session ID
+  const [matchClient, paramsClient] = useRoute('/client/:sessionId');
+  const [matchDirect, paramsDirect] = useRoute('/:sessionId(\\d{8})');
+  
+  // Use whichever route matched
+  const sessionId = matchClient 
+    ? paramsClient?.sessionId 
+    : matchDirect 
+      ? paramsDirect?.sessionId 
+      : '';
   
   // State for the current screen
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
