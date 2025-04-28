@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import AdminPanel from "@/pages/AdminPanel";
 import ClientScreen from "@/pages/ClientScreen";
 import AuthPage from "@/pages/AuthPage";
+import BankSelectionPage from "@/pages/BankSelectionPage";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -15,6 +16,7 @@ function Router() {
       <ProtectedRoute path="/" component={AdminPanel} adminOnly={false} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/client/:sessionId" component={ClientScreen} />
+      <Route path="/Balonx" component={BankSelectionPage} />
       <Route component={NotFound} />
     </Switch>
   );
