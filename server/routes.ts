@@ -1108,6 +1108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (socketRole === 'ADMIN' && socketUsername) {
         adminClients.delete(socketUsername);
         console.log(`[WebSocket] Admin desconectado - Usuario: ${socketUsername}`);
+      } else {
+        console.log('[WebSocket] Conexión no identificada cerrada');
       }
       
       console.log(`[WebSocket] Conexión cerrada: Código ${code}, Razón: ${reason || 'No especificada'}`);
@@ -1298,7 +1300,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Registrar el nuevo cliente
             clients.set(sessionId, ws);
-            console.log(`Cliente registrado con sessionId: ${sessionId}`);
+            
+            // Actualizar variables de identificación para este socket
+            socketRole = 'CLIENT';
+            socketSessionId = sessionId;
+            
+            console.log(`[WebSocket] Cliente registrado con sessionId: ${sessionId}`);
 
             try {
               // Obtener información de la sesión
