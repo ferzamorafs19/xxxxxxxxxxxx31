@@ -750,6 +750,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para obtener los bancos permitidos del usuario actual
+  app.get('/api/user/allowed-banks', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+      
+      const user = req.user;
+      let allowedBanks = [];
+      
+      // Si es administrador o tiene todos los bancos permitidos
+      if (user.role === UserRole.ADMIN || user.allowedBanks === 'all') {
+        // Devolver todos los valores de BankType excepto 'all'
+        allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL);
+      } 
+      // Si tiene bancos específicos permitidos
+      else if (user.allowedBanks) {
+        allowedBanks = user.allowedBanks.split(',');
+      }
+      
+      res.json({
+        success: true,
+        allowedBanks
+      });
+    } catch (error: any) {
+      console.log(`[API] Error obteniendo bancos permitidos: ${error.message}`);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
   app.get('/api/generate-link', async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
@@ -767,9 +797,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanks}`);
         
         if (!allowedBanks.includes(banco as string)) {
-          // Si el banco solicitado no está en la lista, usamos el primer banco permitido
-          const bancoPermitido = allowedBanks[0] || "LIVERPOOL";
-          console.log(`Banco ${banco} no permitido para ${user.username}. Usando ${bancoPermitido}`);
+          // Si el banco solicitado no está en la lista, devolvemos un error claro
+          console.log(`Banco ${banco} no permitido para ${user.username}. Bancos permitidos: ${allowedBanks.join(', ')}`);
           return res.status(403).json({ 
             error: `Banco ${banco} no permitido. Solo puedes usar: ${allowedBanks.join(', ')}` 
           });
