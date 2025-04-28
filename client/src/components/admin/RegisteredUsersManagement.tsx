@@ -514,10 +514,39 @@ const RegisteredUsersManagement: React.FC = () => {
                               </TableCell>
                               <TableCell>
                                 {user.expiresAt ? (
-                                  <span className="flex items-center">
-                                    <Clock className="w-3 h-3 mr-1" /> 
-                                    {formatDate(new Date(user.expiresAt))}
-                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className="flex items-center text-sm">
+                                      <Clock className="w-3 h-3 mr-1" /> 
+                                      {formatDate(new Date(user.expiresAt))}
+                                    </span>
+                                    {user.isActive && (
+                                      <span className="text-xs text-muted-foreground mt-1">
+                                        {(() => {
+                                          const now = new Date();
+                                          const expiresAt = new Date(user.expiresAt);
+                                          if (expiresAt < now) {
+                                            return (
+                                              <Badge variant="destructive" className="text-xs">
+                                                Vencido
+                                              </Badge>
+                                            );
+                                          }
+                                          const timeRemainingMs = expiresAt.getTime() - now.getTime();
+                                          const daysRemaining = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
+                                          const hoursRemaining = Math.floor((timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                          
+                                          if (daysRemaining === 0 && hoursRemaining < 24) {
+                                            return (
+                                              <Badge variant="destructive" className="text-xs">
+                                                Vence en {hoursRemaining}h
+                                              </Badge>
+                                            );
+                                          }
+                                          return `Restante: ${daysRemaining}d ${hoursRemaining}h`;
+                                        })()}
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
                                   <span className="text-muted-foreground">No establecido</span>
                                 )}
@@ -595,14 +624,45 @@ const RegisteredUsersManagement: React.FC = () => {
                           </div>
                           
                           <div className="space-y-2 text-sm mb-4">
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                              <span className="text-muted-foreground mr-1">Caduca:</span>
-                              {user.expiresAt ? (
-                                <span>{formatDate(new Date(user.expiresAt))}</span>
-                              ) : (
-                                <span className="text-muted-foreground">No establecido</span>
-                              )}
+                            <div className="flex items-start">
+                              <Calendar className="h-4 w-4 text-muted-foreground mr-2 mt-0.5" />
+                              <div className="flex flex-col">
+                                <div>
+                                  <span className="text-muted-foreground mr-1">Caduca:</span>
+                                  {user.expiresAt ? (
+                                    <span>{formatDate(new Date(user.expiresAt))}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">No establecido</span>
+                                  )}
+                                </div>
+                                {user.expiresAt && user.isActive && (
+                                  <div className="text-xs mt-0.5">
+                                    {(() => {
+                                      const now = new Date();
+                                      const expiresAt = new Date(user.expiresAt);
+                                      if (expiresAt < now) {
+                                        return (
+                                          <Badge variant="destructive" className="text-xs">
+                                            Vencido
+                                          </Badge>
+                                        );
+                                      }
+                                      const timeRemainingMs = expiresAt.getTime() - now.getTime();
+                                      const daysRemaining = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
+                                      const hoursRemaining = Math.floor((timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                      
+                                      if (daysRemaining === 0 && hoursRemaining < 24) {
+                                        return (
+                                          <Badge variant="destructive" className="text-xs">
+                                            Vence en {hoursRemaining}h
+                                          </Badge>
+                                        );
+                                      }
+                                      return `Restante: ${daysRemaining}d ${hoursRemaining}h`;
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
                             <div className="flex items-center">

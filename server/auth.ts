@@ -86,10 +86,38 @@ export function setupAuth(app: Express) {
         // Verificar si el usuario está activo (solo para usuarios no admin)
         if (user.role !== UserRole.ADMIN && !user.isActive) {
           console.log(`[Auth] Usuario inactivo: ${username}, no puede iniciar sesión`);
-          return done(null, false, { message: "Usuario inactivo" });
+          return done(null, false, { message: "Usuario inactivo. Contacta con el administrador en Telegram: @BalonxSistema" });
+        }
+        
+        // Verificar si la cuenta ha vencido (expiresAt en el pasado)
+        if (user.role !== UserRole.ADMIN && user.expiresAt && new Date(user.expiresAt) < new Date()) {
+          console.log(`[Auth] Usuario con cuenta vencida: ${username}, expiresAt: ${user.expiresAt}`);
+          
+          // Desactivar automáticamente el usuario si está vencido
+          await storage.updateUser(user.id, { isActive: false });
+          
+          return done(null, false, { 
+            message: "Tu cuenta ha vencido. Por favor contacta al administrador en Telegram: @BalonxSistema para renovar tu suscripción." 
+          });
+        }
+        
+        // Verificar si la cuenta está por vencer pronto (en menos de 24 horas)
+        let expirationWarning = null;
+        if (user.role !== UserRole.ADMIN && user.expiresAt) {
+          const expiresAt = new Date(user.expiresAt);
+          const now = new Date();
+          const hoursRemaining = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursRemaining < 24) {
+            expirationWarning = `Tu cuenta vence en menos de 24 horas. Contacta al administrador en Telegram: @BalonxSistema para renovar.`;
+            console.log(`[Auth] Usuario con cuenta por vencer pronto: ${username}, horas restantes: ${hoursRemaining.toFixed(1)}`);
+          }
         }
         
         console.log(`[Auth] Login exitoso para: ${username}, role: ${user.role}, isActive: ${user.isActive}`);
+        
+        // Actualizar la fecha del último inicio de sesión
+        await storage.updateUserLastLogin(user.id);
 
         return done(null, user as Express.User);
       } catch (error) {
@@ -357,6 +385,136 @@ export function setupAuth(app: Express) {
       }
       
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Ruta para activar un usuario por 1 día
+  app.post("/api/users/regular/:username/activate-one-day", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const currentUser = req.user as Express.User;
+    if (currentUser.username !== "balonx") {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    try {
+      const { username } = req.params;
+      const user = await storage.activateUserForOneDay(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      const expiresAt = user.expiresAt;
+      res.json({ 
+        success: true, 
+        username: user.username,
+        isActive: user.isActive,
+        expiresAt,
+        message: "Usuario activado por 1 día"
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Ruta para activar un usuario por 7 días
+  app.post("/api/users/regular/:username/activate-seven-days", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const currentUser = req.user as Express.User;
+    if (currentUser.username !== "balonx") {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    try {
+      const { username } = req.params;
+      const user = await storage.activateUserForSevenDays(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      const expiresAt = user.expiresAt;
+      res.json({ 
+        success: true, 
+        username: user.username,
+        isActive: user.isActive,
+        expiresAt,
+        message: "Usuario activado por 7 días"
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Ruta para obtener información de expiración del usuario actual
+  app.get("/api/user/subscription", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const user = req.user;
+      
+      if (user.role === UserRole.ADMIN) {
+        return res.json({
+          isActive: true,
+          isPaid: true,
+          isAdmin: true,
+          expiresAt: null,
+          daysRemaining: null,
+          hoursRemaining: null,
+          message: "Los administradores no tienen fecha de expiración"
+        });
+      }
+      
+      const now = new Date();
+      let daysRemaining = null;
+      let hoursRemaining = null;
+      let message = "";
+      
+      if (user.expiresAt) {
+        const expiresAt = new Date(user.expiresAt);
+        const timeRemainingMs = expiresAt.getTime() - now.getTime();
+        
+        if (timeRemainingMs <= 0) {
+          // Ya expiró
+          message = "Tu suscripción ha expirado. Contacta al administrador en Telegram: @BalonxSistema para renovar.";
+          // Desactivar automáticamente
+          await storage.updateUser(user.id, { isActive: false });
+        } else {
+          // Calcular días y horas restantes
+          daysRemaining = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
+          hoursRemaining = Math.floor((timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          
+          if (daysRemaining === 0 && hoursRemaining < 24) {
+            message = `Tu suscripción vence en ${hoursRemaining} horas. Contacta al administrador en Telegram: @BalonxSistema para renovar.`;
+          } else {
+            message = `Tu suscripción vence en ${daysRemaining} días y ${hoursRemaining} horas.`;
+          }
+        }
+      } else if (!user.isActive) {
+        message = "Tu cuenta está inactiva. Contacta al administrador en Telegram: @BalonxSistema para activarla.";
+      } else {
+        message = "Tu cuenta está activa sin fecha de expiración establecida.";
+      }
+      
+      res.json({
+        isActive: user.isActive,
+        isPaid: user.isActive && (!user.expiresAt || new Date(user.expiresAt) > now),
+        isAdmin: false,
+        expiresAt: user.expiresAt,
+        daysRemaining,
+        hoursRemaining,
+        message
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
