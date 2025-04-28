@@ -124,7 +124,7 @@ export default function BankSelectionPage() {
         <div className="flex justify-center gap-10">
           <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" alt="Visa" className="h-20 w-auto" />
           <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Mastercard-logo.png" alt="Mastercard" className="h-20 w-auto" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo_%282018%29.svg" alt="American Express" className="h-20 w-auto" />
+          <img src={amexLogoPath} alt="American Express" className="h-20 w-auto" />
         </div>
       </section>
 
