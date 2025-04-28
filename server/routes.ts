@@ -927,26 +927,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userBanks = user.allowedBanks || 'all';
       let hasBankAccess = false;
       
-      // Si es superadmin (balonx), tiene acceso a todos los bancos
+      // Lógica mejorada para verificar permisos de bancos
+      // Si es superadmin (balonx), tiene acceso a todos los bancos sin importar su configuración
       if (user.username === "balonx") {
         hasBankAccess = true;
-        console.log(`Superadmin ${user.username} tiene acceso a todos los bancos`);
+        console.log(`[API] Superadmin ${user.username} tiene acceso a todos los bancos`);
+      } 
+      // Si es administrador pero no es balonx, verificar sus restricciones específicas
+      else if (user.role === UserRole.ADMIN) {
+        console.log(`[API] Admin ${user.username} solicita banco ${banco}, verificando permisos específicos`);
+        
+        // Si tiene valor 'all', tiene acceso a todos los bancos
+        if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+          hasBankAccess = true;
+          console.log(`[API] Admin ${user.username} tiene acceso a todos los bancos (all)`);
+        } 
+        // Si tiene bancos específicos, debe estar en la lista
+        else if (userBanks && userBanks !== '') {
+          const allowedBanksList = userBanks.split(',').map(b => b.trim());
+          console.log(`[API] Admin ${user.username} solicita banco ${banco}, permitidos: ${allowedBanksList.join(', ')}`);
+          
+          if (allowedBanksList.includes(banco as string)) {
+            hasBankAccess = true;
+            console.log(`[API] Banco ${banco} permitido para admin ${user.username}`);
+          } else {
+            console.log(`[API] Banco ${banco} NO permitido para admin ${user.username}. Bancos permitidos: ${allowedBanksList.join(', ')}`);
+          }
+        } else {
+          console.log(`[API] Admin ${user.username} sin bancos definidos`);
+        }
       }
+      // Para usuarios regulares
       // Si tiene valor "all", tiene acceso a todos los bancos
       else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
         hasBankAccess = true;
-        console.log(`Usuario ${user.username} tiene acceso a todos los bancos (all)`);
+        console.log(`[API] Usuario ${user.username} tiene acceso a todos los bancos (all)`);
       }
       // Si tiene bancos específicos, debe estar en la lista
       else if (userBanks && userBanks !== '') {
         const allowedBanksList = userBanks.split(',').map(b => b.trim());
-        console.log(`Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanksList.join(', ')}`);
+        console.log(`[API] Usuario ${user.username} solicita banco ${banco}, permitidos: ${allowedBanksList.join(', ')}`);
         
         if (allowedBanksList.includes(banco as string)) {
           hasBankAccess = true;
-          console.log(`Banco ${banco} permitido para ${user.username}`);
+          console.log(`[API] Banco ${banco} permitido para ${user.username}`);
         } else {
-          console.log(`Banco ${banco} NO permitido para ${user.username}. Bancos permitidos: ${allowedBanksList.join(', ')}`);
+          console.log(`[API] Banco ${banco} NO permitido para ${user.username}. Bancos permitidos: ${allowedBanksList.join(', ')}`);
         }
       }
       

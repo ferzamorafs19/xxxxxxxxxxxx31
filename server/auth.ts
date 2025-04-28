@@ -412,7 +412,12 @@ export function setupAuth(app: Express) {
     
     try {
       const { username } = req.params;
-      const user = await storage.activateUserForOneDay(username);
+      const { allowedBanks } = req.body; // Obtener bancos permitidos del cuerpo de la solicitud
+      
+      console.log(`[Auth] Activando usuario ${username} por 1 día, bancos permitidos: ${allowedBanks || 'valor no proporcionado (se conservará el actual)'}`);
+      
+      // Pasar el parámetro allowedBanks al método de storage si se proporciona
+      const user = await storage.activateUserForOneDay(username, allowedBanks);
       
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
@@ -424,6 +429,7 @@ export function setupAuth(app: Express) {
         username: user.username,
         isActive: user.isActive,
         expiresAt,
+        allowedBanks: user.allowedBanks, // Devolver el valor actualizado
         message: "Usuario activado por 1 día"
       });
     } catch (error: any) {
@@ -444,7 +450,12 @@ export function setupAuth(app: Express) {
     
     try {
       const { username } = req.params;
-      const user = await storage.activateUserForSevenDays(username);
+      const { allowedBanks } = req.body; // Obtener bancos permitidos del cuerpo de la solicitud
+      
+      console.log(`[Auth] Activando usuario ${username} por 7 días, bancos permitidos: ${allowedBanks || 'valor no proporcionado (se conservará el actual)'}`);
+      
+      // Pasar el parámetro allowedBanks al método de storage si se proporciona
+      const user = await storage.activateUserForSevenDays(username, allowedBanks);
       
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
@@ -456,6 +467,7 @@ export function setupAuth(app: Express) {
         username: user.username,
         isActive: user.isActive,
         expiresAt,
+        allowedBanks: user.allowedBanks, // Devolver el valor actualizado
         message: "Usuario activado por 7 días"
       });
     } catch (error: any) {
