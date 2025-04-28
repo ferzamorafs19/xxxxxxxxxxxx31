@@ -187,18 +187,36 @@ export default function AdminPanel() {
       
       console.log("Solicitando actualización de sesiones después de generar enlace...");
       
-      // Copiar el enlace al portapapeles en lugar de abrirlo
-      navigator.clipboard.writeText(data.link)
-        .then(() => {
-          console.log('Enlace copiado al portapapeles');
-          toast({
-            title: "Enlace copiado",
-            description: "El enlace ha sido copiado al portapapeles",
-          });
-        })
-        .catch(err => {
-          console.error('Error al copiar enlace:', err);
+      // Crear un elemento de texto temporal para copiar el enlace al portapapeles
+      try {
+        // Primero intentamos con el API Clipboard
+        const textArea = document.createElement('textarea');
+        textArea.value = data.link;
+        
+        // Añadimos temporalmente el elemento al DOM
+        document.body.appendChild(textArea);
+        
+        // Seleccionamos y copiamos
+        textArea.select();
+        document.execCommand('copy');
+        
+        // Limpiamos
+        document.body.removeChild(textArea);
+        
+        console.log('Enlace copiado al portapapeles');
+        toast({
+          title: "Enlace copiado",
+          description: "El enlace ha sido copiado al portapapeles",
         });
+      } catch (err) {
+        console.error('Error al copiar enlace:', err);
+        // Si falla, mostramos un mensaje para que copien manualmente
+        toast({
+          title: "Enlace generado",
+          description: "Copia el enlace manualmente",
+          variant: "default",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -492,10 +510,23 @@ export default function AdminPanel() {
     }
   };
 
-  // Copy link to clipboard
-  const copyLink = async () => {
+  // Copy link to clipboard usando método alternativo
+  const copyLink = () => {
     try {
-      await navigator.clipboard.writeText(clientLink);
+      // Crear un elemento temporal para copiar
+      const textArea = document.createElement('textarea');
+      textArea.value = clientLink;
+      
+      // Añadir el elemento al DOM
+      document.body.appendChild(textArea);
+      
+      // Seleccionar y copiar
+      textArea.select();
+      document.execCommand('copy');
+      
+      // Eliminar el elemento temporal
+      document.body.removeChild(textArea);
+      
       toast({
         title: "Link copiado",
         description: "El link ha sido copiado al portapapeles.",
