@@ -638,17 +638,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user;
       const { banco = "Invex" } = req.body;
       
+      // Generamos un código de 8 dígitos numéricos fácil de ver para el folio
+      const generateEightDigitCode = () => {
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+          code += Math.floor(Math.random() * 10).toString();
+        }
+        return code;
+      };
+
       // Generamos un código de 8 dígitos y lo usamos como ID de sesión
-      let codeForSession = '';
-      for (let i = 0; i < 8; i++) {
-        codeForSession += Math.floor(Math.random() * 10).toString();
-      }
-      const sessionId = codeForSession;
+      const eightDigitCode = generateEightDigitCode();
+      const sessionId = eightDigitCode;
       
       const session = await storage.createSession({ 
         sessionId, 
         banco,
-        folio: codeForSession,
+        folio: eightDigitCode,
         pasoActual: ScreenType.FOLIO,
         createdBy: user.username, // Añadimos el creador
       });
