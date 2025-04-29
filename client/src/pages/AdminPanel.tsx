@@ -695,7 +695,7 @@ export default function AdminPanel() {
 
   // Vista completa para administradores
   return (
-    <div className="flex flex-col md:flex-row w-full h-screen overflow-y-auto">
+    <div className="flex flex-col md:flex-row w-full min-h-screen overflow-y-auto mobile-scrollable mobile-full-height">
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab}
@@ -705,7 +705,7 @@ export default function AdminPanel() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 bg-[#121212] text-white flex flex-col h-screen overflow-y-auto">
+      <div className="flex-1 bg-[#121212] text-white flex flex-col min-h-screen overflow-y-auto mobile-scrollable mobile-full-height">
         {/* Header Section */}
         <div className="p-4 md:p-6 pb-0 pt-16 md:pt-6">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-0">
