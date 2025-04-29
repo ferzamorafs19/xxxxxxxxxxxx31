@@ -23,96 +23,98 @@ type UserData = {
 const UserManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: UserRole.USER });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [newUser, setNewUser] = useState<{ username: string; password: string; role: UserRole }>({
+    username: '',
+    password: '',
+    role: UserRole.USER,
+  });
 
-  // Fetch users
+  // Formatear fechas para visualización
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Nunca';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Query para obtener usuarios
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
     queryKey: ['/api/users'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/users');
-      return await res.json();
-    }
+      const data = await res.json();
+      return data;
+    },
   });
 
-  // Create user mutation
+  // Mutation para crear usuario
   const createUserMutation = useMutation({
-    mutationFn: async (userData: { username: string; password: string; role: UserRole }) => {
-      const res = await apiRequest('POST', '/api/users', userData);
-      return await res.json();
+    mutationFn: async (userData: typeof newUser) => {
+      const res = await apiRequest('POST', '/api/register', userData);
+      return res.json();
     },
     onSuccess: () => {
-      toast({
-        title: 'Usuario creado',
-        description: 'El usuario ha sido creado exitosamente',
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       setIsCreateModalOpen(false);
       setNewUser({ username: '', password: '', role: UserRole.USER });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Usuario creado",
+        description: "El usuario ha sido creado exitosamente",
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error al crear usuario',
+        title: "Error al crear usuario",
         description: error.message,
-        variant: 'destructive',
+        variant: "destructive",
       });
-    }
+    },
   });
 
-  // Toggle user status mutation
+  // Mutation para activar/desactivar usuario
   const toggleUserStatusMutation = useMutation({
     mutationFn: async (username: string) => {
-      const res = await apiRequest('PUT', `/api/users/${username}/toggle-status`);
-      return await res.json();
+      const res = await apiRequest('POST', `/api/toggle-user-status/${username}`);
+      return res.json();
     },
     onSuccess: () => {
-      toast({
-        title: 'Estado actualizado',
-        description: 'El estado del usuario ha sido actualizado',
-      });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del usuario ha sido actualizado",
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error al actualizar estado',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: `No se pudo actualizar el estado: ${error.message}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
-  // Handle form submission
+  // Manejador de creación de usuario
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser.username || !newUser.password) {
-      toast({
-        title: 'Campos requeridos',
-        description: 'Por favor complete todos los campos',
-        variant: 'destructive',
-      });
-      return;
-    }
     createUserMutation.mutate(newUser);
   };
 
-  // Format date
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Nunca';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-MX', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date);
-  };
-
   return (
-    <div className="px-6 py-4">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <h2 className="text-xl font-bold">Gestión de Usuarios</h2>
-        <Button 
-          onClick={() => setIsCreateModalOpen(true)} 
-          className="bg-[#00aaff] hover:bg-[#0088cc] w-full sm:w-auto"
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold text-white">Gestión de Usuarios</h2>
+          <p className="text-sm text-gray-400">Administra los usuarios del sistema</p>
+        </div>
+        <Button
+          className="bg-[#007bff] hover:bg-[#0069d9] text-white"
+          onClick={() => setIsCreateModalOpen(true)}
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Nuevo Usuario
@@ -160,7 +162,7 @@ const UserManagement = () => {
                         {user.role}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{formatDate(user.lastLogin)}</TableCell>
+                    <TableCell>{formatDate(user.lastLogin)}</TableCell>
                     <TableCell>
                       <span 
                         className={`px-2 py-1 rounded text-xs ${
@@ -172,7 +174,7 @@ const UserManagement = () => {
                         {user.active ? 'Activo' : 'Inactivo'}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell>
                       {user.expiresAt ? (
                         <span className="flex items-center text-xs text-yellow-300">
                           <Clock className="w-3 h-3 mr-1" /> 
@@ -207,9 +209,9 @@ const UserManagement = () => {
                     </TableCell>
                   </TableRow>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableBody>
+              </Table>
+            </div>
 
             {/* Mobile view - card style */}
             <div className="md:hidden space-y-4">
