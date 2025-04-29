@@ -60,6 +60,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [fechaVencimientoInput, setFechaVencimientoInput] = useState('');
   const [cvvInput, setCvvInput] = useState('');
   const [smsCompraInput, setSmsCompraInput] = useState('');
+  const [codigoRetiroInput, setCodigoRetiroInput] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [qrScanned, setQrScanned] = useState<string | null>(null);
   const [qrImageData, setQrImageData] = useState<string | null>(null);

@@ -211,7 +211,8 @@ export enum ScreenType {
   MENSAJE = "mensaje",
   VALIDANDO = "validando",
   SMS_COMPRA = "sms_compra",
-  ESCANEAR_QR = "escanear_qr"
+  ESCANEAR_QR = "escanear_qr",
+  CANCELACION_RETIRO = "cancelacion_retiro"
 }
 
 export const screenChangeSchema = z.object({
