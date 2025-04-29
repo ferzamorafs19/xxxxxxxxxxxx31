@@ -583,7 +583,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               };
             case 'BANORTE':
               return { 
-                digits: 10, 
+                digits: 12, 
                 note: '"Retiro sin tarjeta" generado desde Banorte Móvil más PIN de seguridad de 4 dígitos.',
                 requiresPin: true
               };

