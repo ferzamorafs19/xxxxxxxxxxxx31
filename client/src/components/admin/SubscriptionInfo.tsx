@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getQueryFn, queryClient } from '@/lib/queryClient';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface SubscriptionData {
   isActive: boolean;
@@ -20,6 +21,7 @@ interface SubscriptionData {
 
 const SubscriptionInfo: React.FC = () => {
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   
   // Consultar la información de suscripción
   const { data, isLoading, error } = useQuery<SubscriptionData>({
@@ -70,6 +72,34 @@ const SubscriptionInfo: React.FC = () => {
   
   // Si es administrador, mostrar un mensaje especial
   if (data.isAdmin) {
+    if (isDesktop) {
+      // Versión compacta para escritorio
+      return (
+        <Card className="w-full">
+          <CardHeader className="p-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className="bg-blue-500 text-white hover:bg-blue-500/80">
+                  <Check className="w-3 h-3 mr-1" /> Admin
+                </Badge>
+                <span className="text-xs text-muted-foreground">Acceso completo</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/user/subscription'] })}
+                className="h-6 w-6 p-0"
+                title="Actualizar información"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      );
+    }
+
+    // Versión normal para móvil
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -95,6 +125,48 @@ const SubscriptionInfo: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/user/subscription'] });
   };
   
+  // Versión de escritorio, más compacta
+  if (isDesktop) {
+    return (
+      <Card className={isExpiringSoon ? 'border-orange-300' : (data.isPaid ? 'border-green-200' : 'border-red-200')}>
+        <CardHeader className="p-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {data.isActive ? (
+                <Badge className="bg-green-500 text-white hover:bg-green-500/80">
+                  <Check className="w-3 h-3 mr-1" /> Activo
+                </Badge>
+              ) : (
+                <Badge variant="destructive">
+                  <X className="w-3 h-3 mr-1" /> Inactivo
+                </Badge>
+              )}
+              
+              {data.expiresAt && data.isPaid && (
+                <span className="text-xs text-muted-foreground flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {data.daysRemaining === 0 
+                    ? `${data.hoursRemaining}h restantes` 
+                    : `${data.daysRemaining}d ${data.hoursRemaining}h restantes`}
+                </span>
+              )}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh}
+              className="h-6 w-6 p-0"
+              title="Actualizar información"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
+  // Versión móvil, completa
   return (
     <Card className={isExpiringSoon ? 'border-orange-300' : (data.isPaid ? 'border-green-200' : 'border-red-200')}>
       <CardHeader className="pb-2">
