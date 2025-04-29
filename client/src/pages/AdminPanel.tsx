@@ -719,14 +719,13 @@ export default function AdminPanel() {
 
       {/* Main Content */}
       <div className="flex-1 bg-[#121212] text-white flex flex-col min-h-screen overflow-y-auto mobile-scrollable mobile-full-height">
-        {/* Header Section */}
-        <div className="p-4 md:p-6 pb-0 pt-16 md:pt-6">
-          {/* Estado de cuenta movido arriba por solicitud del usuario */}
-          <div className="mb-4">
+        {/* Header Section - Estado de cuenta compacto arriba */}
+        <div className="p-2 md:p-3 pb-0 pt-16 md:pt-3">
+          <div className="mb-2">
             <SubscriptionInfo />
           </div>
 
-          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-0">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 md:gap-0">
             <div>
               <p className="text-[#00aaff]">Panel / Accesos</p>
               <h1 className="text-xl md:text-2xl font-bold mb-3">Panel Accesos</h1>

@@ -334,10 +334,12 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="px-6 pt-2 pb-6 overflow-x-auto overflow-y-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto", width: "100%"}}>
+      <div className="px-6 pt-2 pb-6 overflow-x-auto overflow-y-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 190px)", height: "auto", width: "100%"}}>
         <div className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
           <div className="p-4">
             <Skeleton className="h-8 w-full mb-4" />
+            <Skeleton className="h-12 w-full mb-2" />
+            <Skeleton className="h-12 w-full mb-2" />
             <Skeleton className="h-12 w-full mb-2" />
             <Skeleton className="h-12 w-full mb-2" />
             <Skeleton className="h-12 w-full mb-2" />
