@@ -21,6 +21,27 @@
     height: 100%;
     width: 100%;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Mejoras para dispositivos móviles */
+  @media (max-width: 640px) {
+    .mobile-scrollable {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .mobile-full-height {
+      min-height: calc(100vh - 50px);
+      height: auto !important;
+    }
+    
+    .mobile-card-view {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
   }
 }
 
