@@ -334,7 +334,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
+      <div className="px-6 pt-2 pb-6 overflow-auto flex-1 mobile-scrollable">
         <div className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
           <div className="p-4">
             <Skeleton className="h-8 w-full mb-4" />
@@ -355,7 +355,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
   };
   
   return (
-    <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
+    <div className="px-6 pt-2 pb-6 overflow-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto"}}>
       {/* Diálogo de confirmación de eliminación */}
       <DeleteConfirmDialog 
         isOpen={isDeleteDialogOpen}

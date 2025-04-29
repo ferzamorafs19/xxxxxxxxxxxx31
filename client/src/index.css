@@ -30,6 +30,8 @@
     .mobile-scrollable {
       overflow-y: auto !important;
       -webkit-overflow-scrolling: touch;
+      max-height: 70vh !important;
+      padding-bottom: 120px !important;
     }
     
     .mobile-full-height {
