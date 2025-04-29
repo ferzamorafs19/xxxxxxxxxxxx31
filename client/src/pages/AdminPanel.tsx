@@ -695,7 +695,7 @@ export default function AdminPanel() {
 
   // Vista completa para administradores
   return (
-    <div className="flex flex-col md:flex-row w-full h-screen overflow-hidden">
+    <div className="flex flex-col md:flex-row w-full h-screen overflow-y-auto">
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab}
