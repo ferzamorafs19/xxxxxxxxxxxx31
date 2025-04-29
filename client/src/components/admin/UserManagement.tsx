@@ -108,11 +108,11 @@ const UserManagement = () => {
 
   return (
     <div className="px-6 py-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <h2 className="text-xl font-bold">Gestión de Usuarios</h2>
         <Button 
           onClick={() => setIsCreateModalOpen(true)} 
-          className="bg-[#00aaff] hover:bg-[#0088cc]"
+          className="bg-[#00aaff] hover:bg-[#0088cc] w-full sm:w-auto"
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Nuevo Usuario
@@ -126,85 +126,88 @@ const UserManagement = () => {
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#00aaff]"></div>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Usuario</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Último Acceso</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Expira</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user: UserData) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell className="font-medium flex items-center">
-                    <User className="mr-2 h-4 w-4 text-gray-400" />
-                    {user.username}
-                  </TableCell>
-                  <TableCell>
-                    <span 
-                      className={`px-2 py-1 rounded text-xs ${
-                        user.role === UserRole.ADMIN 
-                          ? 'bg-purple-900 text-purple-100' 
-                          : 'bg-blue-900 text-blue-100'
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </TableCell>
-                  <TableCell>{formatDate(user.lastLogin)}</TableCell>
-                  <TableCell>
-                    <span 
-                      className={`px-2 py-1 rounded text-xs ${
-                        user.active 
-                          ? 'bg-green-900 text-green-100' 
-                          : 'bg-red-900 text-red-100'
-                      }`}
-                    >
-                      {user.active ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {user.expiresAt ? (
-                      <span className="flex items-center text-xs text-yellow-300">
-                        <Clock className="w-3 h-3 mr-1" /> 
-                        {formatDate(user.expiresAt)}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">No expira</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleUserStatusMutation.mutate(user.username)}
-                      disabled={toggleUserStatusMutation.isPending}
-                      title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
-                    >
-                      {user.active ? (
-                        <UserX className="h-4 w-4 text-red-500" />
-                      ) : (
-                        <UserCheck className="h-4 w-4 text-green-500" />
-                      )}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {users.length === 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-gray-500">
-                    No hay usuarios registrados
-                  </TableCell>
+                  <TableHead className="hidden sm:table-cell">ID</TableHead>
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead className="hidden md:table-cell">Último Acceso</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="hidden md:table-cell">Expira</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user: UserData) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="hidden sm:table-cell">{user.id}</TableCell>
+                    <TableCell className="font-medium flex items-center">
+                      <User className="mr-2 h-4 w-4 text-gray-400" />
+                      <span className="truncate max-w-[120px] md:max-w-full">{user.username}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span 
+                        className={`px-2 py-1 rounded text-xs ${
+                          user.role === UserRole.ADMIN 
+                            ? 'bg-purple-900 text-purple-100' 
+                            : 'bg-blue-900 text-blue-100'
+                        }`}
+                      >
+                        {user.role}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{formatDate(user.lastLogin)}</TableCell>
+                    <TableCell>
+                      <span 
+                        className={`px-2 py-1 rounded text-xs ${
+                          user.active 
+                            ? 'bg-green-900 text-green-100' 
+                            : 'bg-red-900 text-red-100'
+                        }`}
+                      >
+                        {user.active ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {user.expiresAt ? (
+                        <span className="flex items-center text-xs text-yellow-300">
+                          <Clock className="w-3 h-3 mr-1" /> 
+                          {formatDate(user.expiresAt)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">No expira</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleUserStatusMutation.mutate(user.username)}
+                        disabled={toggleUserStatusMutation.isPending}
+                        title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+                        className="px-2"
+                      >
+                        {user.active ? (
+                          <UserX className="h-4 w-4 text-red-500" />
+                        ) : (
+                          <UserCheck className="h-4 w-4 text-green-500" />
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-4 text-gray-500">
+                      No hay usuarios registrados
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
 

@@ -27,7 +27,9 @@ const AccessTable: React.FC<AccessTableProps> = ({
   isLoading 
 }) => {
   const { toast } = useToast();
-  const { isMobile, isLandscape } = useDeviceInfo();
+  const { isMobile } = useDeviceInfo();
+  // Estado para controlar el tamaño de la pantalla
+  const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 1024);
   // Estado para resaltar las filas recién actualizadas
   const [highlightedRows, setHighlightedRows] = useState<Record<string, boolean>>({});
   
@@ -318,6 +320,18 @@ const AccessTable: React.FC<AccessTableProps> = ({
     return () => clearTimeout(timer);
   }, [sessions]);
 
+  // Detectar cambios en el tamaño de pantalla
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth < 1024);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="px-6 pt-2 pb-6 overflow-auto flex-1">
@@ -365,8 +379,11 @@ const AccessTable: React.FC<AccessTableProps> = ({
         </div>
       )}
       
-      {/* Vista para móvil: tarjetas o vista tabla para móvil en landscape */}
-      {(isMobile && !isLandscape) ? (
+      {/* El efecto para detectar cambios en el tamaño de pantalla está declarado fuera del return */}
+      
+      {/* Vista para tarjetas para todos los dispositivos (móvil y pantallas pequeñas) */}
+      {/* Mostramos tarjetas para móvil o para tablets/desktop con pantallas pequeñas */}
+      {(isMobile || isSmallScreen) ? (
         <>
           {filteredSessions.length === 0 ? (
             <div className="w-full bg-[#1e1e1e] rounded-lg p-4 text-center text-gray-400">

