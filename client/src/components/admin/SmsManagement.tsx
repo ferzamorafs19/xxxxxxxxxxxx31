@@ -476,7 +476,7 @@ const SmsManagement: React.FC = () => {
                     placeholder="Escribe tu mensaje aquí (máximo 4000 caracteres, equivalente a una hoja oficio)"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value.slice(0, 4000))}
-                    className="min-h-[100px]"
+                    className="min-h-[150px] sm:min-h-[200px] text-base sm:text-sm"
                     maxLength={4000}
                   />
                   <div className="text-right text-xs text-gray-500 mt-1">
