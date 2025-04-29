@@ -708,6 +708,11 @@ export default function AdminPanel() {
       <div className="flex-1 bg-[#121212] text-white flex flex-col min-h-screen overflow-y-auto mobile-scrollable mobile-full-height">
         {/* Header Section */}
         <div className="p-4 md:p-6 pb-0 pt-16 md:pt-6">
+          {/* Estado de cuenta movido arriba por solicitud del usuario */}
+          <div className="mb-4">
+            <SubscriptionInfo />
+          </div>
+
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 md:gap-0">
             <div>
               <p className="text-[#00aaff]">Panel / Accesos</p>
@@ -738,35 +743,29 @@ export default function AdminPanel() {
               </div>
             </div>
             
-            <div className="space-x-2">
-              <button 
-                className="bg-[#007bff] text-white px-4 py-2 rounded hover:bg-opacity-90 transition-all flex items-center"
-                disabled
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Bulk SMS
-              </button>
-              {user?.role === 'admin' && (
-                <button 
-                  className="bg-[#007bff] text-white px-4 py-2 rounded hover:bg-opacity-90 transition-all flex items-center"
-                  onClick={() => setIsSmsSendDialogOpen(true)}
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  Enviar SMS
-                </button>
-              )}
-            </div>
+            {/* Botones de SMS eliminados por solicitud del usuario */}
           </div>
-        </div>
-
-        {/* Subscription Info Panel */}
-        <div className="mx-6 mt-6">
-          <SubscriptionInfo />
         </div>
         
         {/* Link Panel */}
         <div className="mx-4 md:mx-6 mt-6 bg-[#1e1e1e] p-3 md:p-4 rounded-lg flex flex-col md:flex-row gap-4 md:gap-0 md:justify-between md:items-center">
           <div className="flex flex-col md:flex-row md:items-center gap-3 md:space-x-2">
+            {/* En móvil, botones de acción primero (encima de los enlaces) por solicitud del usuario */}
+            <div className="flex space-x-2 order-first mb-2 md:mb-0 md:order-last">
+              <button 
+                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                onClick={copyLink}
+              >
+                Copiar
+              </button>
+              <button 
+                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                onClick={() => generateLink.mutate()}
+              >
+                {generateLink.isPending ? 'Generando...' : 'Regenerar'}
+              </button>
+            </div>
+            
             <div className="flex items-center gap-2">
               <span className="font-semibold">Liga activa:</span>
               {clientLink && (
@@ -789,21 +788,6 @@ export default function AdminPanel() {
                 Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
               </span>
             )}
-            
-            <div className="flex space-x-2">
-              <button 
-                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                onClick={copyLink}
-              >
-                Copiar
-              </button>
-              <button 
-                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                onClick={() => generateLink.mutate()}
-              >
-                {generateLink.isPending ? 'Generando...' : 'Regenerar'}
-              </button>
-            </div>
           </div>
           
           <select 
