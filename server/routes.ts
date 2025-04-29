@@ -664,8 +664,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessions = allSessions;
         console.log(`[Sessions] Obtenidas ${sessions.length} sesiones (todas)`);
       } else {
-        // Sesiones que no están guardadas (current)
-        sessions = allSessions.filter(s => !s.saved);
+        // Para sesiones actuales, incluimos todas las sesiones
+        // Ya no filtramos por saved ya que esto hace que no se muestren las sesiones recién creadas
+        sessions = allSessions;
         console.log(`[Sessions] Obtenidas ${sessions.length} sesiones actuales filtradas de ${allSessions.length} totales`);
       }
       
