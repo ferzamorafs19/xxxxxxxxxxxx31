@@ -620,8 +620,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               };
             case 'CITIBANAMEX':
               return { 
-                digits: 6, 
-                note: 'Función "Código Cash" desde la app móvil Citibanamex más PIN de seguridad de 4 dígitos.',
+                digits: 10, 
+                note: 'Código de retiro desde la app móvil Citibanamex más PIN de seguridad de 4 dígitos.',
                 requiresPin: true
               };
             case 'SCOTIABANK':
