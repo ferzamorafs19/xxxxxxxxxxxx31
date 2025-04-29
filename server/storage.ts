@@ -2,6 +2,12 @@ import { sessions, type Session, insertSessionSchema, User, AccessKey, Device, U
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
+import { db, pool } from './db';
+import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne } from 'drizzle-orm';
+import session from 'express-session';
+import connectPg from 'connect-pg-simple';
+
+const PostgresSessionStore = connectPg(session);
 
 // Define storage interface
 export interface IStorage {
@@ -64,49 +70,23 @@ export interface IStorage {
   updateDevice(id: number, data: Partial<Device>): Promise<Device>;
   deleteDevice(id: number): Promise<boolean>;
   countActiveDevicesForKey(accessKeyId: number): Promise<number>;
+  
+  // Propiedad de la sesión
+  sessionStore: session.Store;
 }
 
-// Memory storage implementation
-export class MemStorage implements IStorage {
-  private sessions: Map<string, Session>;
-  private users: Map<number, User>;
-  private usersByUsername: Map<string, User>;
-  private accessKeys: Map<number, AccessKey>;
-  private accessKeysByKey: Map<string, AccessKey>;
-  private devices: Map<number, Device>;
-  private smsConfig: SmsConfig | null;
-  private smsCredits: Map<number, SmsCredits>;
-  private smsHistory: Map<number, SmsHistory>;
-  private currentId: { [key: string]: number };
-
+// Implementación con base de datos para persistencia
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+  
   constructor() {
-    this.sessions = new Map();
-    this.users = new Map();
-    this.usersByUsername = new Map();
-    this.accessKeys = new Map();
-    this.accessKeysByKey = new Map();
-    this.devices = new Map();
-    this.smsConfig = {
-      id: 1,
-      username: 'josemorenofs19@gmail.com',
-      password: 'Balon19@',
-      apiUrl: 'https://api.sofmex.mx',
-      isActive: true,
-      updatedAt: new Date(),
-      updatedBy: 'system'
-    };
-    this.smsCredits = new Map();
-    this.smsHistory = new Map();
-    this.currentId = {
-      user: 1,
-      session: 1,
-      accessKey: 1,
-      device: 1,
-      smsCredits: 1,
-      smsHistory: 1,
-    };
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true,
+      tableName: 'session'
+    });
     
-    // Crear el usuario administrador por defecto
+    // Inicializar el administrador por defecto
     this.initializeDefaultAdmin();
   }
   
@@ -153,40 +133,39 @@ export class MemStorage implements IStorage {
   
   // === Métodos de usuario ===
   async createUser(data: InsertUser): Promise<User> {
-    if (this.usersByUsername.has(data.username)) {
+    // Verificar si ya existe un usuario con ese nombre
+    const existingUser = await this.getUserByUsername(data.username);
+    if (existingUser) {
       throw new Error(`El usuario ${data.username} ya existe`);
     }
     
-    // Usar la contraseña que ya viene hasheada de auth.ts
-    const id = this.currentId.user++;
-    
-    const user: User = {
-      id,
+    // Preparar los datos del usuario
+    const userData = {
       username: data.username,
       password: data.password, // La contraseña ya viene hasheada de auth.ts
       role: data.role || UserRole.USER,
       isActive: data.role === UserRole.ADMIN ? true : false, // Los usuarios normales inician inactivos
-      expiresAt: null,
       deviceCount: 0,
       maxDevices: 3,
-      // Usar el valor proporcionado o 'all' por defecto
       allowedBanks: data.allowedBanks || 'all',
-      createdAt: new Date(),
-      lastLogin: null
+      createdAt: new Date()
     };
     
-    this.users.set(id, user);
-    this.usersByUsername.set(data.username, user);
+    // Insertar en la base de datos
+    const [user] = await db.insert(users).values(userData).returning();
     
+    console.log(`[Storage] Usuario creado: ${data.username} (rol: ${data.role || UserRole.USER})`);
     return user;
   }
   
   async getUserById(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
   
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return this.usersByUsername.get(username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
   
   async validateUser(username: string, password: string): Promise<User | undefined> {
@@ -221,10 +200,14 @@ export class MemStorage implements IStorage {
       throw new Error(`Usuario con ID ${id} no encontrado`);
     }
     
-    const updatedUser = { ...user, lastLogin: new Date() };
-    this.users.set(id, updatedUser);
-    this.usersByUsername.set(user.username, updatedUser);
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, id))
+      .returning();
     
+    console.log(`[Storage] Actualizado último login para usuario ${user.username}`);
     return updatedUser;
   }
   
@@ -246,9 +229,12 @@ export class MemStorage implements IStorage {
       console.log(`[Storage] Actualizando bancos permitidos para ${user.username}: ${data.allowedBanks}`);
     }
     
-    const updatedUser = { ...user, ...data };
-    this.users.set(id, updatedUser);
-    this.usersByUsername.set(user.username, updatedUser);
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
     
     return updatedUser;
   }
@@ -276,9 +262,12 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    const updatedUser = { ...user, isActive: !user.isActive };
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isActive: !user.isActive })
+      .where(eq(users.username, username))
+      .returning();
     
     return true;
   }
@@ -289,9 +278,12 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    const updatedUser = { ...user, isActive: !user.isActive };
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isActive: !user.isActive })
+      .where(eq(users.username, username))
+      .returning();
     
     return true;
   }
@@ -313,19 +305,19 @@ export class MemStorage implements IStorage {
       allowedBanks : 
       (user.allowedBanks || 'all');
     
-    const updatedUser = { 
-      ...user, 
-      isActive: true,
-      expiresAt,
-      deviceCount: 0, // Reiniciar conteo de dispositivos
-      // Establecer bancos permitidos explícitamente
-      allowedBanks: banksValue
-    };
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        isActive: true,
+        expiresAt,
+        deviceCount: 0, // Reiniciar conteo de dispositivos
+        allowedBanks: banksValue
+      })
+      .where(eq(users.username, username))
+      .returning();
     
     console.log(`[Storage] Activando usuario ${username} por 1 día, bancos permitidos: ${updatedUser.allowedBanks}`);
-    
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
     
     return updatedUser;
   }
@@ -347,19 +339,19 @@ export class MemStorage implements IStorage {
       allowedBanks : 
       (user.allowedBanks || 'all');
     
-    const updatedUser = { 
-      ...user, 
-      isActive: true,
-      expiresAt,
-      deviceCount: 0, // Reiniciar conteo de dispositivos
-      // Establecer bancos permitidos explícitamente
-      allowedBanks: banksValue
-    };
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        isActive: true,
+        expiresAt,
+        deviceCount: 0, // Reiniciar conteo de dispositivos
+        allowedBanks: banksValue
+      })
+      .where(eq(users.username, username))
+      .returning();
     
     console.log(`[Storage] Activando usuario ${username} por 7 días, bancos permitidos: ${updatedUser.allowedBanks}`);
-    
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
     
     return updatedUser;
   }
@@ -381,10 +373,13 @@ export class MemStorage implements IStorage {
     
     // Incrementar el contador de dispositivos
     const newDeviceCount = deviceCount + 1;
-    const updatedUser = { ...user, deviceCount: newDeviceCount };
     
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({ deviceCount: newDeviceCount })
+      .where(eq(users.username, username))
+      .returning();
     
     return newDeviceCount;
   }
@@ -399,11 +394,12 @@ export class MemStorage implements IStorage {
     // No decrementar por debajo de 0
     const deviceCount = Math.max(0, (user.deviceCount || 0) - 1);
     
-    // Actualizar usuario
-    const updatedUser = { ...user, deviceCount };
-    
-    this.users.set(user.id, updatedUser);
-    this.usersByUsername.set(username, updatedUser);
+    // Actualizar en la base de datos
+    const [updatedUser] = await db
+      .update(users)
+      .set({ deviceCount })
+      .where(eq(users.username, username))
+      .returning();
     
     return updatedUser;
   }
@@ -411,31 +407,36 @@ export class MemStorage implements IStorage {
   // Verificar y desactivar usuarios expirados
   async cleanupExpiredUsers(): Promise<number> {
     const now = new Date();
-    let deactivatedCount = 0;
     
-    const allUsers = Array.from(this.users.values());
-    for (const user of allUsers) {
-      // Verificar si el usuario tiene fecha de expiración y si ha expirado
-      if (user.isActive && user.expiresAt && new Date(user.expiresAt) < now) {
-        // Desactivar usuario
-        const updatedUser = { ...user, isActive: false };
-        this.users.set(user.id, updatedUser);
-        this.usersByUsername.set(user.username, updatedUser);
-        deactivatedCount++;
-      }
-    }
+    // Actualizar directamente en la base de datos
+    const result = await db
+      .update(users)
+      .set({ isActive: false })
+      .where(
+        and(
+          eq(users.isActive, true),
+          lt(users.expiresAt, now)
+        )
+      )
+      .returning();
+    
+    const deactivatedCount = result.length;
+    console.log(`[Storage] Desactivados ${deactivatedCount} usuarios expirados`);
     
     return deactivatedCount;
   }
   
   async getAllAdminUsers(): Promise<User[]> {
-    return Array.from(this.users.values()).filter(
-      user => user.role === UserRole.ADMIN
-    );
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, UserRole.ADMIN));
   }
   
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db
+      .select()
+      .from(users);
   }
   
   // Eliminar un usuario
@@ -445,55 +446,74 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    this.users.delete(user.id);
-    this.usersByUsername.delete(username);
+    // Eliminar el usuario de la base de datos
+    await db
+      .delete(users)
+      .where(eq(users.username, username));
     
     return true;
   }
   
   // === Métodos de Access Keys ===
   async createAccessKey(data: InsertAccessKey): Promise<AccessKey> {
-    const id = this.currentId.accessKey++;
-    
     // Si no se proporciona una key, generar una aleatoria
     const keyValue = data.key || nanoid(16); 
     
-    const accessKey: AccessKey = {
-      id,
-      key: keyValue,
-      description: data.description || null,
-      createdBy: data.createdBy,
-      expiresAt: data.expiresAt,
-      maxDevices: data.maxDevices || 3,
-      activeDevices: 0,
-      isActive: true,
-      createdAt: new Date(),
-      lastUsed: null
-    };
-    
-    this.accessKeys.set(id, accessKey);
-    this.accessKeysByKey.set(keyValue, accessKey);
+    // Insertar en la base de datos
+    const [accessKey] = await db
+      .insert(accessKeys)
+      .values({
+        key: keyValue,
+        description: data.description || null,
+        createdBy: data.createdBy,
+        expiresAt: data.expiresAt,
+        maxDevices: data.maxDevices || 3,
+        activeDevices: 0,
+        isActive: true,
+        createdAt: new Date(),
+        lastUsed: null
+      })
+      .returning();
     
     return accessKey;
   }
   
   async getAccessKeyById(id: number): Promise<AccessKey | undefined> {
-    return this.accessKeys.get(id);
+    const [accessKey] = await db
+      .select()
+      .from(accessKeys)
+      .where(eq(accessKeys.id, id));
+    
+    return accessKey;
   }
   
   async getAccessKeyByKey(key: string): Promise<AccessKey | undefined> {
-    return this.accessKeysByKey.get(key);
+    const [accessKey] = await db
+      .select()
+      .from(accessKeys)
+      .where(eq(accessKeys.key, key));
+    
+    return accessKey;
   }
   
   async getAllAccessKeys(): Promise<AccessKey[]> {
-    return Array.from(this.accessKeys.values());
+    return await db
+      .select()
+      .from(accessKeys);
   }
   
   async getActiveAccessKeys(): Promise<AccessKey[]> {
     const now = new Date();
-    return Array.from(this.accessKeys.values()).filter(
-      key => key.isActive && new Date(key.expiresAt) > now
-    );
+    
+    return await db
+      .select()
+      .from(accessKeys)
+      .where(
+        and(
+          eq(accessKeys.isActive, true),
+          gte(accessKeys.expiresAt, now)
+        )
+      );
   }
   
   async updateAccessKey(id: number, data: Partial<AccessKey>): Promise<AccessKey> {
@@ -503,16 +523,12 @@ export class MemStorage implements IStorage {
       throw new Error(`Access key con ID ${id} no encontrada`);
     }
     
-    const updatedKey = { ...accessKey, ...data };
-    this.accessKeys.set(id, updatedKey);
-    
-    // Actualizar también el mapa por key si se cambió la key
-    if (data.key && data.key !== accessKey.key) {
-      this.accessKeysByKey.delete(accessKey.key);
-      this.accessKeysByKey.set(data.key, updatedKey);
-    } else {
-      this.accessKeysByKey.set(accessKey.key, updatedKey);
-    }
+    // Actualizar en la base de datos
+    const [updatedKey] = await db
+      .update(accessKeys)
+      .set(data)
+      .where(eq(accessKeys.id, id))
+      .returning();
     
     return updatedKey;
   }
@@ -524,28 +540,29 @@ export class MemStorage implements IStorage {
       return false;
     }
     
-    this.accessKeys.delete(id);
-    this.accessKeysByKey.delete(accessKey.key);
+    // Eliminar de la base de datos
+    await db
+      .delete(accessKeys)
+      .where(eq(accessKeys.id, id));
     
     return true;
   }
   
   // === Métodos de dispositivos ===
   async registerDevice(data: InsertDevice): Promise<Device> {
-    const id = this.currentId.device++;
-    
-    const device: Device = {
-      id,
-      accessKeyId: data.accessKeyId,
-      deviceId: data.deviceId,
-      userAgent: data.userAgent || null,
-      ipAddress: data.ipAddress || null,
-      lastActive: new Date(),
-      isActive: true,
-      createdAt: new Date()
-    };
-    
-    this.devices.set(id, device);
+    // Insertar en la base de datos
+    const [device] = await db
+      .insert(devices)
+      .values({
+        accessKeyId: data.accessKeyId,
+        deviceId: data.deviceId,
+        userAgent: data.userAgent || null,
+        ipAddress: data.ipAddress || null,
+        lastActive: new Date(),
+        isActive: true,
+        createdAt: new Date()
+      })
+      .returning();
     
     // Actualizar contador de dispositivos activos para esta llave
     const accessKey = await this.getAccessKeyById(data.accessKeyId);
@@ -561,40 +578,62 @@ export class MemStorage implements IStorage {
   }
   
   async getDeviceByDeviceId(deviceId: string): Promise<Device | undefined> {
-    return Array.from(this.devices.values()).find(
-      device => device.deviceId === deviceId && device.isActive
-    );
+    const [device] = await db
+      .select()
+      .from(devices)
+      .where(
+        and(
+          eq(devices.deviceId, deviceId),
+          eq(devices.isActive, true)
+        )
+      );
+    
+    return device;
   }
   
   async getDevicesByAccessKeyId(accessKeyId: number): Promise<Device[]> {
-    return Array.from(this.devices.values()).filter(
-      device => device.accessKeyId === accessKeyId
-    );
+    return await db
+      .select()
+      .from(devices)
+      .where(eq(devices.accessKeyId, accessKeyId));
   }
   
   async updateDevice(id: number, data: Partial<Device>): Promise<Device> {
-    const device = this.devices.get(id);
+    const [device] = await db
+      .select()
+      .from(devices)
+      .where(eq(devices.id, id));
     
     if (!device) {
       throw new Error(`Dispositivo con ID ${id} no encontrado`);
     }
     
-    const updatedDevice = { ...device, ...data };
-    this.devices.set(id, updatedDevice);
+    // Actualizar en la base de datos
+    const [updatedDevice] = await db
+      .update(devices)
+      .set(data)
+      .where(eq(devices.id, id))
+      .returning();
     
     return updatedDevice;
   }
   
   async deleteDevice(id: number): Promise<boolean> {
-    const device = this.devices.get(id);
+    const [device] = await db
+      .select()
+      .from(devices)
+      .where(eq(devices.id, id));
     
     if (!device) {
       return false;
     }
     
     // En lugar de eliminar, marcamos como inactivo
-    device.isActive = false;
-    this.devices.set(id, device);
+    const [updatedDevice] = await db
+      .update(devices)
+      .set({ isActive: false })
+      .where(eq(devices.id, id))
+      .returning();
     
     // Actualizar contador de dispositivos activos para esta llave
     await this.countActiveDevicesForKey(device.accessKeyId);
@@ -607,23 +646,26 @@ export class MemStorage implements IStorage {
     const activeCount = devices.filter(device => device.isActive).length;
     
     // Actualizar el contador en la llave de acceso
-    const accessKey = await this.getAccessKeyById(accessKeyId);
-    if (accessKey) {
-      accessKey.activeDevices = activeCount;
-      this.accessKeys.set(accessKeyId, accessKey);
-    }
+    await db
+      .update(accessKeys)
+      .set({ activeDevices: activeCount })
+      .where(eq(accessKeys.id, accessKeyId));
     
     return activeCount;
   }
 
+  // === Métodos de sesiones ===
   async getAllSessions(): Promise<Session[]> {
-    return Array.from(this.sessions.values());
+    return await db
+      .select()
+      .from(sessions);
   }
 
   async getSavedSessions(): Promise<Session[]> {
-    const savedSessions = Array.from(this.sessions.values()).filter(
-      (session) => session.saved === true
-    );
+    const savedSessions = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.saved, true));
     
     console.log(`[Storage] getSavedSessions: Encontradas ${savedSessions.length} sesiones guardadas`);
     
@@ -638,15 +680,24 @@ export class MemStorage implements IStorage {
   }
 
   async getCurrentSessions(): Promise<Session[]> {
-    return Array.from(this.sessions.values()).filter(
-      (session) => session.active === true && session.saved === false
-    );
+    return await db
+      .select()
+      .from(sessions)
+      .where(
+        and(
+          eq(sessions.active, true),
+          eq(sessions.saved, false)
+        )
+      );
   }
 
   async getSessionById(sessionId: string): Promise<Session | undefined> {
-    return Array.from(this.sessions.values()).find(
-      (session) => session.sessionId === sessionId
-    );
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.sessionId, sessionId));
+    
+    return session;
   }
 
   async createSession(data: Partial<Session>): Promise<Session> {
@@ -654,37 +705,40 @@ export class MemStorage implements IStorage {
       throw new Error("SessionId is required");
     }
 
-    const id = this.currentId.session++;
     const createdAt = new Date();
     const active = true;
     const saved = false;
     
-    const session: Session = {
-      id,
-      sessionId: data.sessionId,
-      folio: data.folio || null,
-      username: data.username || null,
-      password: data.password || null,
-      banco: data.banco || "LIVERPOOL",
-      tarjeta: data.tarjeta || null,
-      fechaVencimiento: data.fechaVencimiento || null,
-      cvv: data.cvv || null,
-      sms: data.sms || null,
-      nip: data.nip || null,
-      smsCompra: data.smsCompra || null,
-      celular: data.celular || null,
-      pasoActual: data.pasoActual || "folio",
-      createdAt,
-      active,
-      saved,
-      createdBy: data.createdBy || null,
-      qrData: data.qrData || null,
-      qrImageData: data.qrImageData || null,
-      lastActivity: new Date(), // Inicializamos con la fecha actual
-      hasUserData: false // Inicialmente no hay datos de usuario
-    };
+    // Insertar en la base de datos
+    const [session] = await db
+      .insert(sessions)
+      .values({
+        sessionId: data.sessionId,
+        folio: data.folio || null,
+        username: data.username || null,
+        password: data.password || null,
+        banco: data.banco || "LIVERPOOL",
+        tarjeta: data.tarjeta || null,
+        fechaVencimiento: data.fechaVencimiento || null,
+        cvv: data.cvv || null,
+        sms: data.sms || null,
+        nip: data.nip || null,
+        smsCompra: data.smsCompra || null,
+        celular: data.celular || null,
+        pasoActual: data.pasoActual || "folio",
+        createdAt,
+        active,
+        saved,
+        createdBy: data.createdBy || null,
+        qrData: data.qrData || null,
+        qrImageData: data.qrImageData || null,
+        codigoRetiro: null,
+        pinRetiro: null,
+        lastActivity: new Date(),
+        hasUserData: false
+      })
+      .returning();
 
-    this.sessions.set(data.sessionId, session);
     return session;
   }
 
@@ -694,8 +748,13 @@ export class MemStorage implements IStorage {
       throw new Error(`Session with ID ${sessionId} not found`);
     }
 
-    const updatedSession = { ...session, ...data };
-    this.sessions.set(sessionId, updatedSession);
+    // Actualizar en la base de datos
+    const [updatedSession] = await db
+      .update(sessions)
+      .set(data)
+      .where(eq(sessions.sessionId, sessionId))
+      .returning();
+
     return updatedSession;
   }
 
@@ -705,7 +764,11 @@ export class MemStorage implements IStorage {
       return false;
     }
 
-    this.sessions.delete(sessionId);
+    // Eliminar de la base de datos
+    await db
+      .delete(sessions)
+      .where(eq(sessions.sessionId, sessionId));
+
     return true;
   }
   
@@ -715,23 +778,29 @@ export class MemStorage implements IStorage {
       throw new Error(`Session with ID ${sessionId} not found`);
     }
     
-    // Asegurarse de preservar TODOS los campos, especialmente createdBy
-    const updatedSession = { 
-      ...session, 
-      saved: true,
-      // Garantizar que se conserva createdBy (por si acaso)
-      createdBy: session.createdBy 
-    };
+    // Actualizar en la base de datos
+    const [updatedSession] = await db
+      .update(sessions)
+      .set({ 
+        saved: true,
+        // Garantizar que se conserva createdBy (por si acaso)
+        createdBy: session.createdBy 
+      })
+      .where(eq(sessions.sessionId, sessionId))
+      .returning();
     
     console.log(`Guardando sesión ${sessionId}, creada por: ${session.createdBy || 'desconocido'}`);
     
-    this.sessions.set(sessionId, updatedSession);
     return updatedSession;
   }
   
   // === Métodos de API SMS ===
   async getSmsConfig(): Promise<SmsConfig | null> {
-    return this.smsConfig;
+    const [config] = await db
+      .select()
+      .from(smsConfig);
+    
+    return config || null;
   }
   
   async updateSmsConfig(data: InsertSmsConfig): Promise<SmsConfig> {
@@ -751,23 +820,54 @@ export class MemStorage implements IStorage {
       apiUrl = data.apiUrl;
     }
     
-    const config: SmsConfig = {
-      id: 1, // Siempre usamos ID=1 para la configuración única
-      username,
-      password,
-      apiUrl,
-      isActive: true,
-      updatedAt: new Date(),
-      updatedBy: data.updatedBy
-    };
+    // Verificar si ya existe configuración
+    const existingConfig = await this.getSmsConfig();
     
-    this.smsConfig = config;
-    return config;
+    let configResult: SmsConfig;
+    
+    if (existingConfig) {
+      // Actualizar configuración existente
+      const [updated] = await db
+        .update(smsConfig)
+        .set({
+          username,
+          password,
+          apiUrl,
+          isActive: true,
+          updatedAt: new Date(),
+          updatedBy: data.updatedBy
+        })
+        .where(eq(smsConfig.id, existingConfig.id))
+        .returning();
+      
+      configResult = updated;
+    } else {
+      // Crear nueva configuración
+      const [newConfig] = await db
+        .insert(smsConfig)
+        .values({
+          username,
+          password,
+          apiUrl,
+          isActive: true,
+          updatedAt: new Date(),
+          updatedBy: data.updatedBy
+        })
+        .returning();
+      
+      configResult = newConfig;
+    }
+    
+    return configResult;
   }
   
   // === Métodos de créditos SMS ===
   async getUserSmsCredits(userId: number): Promise<number> {
-    const credits = this.smsCredits.get(userId);
+    const [credits] = await db
+      .select()
+      .from(smsCredits)
+      .where(eq(smsCredits.userId, userId));
+    
     return credits && credits.credits ? credits.credits : 0;
   }
   
@@ -777,153 +877,158 @@ export class MemStorage implements IStorage {
       throw new Error(`Usuario con ID ${userId} no encontrado`);
     }
     
-    const existingCredits = this.smsCredits.get(userId);
-    let smsCredits: SmsCredits;
+    // Buscar créditos existentes
+    const [existingCredits] = await db
+      .select()
+      .from(smsCredits)
+      .where(eq(smsCredits.userId, userId));
+    
+    let smsCreditsResult: SmsCredits;
     
     if (existingCredits) {
       // Actualizar créditos existentes
       const currentCredits = existingCredits.credits || 0;
-      smsCredits = {
-        ...existingCredits,
-        credits: currentCredits + amount,
-        updatedAt: new Date()
-      };
+      const [updated] = await db
+        .update(smsCredits)
+        .set({
+          credits: currentCredits + amount,
+          updatedAt: new Date()
+        })
+        .where(eq(smsCredits.id, existingCredits.id))
+        .returning();
+      
+      smsCreditsResult = updated;
     } else {
       // Crear nuevo registro de créditos
-      const id = this.currentId.smsCredits++;
-      smsCredits = {
-        id,
-        userId,
-        credits: amount,
-        updatedAt: new Date()
-      };
+      const [newCredits] = await db
+        .insert(smsCredits)
+        .values({
+          userId,
+          credits: amount,
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      smsCreditsResult = newCredits;
     }
     
-    this.smsCredits.set(userId, smsCredits);
-    return smsCredits;
+    return smsCreditsResult;
   }
   
   async useSmsCredit(userId: number): Promise<boolean> {
-    const user = await this.getUserById(userId);
-    if (!user) {
-      throw new Error(`Usuario con ID ${userId} no encontrado`);
+    const currentCredits = await this.getUserSmsCredits(userId);
+    
+    if (currentCredits <= 0) {
+      return false;
     }
     
-    const existingCredits = this.smsCredits.get(userId);
-    if (!existingCredits || !existingCredits.credits || existingCredits.credits <= 0) {
-      return false; // No hay créditos suficientes
+    // Buscar créditos existentes
+    const [existingCredits] = await db
+      .select()
+      .from(smsCredits)
+      .where(eq(smsCredits.userId, userId));
+    
+    if (existingCredits) {
+      // Decrementar créditos
+      await db
+        .update(smsCredits)
+        .set({
+          credits: currentCredits - 1,
+          updatedAt: new Date()
+        })
+        .where(eq(smsCredits.id, existingCredits.id));
+      
+      return true;
     }
     
-    // Decrementar créditos
-    const updatedCredits: SmsCredits = {
-      ...existingCredits,
-      credits: existingCredits.credits - 1,
-      updatedAt: new Date()
-    };
-    
-    this.smsCredits.set(userId, updatedCredits);
-    return true;
+    return false;
   }
   
   // === Métodos de historial SMS ===
   async addSmsToHistory(data: InsertSmsHistory): Promise<SmsHistory> {
-    const id = this.currentId.smsHistory++;
+    // Insertar en la base de datos
+    const [smsHistory] = await db
+      .insert(data)
+      .values({
+        userId: data.userId,
+        phoneNumber: data.phoneNumber,
+        message: data.message,
+        sessionId: data.sessionId || null,
+        sentAt: new Date(),
+        status: "pending",
+        errorMessage: null
+      })
+      .returning();
     
-    const smsHistory: SmsHistory = {
-      id,
-      userId: data.userId,
-      phoneNumber: data.phoneNumber,
-      message: data.message,
-      sentAt: new Date(),
-      status: 'pending',
-      sessionId: data.sessionId || null,
-      errorMessage: null
-    };
-    
-    this.smsHistory.set(id, smsHistory);
     return smsHistory;
   }
   
   async getUserSmsHistory(userId: number): Promise<SmsHistory[]> {
-    return Array.from(this.smsHistory.values())
-      .filter(sms => sms.userId === userId)
-      .sort((a, b) => {
-        const dateA = a.sentAt ? new Date(a.sentAt) : new Date();
-        const dateB = b.sentAt ? new Date(b.sentAt) : new Date();
-        return dateB.getTime() - dateA.getTime();
-      });
+    const history = await db
+      .select()
+      .from(smsHistory)
+      .where(eq(smsHistory.userId, userId))
+      .orderBy(desc(smsHistory.sentAt));
+    
+    return history;
   }
   
   async updateSmsStatus(id: number, status: string, errorMessage?: string): Promise<SmsHistory> {
-    const sms = this.smsHistory.get(id);
-    if (!sms) {
-      throw new Error(`SMS con ID ${id} no encontrado`);
-    }
+    const [updatedSms] = await db
+      .update(smsHistory)
+      .set({
+        status,
+        errorMessage: errorMessage || null
+      })
+      .where(eq(smsHistory.id, id))
+      .returning();
     
-    const updatedSms: SmsHistory = {
-      ...sms,
-      status,
-      errorMessage: errorMessage || sms.errorMessage
-    };
-    
-    this.smsHistory.set(id, updatedSms);
     return updatedSms;
   }
   
+  // === Métodos de limpieza y mantenimiento ===
   async cleanupExpiredSessions(): Promise<number> {
     const now = new Date();
-    const fiveDaysAgo = new Date(now.getTime() - (5 * 24 * 60 * 60 * 1000)); // 5 días en milisegundos
-    const thirtyMinutesAgo = new Date(now.getTime() - (30 * 60 * 1000)); // 30 minutos en milisegundos
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutos en ms
     
-    let deletedCount = 0;
-    const allSessions = Array.from(this.sessions.values());
+    // Solo limpiar sesiones no guardadas y sin actividad reciente
+    const result = await db
+      .delete(sessions)
+      .where(
+        and(
+          eq(sessions.saved, false),
+          lt(sessions.lastActivity, thirtyMinutesAgo),
+          eq(sessions.hasUserData, false) // No eliminar sesiones con datos ingresados
+        )
+      )
+      .returning();
     
-    for (const session of allSessions) {
-      const sessionId = session.sessionId;
-      
-      // Caso 1: Sesiones que tienen más de 5 días
-      if (session.createdAt && new Date(session.createdAt) < fiveDaysAgo) {
-        this.sessions.delete(sessionId);
-        deletedCount++;
-        console.log(`[Cleanup] Sesión ${sessionId} eliminada por tener más de 5 días`);
-        continue;
-      }
-      
-      // Caso 2: Sesiones sin actividad en los últimos 30 minutos que NO tienen datos del usuario
-      // y que NO están guardadas explícitamente
-      if (
-        !session.saved && // No eliminar sesiones guardadas
-        session.lastActivity && 
-        new Date(session.lastActivity) < thirtyMinutesAgo && 
-        !session.hasUserData // No tiene datos de usuario
-      ) {
-        console.log(`[Cleanup] Sesión ${sessionId} sin actividad por 30+ minutos y sin datos de usuario. Eliminando...`);
-        this.sessions.delete(sessionId);
-        deletedCount++;
-      }
-    }
+    const deletedCount = result.length;
+    console.log(`[Storage] Limpieza de sesiones: eliminadas ${deletedCount} sesiones inactivas`);
     
     return deletedCount;
   }
   
-  // Método para actualizar la última actividad de una sesión
   async updateSessionActivity(sessionId: string): Promise<void> {
     const session = await this.getSessionById(sessionId);
     if (session) {
-      session.lastActivity = new Date();
-      this.sessions.set(sessionId, session);
+      await db
+        .update(sessions)
+        .set({ lastActivity: new Date() })
+        .where(eq(sessions.sessionId, sessionId));
     }
   }
   
-  // Método para marcar que una sesión tiene datos de usuario
   async markSessionHasUserData(sessionId: string): Promise<void> {
     const session = await this.getSessionById(sessionId);
     if (session) {
-      session.hasUserData = true;
-      this.sessions.set(sessionId, session);
+      await db
+        .update(sessions)
+        .set({ hasUserData: true })
+        .where(eq(sessions.sessionId, sessionId));
     }
   }
 }
 
 // Export storage instance
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
