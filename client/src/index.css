@@ -29,9 +29,11 @@
   @media (max-width: 640px) {
     .mobile-scrollable {
       overflow-y: auto !important;
+      overflow-x: auto !important;
       -webkit-overflow-scrolling: touch;
       max-height: 70vh !important;
       padding-bottom: 120px !important;
+      width: 100% !important;
     }
     
     .mobile-full-height {
@@ -43,6 +45,24 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+    }
+
+    /* Mejora para tablas en móviles */
+    table {
+      display: block;
+      width: 100% !important;
+      overflow-x: auto !important;
+    }
+
+    /* Asegurar que los contenidos son visibles en pantallas pequeñas */
+    .overflow-hidden {
+      overflow: visible !important;
+    }
+
+    /* Forzar scroll vertical en contenedores que puedan tener contenido cortado */
+    .overflow-y-auto {
+      overflow-y: auto !important;
+      max-height: unset !important;
     }
   }
 }
