@@ -248,12 +248,14 @@ const SmsManagement: React.FC = () => {
   };
   
   return (
-    <div className="p-4 h-full">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">API de Mensajes SMS</h2>
-        <div className="flex space-x-2">
+    <div className="p-2 sm:p-4 h-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold">API de Mensajes SMS</h2>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
           <Button 
             variant="outline" 
+            size="sm"
+            className="w-full sm:w-auto"
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ['/api/sms/config'] });
               queryClient.invalidateQueries({ queryKey: ['/api/sms/credits'] });
@@ -267,7 +269,7 @@ const SmsManagement: React.FC = () => {
           {isAdmin && (
             <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="secondary">
+                <Button variant="secondary" size="sm" className="w-full sm:w-auto">
                   <Settings className="h-4 w-4 mr-2" />
                   Configurar API
                 </Button>
@@ -364,7 +366,7 @@ const SmsManagement: React.FC = () => {
           {isAdmin && (
             <Dialog open={isAddCreditsDialogOpen} onOpenChange={setIsAddCreditsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="secondary">
+                <Button variant="secondary" size="sm" className="w-full sm:w-auto">
                   <Coins className="h-4 w-4 mr-2" />
                   Agregar Créditos
                 </Button>
@@ -445,7 +447,7 @@ const SmsManagement: React.FC = () => {
           
           <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm" className="w-full sm:w-auto">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Enviar SMS
               </Button>
