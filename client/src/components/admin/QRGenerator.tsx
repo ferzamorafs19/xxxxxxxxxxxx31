@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,7 @@ export function QRGenerator() {
     return /^\d*$/.test(input);
   };
 
-  // Función para generar el código QR
+  // Función para generar el código QR utilizando la API de QR Code Generator
   const generateQR = async () => {
     if (!inputText) {
       toast({
@@ -32,17 +31,14 @@ export function QRGenerator() {
     setIsGenerating(true);
     
     try {
-      const url = await QRCode.toDataURL(inputText, {
-        errorCorrectionLevel: 'H',
-        margin: 1,
-        width: 300,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        }
-      });
-      
+      // Usar la API de QR Code Generator en lugar de la biblioteca
+      const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(inputText)}`;
       setQrImageUrl(url);
+      
+      toast({
+        title: "QR generado",
+        description: "El código QR se ha generado correctamente",
+      });
     } catch (error) {
       console.error("Error generando QR:", error);
       toast({
@@ -59,17 +55,31 @@ export function QRGenerator() {
   const downloadQR = () => {
     if (!qrImageUrl) return;
     
-    const link = document.createElement('a');
-    link.href = qrImageUrl;
-    link.download = `qr-code-${inputText}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "QR descargado",
-      description: "El código QR se ha descargado correctamente",
-    });
+    fetch(qrImageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `qr-code-${inputText}.png`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        
+        toast({
+          title: "QR descargado",
+          description: "El código QR se ha descargado correctamente",
+        });
+      })
+      .catch(error => {
+        console.error("Error descargando QR:", error);
+        toast({
+          title: "Error al descargar",
+          description: "No se pudo descargar el código QR",
+          variant: "destructive",
+        });
+      });
   };
 
   // Función para copiar el texto del QR al portapapeles
