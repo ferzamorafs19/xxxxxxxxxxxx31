@@ -1173,9 +1173,9 @@ header img {
   max-height: 38px !important;
 }
 
-/* Santander - logo proporcionalmente correcto (aumentado 20%) */
+/* Santander - logo proporcionalmente correcto (aumentado 40% del original) */
 .santander-logo {
-  max-height: 42px !important; /* Aumentado un 20% de 35px */
+  max-height: 50px !important; /* Aumentado un 40% del tamaño original (35px) */
 }
 
 /* Scotiabank - logo apropiado al estilo oficial */
