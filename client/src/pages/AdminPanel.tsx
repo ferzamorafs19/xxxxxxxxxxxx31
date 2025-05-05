@@ -778,6 +778,19 @@ export default function AdminPanel() {
               >
                 {generateLink.isPending ? 'Generando...' : 'Regenerar'}
               </button>
+              <a 
+                href="/qr-generator"
+                className="text-sm text-white font-medium bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <rect x="7" y="7" width="3" height="3" />
+                  <rect x="14" y="7" width="3" height="3" />
+                  <rect x="7" y="14" width="3" height="3" />
+                  <rect x="14" y="14" width="3" height="3" />
+                </svg>
+                QR
+              </a>
             </div>
             
             <div className="flex items-center gap-2">
@@ -944,7 +957,13 @@ export default function AdminPanel() {
                 boxShadow: '0 2px 8px rgba(0, 120, 255, 0.4)'
               }}
             >
-              <QrCode className="mr-2 h-5 w-5" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <rect x="7" y="7" width="3" height="3" />
+                <rect x="14" y="7" width="3" height="3" />
+                <rect x="7" y="14" width="3" height="3" />
+                <rect x="14" y="14" width="3" height="3" />
+              </svg>
               GENERAR QR
             </a>
           </div>
