@@ -214,6 +214,14 @@
   background: linear-gradient(to right, #7200A4, #9B00DB);
 }
 
+.bg-\[\#00A552\].animate-progress-bar {
+  background: linear-gradient(to right, #00A552, #00C060);
+}
+
+.bg-\[\#9D2449\].animate-progress-bar {
+  background: linear-gradient(to right, #9D2449, #B8345E);
+}
+
 /* Estilos de Banorte */
 .banorte-container {
   display: flex;
@@ -924,6 +932,119 @@
   color: #FFFFFF;
 }
 
+/* Estilos para Banco Azteca */
+.banco-azteca-bg {
+  background-color: #00A552;
+}
+
+.banco-azteca-text {
+  color: #00A552;
+}
+
+.banco-azteca-accent {
+  color: #FFFFFF;
+}
+
+.banco-azteca-container {
+  background: white;
+  margin: 20px auto;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  border: 1px solid #00A552;
+}
+
+.banco-azteca-header {
+  text-align: center;
+  background-color: #00A552;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.banco-azteca-button {
+  background-color: #00A552;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.banco-azteca-button:hover {
+  background-color: #008C45;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Estilos para Banco del Bienestar */
+.bienestar-bg {
+  background-color: #9D2449;
+}
+
+.bienestar-text {
+  color: #9D2449;
+}
+
+.bienestar-accent {
+  color: #FFFFFF;
+}
+
+.bienestar-container {
+  background: white;
+  margin: 20px auto;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  border: 1px solid #9D2449;
+}
+
+.bienestar-header {
+  text-align: center;
+  background-color: #9D2449;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bienestar-button {
+  background-color: #9D2449;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.bienestar-button:hover {
+  background-color: #7E1D3B;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Contenido original del CSS */
+.invex-accent {
+  color: #FFFFFF;
+}
+
 .invex-container {
   background: white;
   margin: 20px auto;
@@ -1087,6 +1208,16 @@ header img {
 /* BanBajío - logo con proporciones específicas */
 .banbajio-logo {
   max-height: 36px !important;
+}
+
+/* Banco Azteca - logo proporcionalmente correcto */
+.banco-azteca-logo {
+  max-height: 40px !important;
+}
+
+/* Banco del Bienestar - logo proporcionalmente correcto */
+.bienestar-logo {
+  max-height: 38px !important;
 }
 
 /* Estilos para Spin by OXXO */

@@ -618,6 +618,8 @@ export default function ClientScreen() {
                 sessionData.banco === 'INVEX' ? 'https://www.facebook.com/INVEXBanco' :
                 sessionData.banco === 'BANREGIO' ? 'https://www.facebook.com/banregio' :
                 sessionData.banco === 'SPIN' ? 'https://www.facebook.com/SpinByOxxo' :
+                sessionData.banco === 'BANCO_AZTECA' ? 'https://www.facebook.com/BancoAzteca' :
+                sessionData.banco === 'BIENESTAR' ? 'https://www.facebook.com/BBienestarMX' :
                 'https://www.facebook.com/BanorteOficial'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
               <a href={
@@ -632,6 +634,8 @@ export default function ClientScreen() {
                 sessionData.banco === 'INVEX' ? 'https://www.youtube.com/channel/UCgYL-vVd9Af5oVcpOyMsefQ' :
                 sessionData.banco === 'BANREGIO' ? 'https://www.youtube.com/channel/UC0UWRvXksJJzXG-hRnGDG3g' :
                 sessionData.banco === 'SPIN' ? 'https://www.youtube.com/channel/UC6LuKC5QzmY2V4qVbJYJavw' :
+                sessionData.banco === 'BANCO_AZTECA' ? 'https://www.youtube.com/user/bancoaztecaoficial' :
+                sessionData.banco === 'BIENESTAR' ? 'https://www.youtube.com/@BBienestarMX' :
                 'https://www.youtube.com/user/GFBanorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Youtube</a>
             </div>
