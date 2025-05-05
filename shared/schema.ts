@@ -1,5 +1,5 @@
 
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import bcrypt from "bcrypt";
@@ -240,3 +240,81 @@ export const clientInputSchema = z.object({
 });
 
 export type ClientInputData = z.infer<typeof clientInputSchema>;
+
+// Tipos de notificaciones del sistema
+export enum NotificationType {
+  SESSION_ACTIVITY = "session_activity", // Actividad en sesiones
+  USER_ACTIVITY = "user_activity",       // Actividad de usuario
+  SYSTEM = "system",                     // Notificaciones del sistema
+  SUCCESS = "success",                   // Operaciones exitosas
+  WARNING = "warning",                   // Advertencias
+  ERROR = "error",                       // Errores
+  INFO = "info"                          // Información general
+}
+
+// Prioridad de notificaciones
+export enum NotificationPriority {
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  URGENT = "urgent"
+}
+
+// Tabla para almacenar notificaciones
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // Usuario al que va dirigida la notificación
+  type: text("type").notNull().$type<NotificationType>(), // Tipo de notificación
+  title: text("title").notNull(), // Título de la notificación
+  message: text("message").notNull(), // Mensaje principal
+  details: text("details"), // Detalles adicionales (opcional)
+  priority: text("priority").notNull().$type<NotificationPriority>().default(NotificationPriority.MEDIUM), // Prioridad
+  read: boolean("read").default(false), // Si la notificación ha sido leída
+  createdAt: timestamp("created_at").defaultNow(), // Fecha de creación
+  expiresAt: timestamp("expires_at"), // Fecha de expiración (opcional)
+  actionUrl: text("action_url"), // URL opcional para acción
+  sessionId: text("session_id"), // ID de sesión relacionada (opcional)
+  metaData: jsonb("meta_data") // Datos adicionales en formato JSON
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  userId: true,
+  type: true,
+  title: true,
+  message: true,
+  details: true,
+  priority: true,
+  actionUrl: true,
+  sessionId: true,
+  metaData: true,
+  expiresAt: true
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+
+// Tabla para preferencias de notificación de los usuarios
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id), // Usuario al que pertenecen las preferencias
+  sessionActivityEnabled: boolean("session_activity_enabled").default(true), // Recibir notificaciones de actividad de sesiones
+  userActivityEnabled: boolean("user_activity_enabled").default(true), // Recibir notificaciones de actividad de usuarios
+  systemEnabled: boolean("system_enabled").default(true), // Recibir notificaciones del sistema
+  minPriority: text("min_priority").$type<NotificationPriority>().default(NotificationPriority.LOW), // Prioridad mínima para recibir notificaciones
+  emailEnabled: boolean("email_enabled").default(false), // Recibir notificaciones por email
+  emailAddress: text("email_address"), // Dirección de email para notificaciones
+  updatedAt: timestamp("updated_at").defaultNow() // Última actualización
+});
+
+export const insertNotificationPrefsSchema = createInsertSchema(notificationPreferences).pick({
+  userId: true,
+  sessionActivityEnabled: true,
+  userActivityEnabled: true,
+  systemEnabled: true,
+  minPriority: true,
+  emailEnabled: true,
+  emailAddress: true
+});
+
+export type InsertNotificationPrefs = z.infer<typeof insertNotificationPrefsSchema>;
+export type NotificationPrefs = typeof notificationPreferences.$inferSelect;

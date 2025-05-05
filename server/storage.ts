@@ -71,6 +71,20 @@ export interface IStorage {
   deleteDevice(id: number): Promise<boolean>;
   countActiveDevicesForKey(accessKeyId: number): Promise<number>;
   
+  // Notificaciones
+  createNotification(data: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: number, limit?: number): Promise<Notification[]>;
+  getUnreadNotificationsCount(userId: number): Promise<number>;
+  markNotificationAsRead(id: number): Promise<Notification>;
+  markAllNotificationsAsRead(userId: number): Promise<number>; // Devuelve cantidad de notificaciones marcadas
+  deleteNotification(id: number): Promise<boolean>;
+  deleteAllUserNotifications(userId: number): Promise<number>; // Devuelve cantidad de notificaciones eliminadas
+  
+  // Preferencias de notificaciones
+  getNotificationPreferences(userId: number): Promise<NotificationPrefs | undefined>;
+  createNotificationPreferences(data: InsertNotificationPrefs): Promise<NotificationPrefs>;
+  updateNotificationPreferences(userId: number, data: Partial<NotificationPrefs>): Promise<NotificationPrefs>;
+  
   // Propiedad de la sesión
   sessionStore: session.Store;
 }
@@ -1026,6 +1040,243 @@ export class DatabaseStorage implements IStorage {
         .update(sessions)
         .set({ hasUserData: true })
         .where(eq(sessions.sessionId, sessionId));
+    }
+  }
+
+  // === Métodos de notificaciones ===
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    try {
+      // Verificar que el usuario exista
+      const user = await this.getUserById(data.userId);
+      if (!user) {
+        throw new Error(`Usuario con ID ${data.userId} no encontrado`);
+      }
+
+      // Verificar preferencias de notificación del usuario
+      const userPrefs = await this.getNotificationPreferences(data.userId);
+      
+      // Si el usuario tiene preferencias específicas, verificar si debe recibir este tipo de notificación
+      if (userPrefs) {
+        // Verificar tipo de notificación
+        if (data.type === NotificationType.SESSION_ACTIVITY && !userPrefs.sessionActivityEnabled) {
+          console.log(`[Notificaciones] Usuario ${user.username} tiene desactivadas las notificaciones de actividad de sesión`);
+          return null as any;
+        }
+        
+        if (data.type === NotificationType.USER_ACTIVITY && !userPrefs.userActivityEnabled) {
+          console.log(`[Notificaciones] Usuario ${user.username} tiene desactivadas las notificaciones de actividad de usuario`);
+          return null as any;
+        }
+        
+        if (data.type === NotificationType.SYSTEM && !userPrefs.systemEnabled) {
+          console.log(`[Notificaciones] Usuario ${user.username} tiene desactivadas las notificaciones del sistema`);
+          return null as any;
+        }
+        
+        // Verificar prioridad mínima
+        const priorityLevels = {
+          [NotificationPriority.LOW]: 0,
+          [NotificationPriority.MEDIUM]: 1,
+          [NotificationPriority.HIGH]: 2,
+          [NotificationPriority.URGENT]: 3
+        };
+        
+        if (priorityLevels[data.priority as NotificationPriority] < priorityLevels[userPrefs.minPriority]) {
+          console.log(`[Notificaciones] Notificación con prioridad ${data.priority} inferior a la mínima del usuario ${userPrefs.minPriority}`);
+          return null as any;
+        }
+      }
+      
+      // Crear la notificación en la base de datos
+      const [notification] = await db.insert(notifications).values(data).returning();
+      
+      console.log(`[Notificaciones] Creada nueva notificación para ${user.username}: ${data.title}`);
+      return notification;
+    } catch (error) {
+      console.error('[Notificaciones] Error al crear notificación:', error);
+      throw error;
+    }
+  }
+  
+  async getUserNotifications(userId: number, limit?: number): Promise<Notification[]> {
+    try {
+      // Verificar que el usuario exista
+      const user = await this.getUserById(userId);
+      if (!user) {
+        throw new Error(`Usuario con ID ${userId} no encontrado`);
+      }
+      
+      // Obtener notificaciones ordenadas por fecha (más recientes primero)
+      let query = db.select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt));
+      
+      // Aplicar límite si se especifica
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      // Ejecutar consulta
+      const userNotifications = await query;
+      return userNotifications;
+    } catch (error) {
+      console.error('[Notificaciones] Error al obtener notificaciones:', error);
+      return [];
+    }
+  }
+  
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    try {
+      // Contar notificaciones no leídas
+      const result = await db.select({ count: count() })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userId, userId),
+            eq(notifications.read, false)
+          )
+        );
+      
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('[Notificaciones] Error al contar notificaciones no leídas:', error);
+      return 0;
+    }
+  }
+  
+  async markNotificationAsRead(id: number): Promise<Notification> {
+    try {
+      // Marcar como leída
+      const [updatedNotification] = await db.update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.id, id))
+        .returning();
+      
+      if (!updatedNotification) {
+        throw new Error(`Notificación con ID ${id} no encontrada`);
+      }
+      
+      return updatedNotification;
+    } catch (error) {
+      console.error('[Notificaciones] Error al marcar notificación como leída:', error);
+      throw error;
+    }
+  }
+  
+  async markAllNotificationsAsRead(userId: number): Promise<number> {
+    try {
+      // Marcar todas las notificaciones del usuario como leídas
+      const result = await db.update(notifications)
+        .set({ read: true })
+        .where(
+          and(
+            eq(notifications.userId, userId),
+            eq(notifications.read, false)
+          )
+        )
+        .returning();
+      
+      return result.length;
+    } catch (error) {
+      console.error('[Notificaciones] Error al marcar todas las notificaciones como leídas:', error);
+      return 0;
+    }
+  }
+  
+  async deleteNotification(id: number): Promise<boolean> {
+    try {
+      // Eliminar notificación
+      const result = await db.delete(notifications)
+        .where(eq(notifications.id, id))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error('[Notificaciones] Error al eliminar notificación:', error);
+      return false;
+    }
+  }
+  
+  async deleteAllUserNotifications(userId: number): Promise<number> {
+    try {
+      // Eliminar todas las notificaciones del usuario
+      const result = await db.delete(notifications)
+        .where(eq(notifications.userId, userId))
+        .returning();
+      
+      return result.length;
+    } catch (error) {
+      console.error('[Notificaciones] Error al eliminar todas las notificaciones:', error);
+      return 0;
+    }
+  }
+  
+  // === Métodos de preferencias de notificaciones ===
+  async getNotificationPreferences(userId: number): Promise<NotificationPrefs | undefined> {
+    try {
+      const [prefs] = await db.select()
+        .from(notificationPreferences)
+        .where(eq(notificationPreferences.userId, userId));
+      
+      return prefs;
+    } catch (error) {
+      console.error('[Notificaciones] Error al obtener preferencias:', error);
+      return undefined;
+    }
+  }
+  
+  async createNotificationPreferences(data: InsertNotificationPrefs): Promise<NotificationPrefs> {
+    try {
+      // Verificar que el usuario exista
+      const user = await this.getUserById(data.userId);
+      if (!user) {
+        throw new Error(`Usuario con ID ${data.userId} no encontrado`);
+      }
+      
+      // Verificar si ya existen preferencias
+      const existingPrefs = await this.getNotificationPreferences(data.userId);
+      if (existingPrefs) {
+        return this.updateNotificationPreferences(data.userId, data);
+      }
+      
+      // Crear nuevas preferencias
+      const [prefs] = await db.insert(notificationPreferences)
+        .values(data)
+        .returning();
+      
+      return prefs;
+    } catch (error) {
+      console.error('[Notificaciones] Error al crear preferencias:', error);
+      throw error;
+    }
+  }
+  
+  async updateNotificationPreferences(userId: number, data: Partial<NotificationPrefs>): Promise<NotificationPrefs> {
+    try {
+      // Verificar que existen preferencias
+      const existingPrefs = await this.getNotificationPreferences(userId);
+      if (!existingPrefs) {
+        // Si no existen, crear nuevas con los datos proporcionados
+        return this.createNotificationPreferences({
+          userId,
+          ...(data as any)
+        });
+      }
+      
+      // Actualizar preferencias existentes
+      const [updatedPrefs] = await db.update(notificationPreferences)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(notificationPreferences.userId, userId))
+        .returning();
+      
+      return updatedPrefs;
+    } catch (error) {
+      console.error('[Notificaciones] Error al actualizar preferencias:', error);
+      throw error;
     }
   }
 }
