@@ -1210,10 +1210,9 @@ header img {
   max-height: 36px !important;
 }
 
-/* Banco Azteca - logo duplicado */
+/* Banco Azteca - tamaño original */
 .banco-azteca-logo {
-  max-height: 200px !important; /* Duplicado el tamaño actual (100px) */
-  filter: brightness(0) invert(1) !important; /* Cambia las partes grises a blanco */
+  max-height: 100px !important;
 }
 
 /* Banco del Bienestar - logo proporcionalmente correcto */

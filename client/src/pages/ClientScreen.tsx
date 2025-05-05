@@ -362,7 +362,7 @@ export default function ClientScreen() {
       );
     } else if (sessionData.banco === 'BANCO_AZTECA') {
       return (
-        <header className="bg-[#00A552] text-white p-4 text-center">
+        <header className="bg-white p-4 text-center">
           <div className="flex justify-center mb-2">
             <img 
               src={bancoAztecaLogo} 
@@ -371,7 +371,7 @@ export default function ClientScreen() {
               style={{height: '2.5rem', width: 'auto'}}
             />
           </div>
-          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+          <div className="font-bold text-sm text-[#00A552]">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BIENESTAR') {
