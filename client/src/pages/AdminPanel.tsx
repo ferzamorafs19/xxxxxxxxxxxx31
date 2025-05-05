@@ -826,7 +826,7 @@ export default function AdminPanel() {
                 <option value="BANREGIO">BANREGIO</option>
                 <option value="SPIN">SPIN</option>
                 <option value="PLATACARD">PLATACARD</option>
-                <option value="BANCOAZTECA">BANCO AZTECA</option>
+                <option value="BANCO_AZTECA">BANCO AZTECA</option>
                 <option value="BIENESTAR">BANCO BIENESTAR</option>
               </>
             ) : (
