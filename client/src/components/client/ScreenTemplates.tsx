@@ -748,6 +748,10 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'PLATACARD':
         return 'bg-[#FF5722] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+      case 'BANCO_AZTECA':
+        return 'bg-[#00A552] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+      case 'BIENESTAR':
+        return 'bg-[#9D2449] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
     }

