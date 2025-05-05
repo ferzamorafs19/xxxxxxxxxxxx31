@@ -570,6 +570,8 @@ export default function ClientScreen() {
                 sessionData.banco === 'INVEX' ? 'https://www.invex.com/contacto' :
                 sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/contacto.php' :
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/contacto' :
+                sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/contacto.html' :
+                sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/contacto' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
               <a href={
@@ -584,6 +586,8 @@ export default function ClientScreen() {
                 sessionData.banco === 'INVEX' ? 'https://www.invex.com/aclaraciones' :
                 sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/ayuda/aclaraciones.php' :
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/preguntas-frecuentes' :
+                sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/ayuda-y-preguntas-frecuentes.html' :
+                sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/acciones-y-programas/aclaraciones-bancarias' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte/aclaraciones-en-linea'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
               <a href={
@@ -598,6 +602,8 @@ export default function ClientScreen() {
                 sessionData.banco === 'INVEX' ? 'https://www.invex.com/promociones' :
                 sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/promociones/' :
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/promociones' :
+                sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/promociones.html' :
+                sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/documentos/promociones-y-sorteos' :
                 'https://www.banorte.com/wps/portal/banorte/Home/promociones/todas'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
               <a href={

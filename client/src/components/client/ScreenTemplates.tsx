@@ -777,6 +777,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANREGIO': return 'banregio-header';
       case 'BANORTE': return 'banorte-header';
       case 'PLATACARD': return 'bg-[#333333] text-white p-2';
+      case 'BANCO_AZTECA': return 'bg-[#00A552] text-white p-2';
+      case 'BIENESTAR': return 'bg-[#9D2449] text-white p-2';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -797,6 +799,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANREGIO': return 'bg-white p-4 rounded-lg shadow banregio-container';
       case 'BANORTE': return 'banorte-container';
       case 'PLATACARD': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#FF5722]';
+      case 'BANCO_AZTECA': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#00A552]';
+      case 'BIENESTAR': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#9D2449]';
       default: return '';
     }
   };

@@ -16,6 +16,8 @@ import bancoppelLogoPath from '@assets/bancoppel.png';
 import plataCardLogoPath from '@assets/Plata_Card_Logo.png';
 import scotiaLogoPath from '@assets/Skotia.png';
 import amexLogoPath from '@assets/Amex.png';
+import bancoAztecaLogoPath from '@assets/Banco_Azteca_Logo.png';
+import bienestarLogoPath from '@assets/Logo_Banco_del_Bienestar.png';
 
 // Definir mapa de logos
 const bankLogos: Record<string, string> = {
@@ -27,7 +29,9 @@ const bankLogos: Record<string, string> = {
   [BankType.BANREGIO]: banregioLogoPath,
   [BankType.PLATACARD]: plataCardLogoPath,
   [BankType.SCOTIABANK]: scotiaLogoPath,
-  [BankType.AMEX]: amexLogoPath
+  [BankType.AMEX]: amexLogoPath,
+  [BankType.BANCOAZTECA]: bancoAztecaLogoPath,
+  [BankType.BIENESTAR]: bienestarLogoPath
 };
 
 // Definir mapa de descripciones
@@ -40,7 +44,9 @@ const bankDescriptions: Record<string, string> = {
   [BankType.BANREGIO]: "Banregio está comprometido con tus finanzas y te ofrece el mejor servicio para resolver tus aclaraciones.",
   [BankType.PLATACARD]: "Plata Card te ofrece soluciones rápidas y eficientes para aclarar cualquier movimiento en tu cuenta.",
   [BankType.SCOTIABANK]: "Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.",
-  [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias."
+  [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias.",
+  [BankType.BANCOAZTECA]: "Banco Azteca te acompaña con atención personalizada para resolver tus aclaraciones de forma rápida y eficiente.",
+  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias."
 };
 
 export default function BankSelectionPage() {
