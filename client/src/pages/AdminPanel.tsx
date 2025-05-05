@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, UserCog, MessageSquare, Send, RefreshCw } from 'lucide-react';
+import { LogOut, UserCog, MessageSquare, Send, RefreshCw, QrCode } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 export default function AdminPanel() {
