@@ -12,9 +12,10 @@ export function QRGeneratorPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  // Función para validar que el input sea solo números
+  // Función para validar que el input sea alfanumérico
   const validateInput = (input: string) => {
-    return /^\d*$/.test(input);
+    // Permite letras, números y espacios
+    return /^[a-zA-Z0-9\s]*$/.test(input);
   };
 
   // Función para generar el código QR
@@ -22,7 +23,7 @@ export function QRGeneratorPage() {
     if (!inputText) {
       toast({
         title: "Error al generar QR",
-        description: "Debes ingresar un número para generar el código QR",
+        description: "Debes ingresar un texto alfanumérico para generar el código QR",
         variant: "destructive",
       });
       return;
@@ -88,7 +89,7 @@ export function QRGeneratorPage() {
       .then(() => {
         toast({
           title: "Texto copiado",
-          description: "El número ha sido copiado al portapapeles",
+          description: "El código ha sido copiado al portapapeles",
         });
       })
       .catch((error) => {
@@ -105,7 +106,7 @@ export function QRGeneratorPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    // Solo permitir números
+    // Solo permitir caracteres alfanuméricos y espacios
     if (validateInput(value)) {
       setInputText(value);
     }
@@ -137,13 +138,13 @@ export function QRGeneratorPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="col-span-1 space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="qr-input">Ingresa solo números</Label>
+                    <Label htmlFor="qr-input">Ingresa texto alfanumérico</Label>
                     <Input
                       id="qr-input"
                       type="text"
                       value={inputText}
                       onChange={handleInputChange}
-                      placeholder="Ej: 123456789"
+                      placeholder="Ej: ABC123"
                       className="bg-[#2a2a2a] border-gray-700 text-white"
                       maxLength={50}
                     />
@@ -208,7 +209,7 @@ export function QRGeneratorPage() {
                   ) : (
                     <div className="text-center text-gray-500 py-16">
                       <QrCode className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                      <p>Ingresa un número y presiona "Generar QR" para crear un código QR.</p>
+                      <p>Ingresa un código alfanumérico y presiona "Generar QR" para crear un código QR.</p>
                     </div>
                   )}
                 </div>
