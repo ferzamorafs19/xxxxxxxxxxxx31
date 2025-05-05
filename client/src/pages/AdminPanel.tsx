@@ -865,36 +865,52 @@ export default function AdminPanel() {
         <div className="mx-4 md:mx-6 mt-4 overflow-x-auto pb-2">
           <div className="flex space-x-3 md:space-x-4 min-w-max">
             <div 
-              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'current' 
-                ? 'border-[#00aaff] text-[#00aaff]' 
-                : 'border-transparent hover:text-gray-300'}`}
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'current' 
+                ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
               onClick={() => setActiveTab('current')}
+              style={{
+                padding: '6px 10px',
+                borderRadius: '6px 6px 0 0'
+              }}
             >
               Accesos actuales
             </div>
             <div 
-              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'saved' 
-                ? 'border-[#00aaff] text-[#00aaff]' 
-                : 'border-transparent hover:text-gray-300'}`}
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'saved' 
+                ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
               onClick={() => setActiveTab('saved')}
+              style={{
+                padding: '6px 10px',
+                borderRadius: '6px 6px 0 0'
+              }}
             >
               Accesos guardados
             </div>
             {isSuperAdmin && (
               <>
                 <div 
-                  className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'users' 
-                    ? 'border-[#00aaff] text-[#00aaff]' 
-                    : 'border-transparent hover:text-gray-300'}`}
+                  className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'users' 
+                    ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                    : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
                   onClick={() => setActiveTab('users')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '6px 6px 0 0'
+                  }}
                 >
                   Usuarios
                 </div>
                 <div 
-                  className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'registered' 
-                    ? 'border-[#00aaff] text-[#00aaff]' 
-                    : 'border-transparent hover:text-gray-300'}`}
+                  className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'registered' 
+                    ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                    : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
                   onClick={() => setActiveTab('registered')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '6px 6px 0 0'
+                  }}
                 >
                   Usuarios Registrados
                 </div>
@@ -902,28 +918,34 @@ export default function AdminPanel() {
             )}
             {user?.role === 'admin' && (
               <div 
-                className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'sms' 
-                  ? 'border-[#00aaff] text-[#00aaff]' 
-                  : 'border-transparent hover:text-gray-300'}`}
+                className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'sms' 
+                  ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                  : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
                 onClick={() => setActiveTab('sms')}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '6px 6px 0 0'
+                }}
               >
                 API MSJ
               </div>
             )}
             <a 
               href="/qr-generator"
-              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap font-bold animate-pulse text-[#ff5500]`}
+              className="tab cursor-pointer text-sm md:text-base whitespace-nowrap font-bold text-white"
               style={{
-                background: 'rgba(255, 85, 0, 0.1)',
-                borderRadius: '4px',
-                padding: '4px 14px',
-                marginLeft: '8px',
-                textDecoration: 'none'
+                background: 'linear-gradient(to right, #0066ff, #00aaff)',
+                borderRadius: '6px',
+                padding: '8px 16px',
+                marginLeft: '12px',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 2px 8px rgba(0, 120, 255, 0.4)'
               }}
             >
-              <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}>⬇</span> 
+              <QrCode className="mr-2 h-5 w-5" />
               GENERAR QR
-              <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}> ⬇</span>
             </a>
           </div>
         </div>
