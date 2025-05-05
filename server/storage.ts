@@ -1,9 +1,15 @@
-import { sessions, type Session, insertSessionSchema, User, AccessKey, Device, UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, devices, SmsConfig, InsertSmsConfig, SmsCredits, SmsHistory, InsertSmsHistory } from "@shared/schema";
+import { 
+  sessions, type Session, insertSessionSchema, User, AccessKey, Device, 
+  UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, 
+  devices, SmsConfig, InsertSmsConfig, SmsCredits, SmsHistory, InsertSmsHistory,
+  notifications, notificationPreferences, Notification, InsertNotification, 
+  NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority
+} from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
 import { db, pool } from './db';
-import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne } from 'drizzle-orm';
+import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne, count } from 'drizzle-orm';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 
