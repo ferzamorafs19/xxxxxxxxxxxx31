@@ -54,9 +54,10 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: sessionStore,
     name: 'banksystem.sid', // Nombre específico para evitar conflictos
+    rolling: true, // Renueva la cookie en cada interacción para reiniciar el tiempo de inactividad
     cookie: {
       secure: process.env.NODE_ENV === 'production', // Cookies seguras solo en producción
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+      maxAge: 40 * 60 * 1000, // 40 minutos de inactividad máxima
       sameSite: 'lax', // Menos restrictivo que 'strict', más seguro que 'none'
       httpOnly: true, // Mayor seguridad
       path: '/'

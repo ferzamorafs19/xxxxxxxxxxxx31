@@ -1031,9 +1031,9 @@ header img {
   max-height: 35px !important;
 }
 
-/* Banorte - logo oficial con buen tamaño */
+/* Banorte - logo oficial con buen tamaño (aumentado 20%) */
 .banorte-logo {
-  max-height: 40px !important;
+  max-height: 48px !important; /* Aumentado un 20% de 40px */
 }
 
 /* HSBC - logo más grande */
@@ -1052,9 +1052,9 @@ header img {
   max-height: 38px !important;
 }
 
-/* Santander - logo proporcionalmente correcto */
+/* Santander - logo proporcionalmente correcto (aumentado 20%) */
 .santander-logo {
-  max-height: 35px !important;
+  max-height: 42px !important; /* Aumentado un 20% de 35px */
 }
 
 /* Scotiabank - logo apropiado al estilo oficial */
