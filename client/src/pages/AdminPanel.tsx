@@ -10,7 +10,7 @@ import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
 import SmsManagement from '@/components/admin/SmsManagement';
-import { QRGenerator } from '@/components/admin/QRGenerator';
+import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { Session, ScreenType } from '@shared/schema';
@@ -911,12 +911,20 @@ export default function AdminPanel() {
               </div>
             )}
             <div 
-              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'qr' 
-                ? 'border-[#00aaff] text-[#00aaff]' 
-                : 'border-transparent hover:text-gray-300'}`}
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap font-bold animate-pulse ${activeTab === 'qr' 
+                ? 'border-[#ff5500] text-[#ff5500]' 
+                : 'border-transparent text-[#ff9933] hover:text-[#ff7700]'}`}
               onClick={() => setActiveTab('qr')}
+              style={{
+                background: activeTab === 'qr' ? 'rgba(255, 85, 0, 0.1)' : 'rgba(255, 153, 51, 0.05)',
+                borderRadius: '4px',
+                padding: '2px 10px',
+                marginLeft: '8px'
+              }}
             >
-              Generar QR
+              <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}>⬇</span> 
+              GENERAR QR
+              <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}> ⬇</span>
             </div>
           </div>
         </div>
@@ -929,7 +937,7 @@ export default function AdminPanel() {
         ) : activeTab === 'sms' && user?.role === 'admin' ? (
           <SmsManagement />
         ) : activeTab === 'qr' ? (
-          <QRGenerator />
+          <SimpleQRGenerator />
         ) : (
           <AccessTable 
             sessions={sessions}
