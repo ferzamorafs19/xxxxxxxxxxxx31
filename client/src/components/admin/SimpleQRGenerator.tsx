@@ -23,8 +23,8 @@ export function SimpleQRGenerator() {
         <CardContent>
           <div className="p-8 text-white text-center">
             <QrCode className="h-20 w-20 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-4">Generador de Códigos QR Numéricos</h2>
-            <p>Esta sección le permite generar códigos QR a partir de números para su uso en diversas funcionalidades del sistema.</p>
+            <h2 className="text-xl font-bold mb-4">Generador de Códigos QR Alfanuméricos</h2>
+            <p>Esta sección le permite generar códigos QR a partir de texto alfanumérico para su uso en diversas funcionalidades del sistema.</p>
             <p className="mt-2 text-green-400">La función estará disponible próximamente.</p>
           </div>
         </CardContent>
