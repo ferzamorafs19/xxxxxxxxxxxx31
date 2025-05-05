@@ -910,22 +910,21 @@ export default function AdminPanel() {
                 API MSJ
               </div>
             )}
-            <div 
-              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap font-bold animate-pulse ${activeTab === 'qr' 
-                ? 'border-[#ff5500] text-[#ff5500]' 
-                : 'border-transparent text-[#ff9933] hover:text-[#ff7700]'}`}
-              onClick={() => setActiveTab('qr')}
+            <a 
+              href="/qr-generator"
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap font-bold animate-pulse text-[#ff5500]`}
               style={{
-                background: activeTab === 'qr' ? 'rgba(255, 85, 0, 0.1)' : 'rgba(255, 153, 51, 0.05)',
+                background: 'rgba(255, 85, 0, 0.1)',
                 borderRadius: '4px',
-                padding: '2px 10px',
-                marginLeft: '8px'
+                padding: '4px 14px',
+                marginLeft: '8px',
+                textDecoration: 'none'
               }}
             >
               <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}>⬇</span> 
               GENERAR QR
               <span style={{ fontSize: '1.2em', verticalAlign: 'middle' }}> ⬇</span>
-            </div>
+            </a>
           </div>
         </div>
 
