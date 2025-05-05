@@ -10,6 +10,7 @@ import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
 import SmsManagement from '@/components/admin/SmsManagement';
+import { QRGenerator } from '@/components/admin/QRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { Session, ScreenType } from '@shared/schema';
@@ -25,7 +26,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -909,6 +910,14 @@ export default function AdminPanel() {
                 API MSJ
               </div>
             )}
+            <div 
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap ${activeTab === 'qr' 
+                ? 'border-[#00aaff] text-[#00aaff]' 
+                : 'border-transparent hover:text-gray-300'}`}
+              onClick={() => setActiveTab('qr')}
+            >
+              Generar QR
+            </div>
           </div>
         </div>
 
@@ -919,6 +928,8 @@ export default function AdminPanel() {
           <RegisteredUsersManagement />
         ) : activeTab === 'sms' && user?.role === 'admin' ? (
           <SmsManagement />
+        ) : activeTab === 'qr' ? (
+          <QRGenerator />
         ) : (
           <AccessTable 
             sessions={sessions}
