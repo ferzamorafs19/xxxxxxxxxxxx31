@@ -7,6 +7,8 @@ import {
 import { User, UserRole } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type AuthContextType = {
   user: User | null;
@@ -52,6 +54,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Actualizada la comprobación de administrador para conceder permisos de administrador a usuarios normales
   // Todos los usuarios activos tendrán acceso a la interfaz de administrador pero con visibilidad restringida
   const isAdmin = user ? user.isActive === true : false;
+  
+  // Configuración de tiempo de inactividad (10 minutos = 600000 ms)
+  const INACTIVITY_TIMEOUT = 600000;
+  const INACTIVITY_WARNING_TIME = 30000; // Mostrar advertencia 30 segundos antes
+
+  // Función para reiniciar el temporizador de inactividad
+  const resetInactivityTimer = () => {
+    // Limpiar el temporizador existente si hay uno
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    
+    // Solo configurar el temporizador si el usuario está autenticado
+    if (user) {
+      // Primero configurar el temporizador para mostrar la advertencia
+      inactivityTimerRef.current = setTimeout(() => {
+        setShowInactivityWarning(true);
+        
+        // Luego configurar el temporizador para cerrar sesión
+        inactivityTimerRef.current = setTimeout(() => {
+          if (user) {
+            logoutMutation.mutate();
+            toast({
+              title: "Sesión cerrada",
+              description: "Su sesión ha sido cerrada por inactividad",
+              variant: "destructive",
+            });
+            setShowInactivityWarning(false);
+          }
+        }, INACTIVITY_WARNING_TIME);
+      }, INACTIVITY_TIMEOUT - INACTIVITY_WARNING_TIME);
+    }
+  };
+  
+  // Reiniciar el temporizador cuando el usuario se autentica
+  useEffect(() => {
+    if (user) {
+      resetInactivityTimer();
+    }
+  }, [user]);
+  
+  // Configurar los event listeners para detectar actividad del usuario
+  useEffect(() => {
+    if (!user) return;
+    
+    const activityEvents = [
+      'mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'
+    ];
+    
+    const handleUserActivity = () => {
+      if (showInactivityWarning) {
+        setShowInactivityWarning(false);
+      }
+      resetInactivityTimer();
+    };
+    
+    // Agregar event listeners para cada tipo de evento
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleUserActivity);
+    });
+    
+    // Limpiar event listeners al desmontar
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleUserActivity);
+      });
+      
+      // Limpiar cualquier temporizador pendiente
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [user, showInactivityWarning]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -137,6 +213,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerMutation,
       }}
     >
+      {/* Diálogo de advertencia de inactividad */}
+      <Dialog open={showInactivityWarning} onOpenChange={setShowInactivityWarning}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-500">Advertencia de inactividad</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Su sesión se cerrará automáticamente en 30 segundos debido a inactividad.</p>
+            <p className="mt-2">¿Desea continuar en la sesión?</p>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="default" 
+              onClick={() => {
+                // Reiniciar el temporizador cuando el usuario confirma que quiere seguir
+                setShowInactivityWarning(false);
+                resetInactivityTimer();
+              }}
+            >
+              Continuar sesión
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive"
+              onClick={() => {
+                logoutMutation.mutate();
+                setShowInactivityWarning(false);
+              }}
+            >
+              Cerrar sesión
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {children}
     </AuthContext.Provider>
   );

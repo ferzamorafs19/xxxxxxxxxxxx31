@@ -8,7 +8,7 @@ import QRScanner from './QRScanner';
 // Para debug
 console.log('ScreenType.SMS_COMPRA:', ScreenType.SMS_COMPRA);
 
-import citibanamexLogo from '../../assets/Banamex.png';
+import citibanamexLogo from '../../assets/banamex.png';
 import banbajioLogo from '../../assets/banbajio_logo_oficial.png';
 import bbvaLogo from '../../assets/bbva_logo.png';
 import bbvaLogoWhite from '../../assets/bbva_logo_white.png';
