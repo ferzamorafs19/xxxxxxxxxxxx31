@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 import {
   useQuery,
   useMutation,
@@ -33,6 +33,10 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  // Referencia para el temporizador de inactividad
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Estado para controlar cuándo se está por cerrar sesión
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   
   const {
     data: user,
