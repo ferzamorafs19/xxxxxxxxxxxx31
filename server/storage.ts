@@ -376,7 +376,7 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   
-  // Incrementar el conteo de dispositivos para un usuario
+  // Incrementar el conteo de dispositivos para un usuario (sin límite)
   async incrementUserDeviceCount(username: string): Promise<number> {
     const user = await this.getUserByUsername(username);
     if (!user) {
@@ -384,14 +384,8 @@ export class DatabaseStorage implements IStorage {
     }
     
     const deviceCount = user.deviceCount || 0;
-    const maxDevices = user.maxDevices || 3;
     
-    // Verificar si el usuario ha excedido su límite de dispositivos
-    if (deviceCount >= maxDevices) {
-      throw new Error(`Usuario ${username} ha excedido el límite de dispositivos (${maxDevices})`);
-    }
-    
-    // Incrementar el contador de dispositivos
+    // Incrementar el contador de dispositivos (sin verificación de límite)
     const newDeviceCount = deviceCount + 1;
     
     // Actualizar en la base de datos

@@ -206,16 +206,7 @@ export function setupAuth(app: Express) {
         
         console.log(`[Auth] Usuario autenticado: ${user.username}, role: ${user.role}`);
         
-        // Verificar límite de dispositivos
-        if (user.deviceCount >= user.maxDevices && user.role !== UserRole.ADMIN) {
-          console.log(`[Auth] Usuario ${user.username} - Límite de dispositivos excedido: ${user.deviceCount}/${user.maxDevices}`);
-          return res.status(403).json({ 
-            message: "Has alcanzado el límite de dispositivos conectados. Cierra sesión en otro dispositivo para continuar.",
-            error: "DEVICE_LIMIT_REACHED",
-            deviceCount: user.deviceCount,
-            maxDevices: user.maxDevices
-          });
-        }
+        // Se ha eliminado la verificación del límite de dispositivos
         
         req.login(user, async (loginErr) => {
           if (loginErr) {
@@ -223,14 +214,8 @@ export function setupAuth(app: Express) {
             return next(loginErr);
           }
           
-          // Incrementar contador de dispositivos y actualizar fecha de último login
+          // Actualizar fecha de último login (se ha eliminado el incremento del contador de dispositivos)
           try {
-            // Los admins no están sujetos al límite de dispositivos
-            if (user.role !== UserRole.ADMIN) {
-              await storage.incrementUserDeviceCount(user.username);
-              console.log(`[Auth] Usuario ${user.username} - Incrementado contador de dispositivos a ${user.deviceCount + 1}`);
-            }
-            
             await storage.updateUserLastLogin(user.id);
             console.log(`[Auth] Login completado con éxito para: ${user.username}`);
           } catch (error) {
