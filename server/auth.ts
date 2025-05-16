@@ -242,21 +242,7 @@ export function setupAuth(app: Express) {
     
     console.log(`[Auth] Solicitud de cierre de sesión para: ${username}`);
     
-    // Decrementar el contador de dispositivos si es un usuario no admin
-    if (!isAdmin) {
-      try {
-        console.log(`[Auth] Reduciendo contador de dispositivos para ${username}`);
-        
-        // NO disminuimos por debajo de 0 por seguridad
-        if (user.deviceCount > 0) {
-          // Decrementar el contador
-          const updatedUser = await storage.decrementUserDeviceCount(username);
-          console.log(`[Auth] Contador de dispositivos actualizado a ${updatedUser.deviceCount}`);
-        }
-      } catch (error) {
-        console.error(`[Auth] Error decrementando contador de dispositivos para ${username}:`, error);
-      }
-    }
+    // Se ha eliminado la lógica de decremento del contador de dispositivos
     
     // Cerrar sesión
     req.logout((err) => {
