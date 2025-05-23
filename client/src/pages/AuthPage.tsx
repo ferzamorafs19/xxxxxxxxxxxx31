@@ -248,6 +248,51 @@ export default function AuthPage() {
                         placeholder="Contraseña"
                       />
                     </div>
+                    
+                    {/* Selector de tipo de captcha */}
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCaptchaType('visual');
+                          setCaptchaVerified(false);
+                        }}
+                        className={`px-3 py-1 text-xs rounded ${
+                          captchaType === 'visual' 
+                            ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        Captcha Visual
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCaptchaType('math');
+                          setCaptchaVerified(false);
+                        }}
+                        className={`px-3 py-1 text-xs rounded ${
+                          captchaType === 'math' 
+                            ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        Captcha Matemático
+                      </button>
+                    </div>
+                    
+                    {/* Componente de captcha */}
+                    {captchaType === 'visual' ? (
+                      <Captcha 
+                        onVerify={setCaptchaVerified}
+                        disabled={loginMutation.isPending}
+                      />
+                    ) : (
+                      <MathCaptcha 
+                        onVerify={setCaptchaVerified}
+                        disabled={loginMutation.isPending}
+                      />
+                    )}
                   </CardContent>
                   <CardFooter className="flex flex-col space-y-2">
                     <Button 
