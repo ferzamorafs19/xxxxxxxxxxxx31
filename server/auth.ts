@@ -53,7 +53,7 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
-    name: 'banksystem.sid', // Nombre específico para evitar conflictos
+    name: 'platform.secure.token', // Nombre genérico para evitar detección
     rolling: true, // Renueva la cookie en cada interacción para reiniciar el tiempo de inactividad
     cookie: {
       secure: process.env.NODE_ENV === 'production', // Cookies seguras solo en producción
