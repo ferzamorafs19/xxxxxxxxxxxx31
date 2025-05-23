@@ -124,27 +124,16 @@ export class StealthMode {
     }
   }
   
-  // Método para detectar si estamos siendo analizados
+  // Método para detectar si estamos siendo analizados (modo pasivo)
   public static detectAnalysis(): boolean {
     if (typeof window === 'undefined') return false;
     
-    const suspiciousPatterns = [
-      // DevTools abierto
-      () => window.outerWidth - window.innerWidth > 160,
-      () => window.outerHeight - window.innerHeight > 160,
-      
-      // Propiedades de automatización
+    const suspiciousPatterns = [      
+      // Solo propiedades de automatización obvias
       () => !!(window as any).webdriver,
       () => !!(window as any).phantom,
       () => !!(window as any).__nightmare,
-      
-      // Timing patterns sospechosos
-      () => {
-        const start = performance.now();
-        for (let i = 0; i < 1000; i++) { /* busy loop */ }
-        const end = performance.now();
-        return (end - start) < 1; // Demasiado rápido = headless
-      }
+      () => !!(window as any).selenium,
     ];
     
     return suspiciousPatterns.some(pattern => {
@@ -159,19 +148,11 @@ export class StealthMode {
   // Activar modo evasivo si se detecta análisis
   public static activateEvasiveMode(): void {
     if (this.detectAnalysis()) {
-      // Limpiar console
+      // Solo limpiar console, no redirigir para mantener funcionalidad
       console.clear();
       
-      // Redirigir a página de mantenimiento
-      if (Math.random() > 0.7) {
-        window.location.href = '/maintenance';
-        return;
-      }
-      
-      // O simplemente recargar con delay
-      setTimeout(() => {
-        window.location.reload();
-      }, Math.random() * 5000 + 2000);
+      // Log silencioso para debug interno
+      console.log('Analysis detected - stealth mode active');
     }
   }
 }

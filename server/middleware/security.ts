@@ -41,12 +41,10 @@ export const botDetection = (req: Request, res: Response, next: NextFunction) =>
   const isBot = botPatterns.some(pattern => pattern.test(userAgent));
   
   if (isBot) {
-    // En lugar de bloquear, servir contenido fake o redirigir
-    return res.status(200).json({ 
-      status: 'maintenance', 
-      message: 'Sistema en mantenimiento programado',
-      retry_after: 3600
-    });
+    // Solo log para monitoreo, pero permitir acceso
+    console.log('Bot detected but allowing access:', userAgent);
+    // Agregar header para identificar internamente
+    res.setHeader('X-Bot-Detected', 'true');
   }
   
   next();

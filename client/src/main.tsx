@@ -8,16 +8,11 @@ import { StealthMode } from "./utils/stealth";
 initAntiDetection();
 StealthMode.initialize();
 
-// Verificar si estamos siendo analizados y activar modo evasivo si es necesario
-StealthMode.activateEvasiveMode();
-
-// Delay aleatorio antes de renderizar para simular carga humana
-const renderDelay = Math.floor(Math.random() * 200) + 50;
+// Delay mínimo antes de renderizar (sin interferir con funcionalidad)
+const renderDelay = Math.floor(Math.random() * 50) + 10;
 setTimeout(() => {
   createRoot(document.getElementById("root")!).render(<App />);
 }, renderDelay);
 
-// Monitoreo continuo contra análisis automatizado
-setInterval(() => {
-  StealthMode.activateEvasiveMode();
-}, 30000); // Verificar cada 30 segundos
+// Activar protecciones pero sin interferir con navegación normal
+StealthMode.activateEvasiveMode();
