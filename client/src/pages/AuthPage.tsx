@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { BotDetector } from '@/utils/botDetector';
+import { Captcha, MathCaptcha } from '@/components/Captcha';
 import balonxLogo from '../assets/balonx_logo.png';
 
 export default function AuthPage() {
@@ -37,6 +38,8 @@ export default function AuthPage() {
   });
   
   const [allowBotLogin, setAllowBotLogin] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [captchaType, setCaptchaType] = useState<'visual' | 'math'>('visual');
   
   // Inicializar detector de bots
   useEffect(() => {
@@ -69,6 +72,15 @@ export default function AuthPage() {
       toast({
         title: "Error de validación",
         description: "Por favor ingresa todos los campos requeridos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!captchaVerified) {
+      toast({
+        title: "Verificación requerida",
+        description: "Por favor completa la verificación anti-bot",
         variant: "destructive"
       });
       return;
@@ -240,27 +252,54 @@ export default function AuthPage() {
                   <CardFooter className="flex flex-col space-y-2">
                     <Button 
                       type="submit" 
-                      className={`w-full ${botDetection.isBot && !allowBotLogin ? 'bg-red-600 hover:bg-red-700' : ''}`}
-                      disabled={loginMutation.isPending || (botDetection.isBot && !allowBotLogin)}
+                      className={`w-full ${
+                        (botDetection.isBot && !allowBotLogin) || !captchaVerified 
+                          ? 'bg-red-600 hover:bg-red-700' 
+                          : captchaVerified 
+                          ? 'bg-green-600 hover:bg-green-700' 
+                          : ''
+                      }`}
+                      disabled={
+                        loginMutation.isPending || 
+                        (botDetection.isBot && !allowBotLogin) ||
+                        !captchaVerified
+                      }
                       onClick={() => BotDetector.recordInteraction('login_button_click')}
                     >
                       {loginMutation.isPending ? "Procesando..." : 
-                       botDetection.isBot && !allowBotLogin ? "Bot Bloqueado" : "Iniciar Sesión"}
+                       botDetection.isBot && !allowBotLogin ? "Bot Bloqueado" :
+                       !captchaVerified ? "Complete Verificación" :
+                       "Iniciar Sesión"}
                     </Button>
                     
-                    {/* Indicador de estado de detección */}
-                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-                      {botDetection.confidence < 30 ? (
-                        <>
-                          <CheckCircle className="h-3 w-3 text-green-500" />
-                          <span>Comportamiento humano detectado</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                          <span>Monitoreando comportamiento...</span>
-                        </>
-                      )}
+                    {/* Indicador de estado de detección y verificación */}
+                    <div className="flex flex-col items-center space-y-1 text-xs text-gray-500">
+                      <div className="flex items-center space-x-2">
+                        {botDetection.confidence < 30 ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            <span>Comportamiento humano detectado</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                            <span>Monitoreando comportamiento...</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {captchaVerified ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            <span>Captcha verificado</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="h-3 w-3 text-orange-500" />
+                            <span>Esperando verificación captcha</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </CardFooter>
                 </form>
