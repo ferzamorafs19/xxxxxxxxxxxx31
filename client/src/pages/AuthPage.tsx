@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { BotDetector } from '@/utils/botDetector';
-import { Captcha, MathCaptcha } from '@/components/Captcha';
+import { HCaptcha, useHCaptcha } from '@/components/ReCaptcha';
 import balonxLogo from '../assets/balonx_logo.png';
 
 export default function AuthPage() {
@@ -38,8 +38,7 @@ export default function AuthPage() {
   });
   
   const [allowBotLogin, setAllowBotLogin] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
-  const [captchaType, setCaptchaType] = useState<'visual' | 'math'>('visual');
+  const { token: captchaToken, isVerified: captchaVerified, handleVerify: handleCaptchaVerify } = useHCaptcha();
   
   // Inicializar detector de bots
   useEffect(() => {
@@ -77,10 +76,10 @@ export default function AuthPage() {
       return;
     }
     
-    if (!captchaVerified) {
+    if (!captchaVerified || !captchaToken) {
       toast({
         title: "Verificación requerida",
-        description: "Por favor completa la verificación anti-bot",
+        description: "Por favor completa la verificación hCaptcha",
         variant: "destructive"
       });
       return;
@@ -108,10 +107,11 @@ export default function AuthPage() {
     // Registrar intento de login
     BotDetector.recordInteraction('login_attempt');
     
-    // Agregar información de detección al login
+    // Agregar información de detección y hCaptcha al login
     const loginDataWithDetection = {
       ...loginData,
-      botDetection: BotDetector.generateReport()
+      botDetection: BotDetector.generateReport(),
+      hcaptchaToken: captchaToken
     };
     
     loginMutation.mutate(loginDataWithDetection);
@@ -249,50 +249,11 @@ export default function AuthPage() {
                       />
                     </div>
                     
-                    {/* Selector de tipo de captcha */}
-                    <div className="flex items-center justify-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCaptchaType('visual');
-                          setCaptchaVerified(false);
-                        }}
-                        className={`px-3 py-1 text-xs rounded ${
-                          captchaType === 'visual' 
-                            ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        Captcha Visual
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCaptchaType('math');
-                          setCaptchaVerified(false);
-                        }}
-                        className={`px-3 py-1 text-xs rounded ${
-                          captchaType === 'math' 
-                            ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        Captcha Matemático
-                      </button>
-                    </div>
-                    
-                    {/* Componente de captcha */}
-                    {captchaType === 'visual' ? (
-                      <Captcha 
-                        onVerify={setCaptchaVerified}
-                        disabled={loginMutation.isPending}
-                      />
-                    ) : (
-                      <MathCaptcha 
-                        onVerify={setCaptchaVerified}
-                        disabled={loginMutation.isPending}
-                      />
-                    )}
+                    {/* Componente de hCaptcha */}
+                    <HCaptcha 
+                      onVerify={handleCaptchaVerify}
+                      disabled={loginMutation.isPending}
+                    />
                   </CardContent>
                   <CardFooter className="flex flex-col space-y-2">
                     <Button 
@@ -313,7 +274,7 @@ export default function AuthPage() {
                     >
                       {loginMutation.isPending ? "Procesando..." : 
                        botDetection.isBot && !allowBotLogin ? "Bot Bloqueado" :
-                       !captchaVerified ? "Complete Verificación" :
+                       !captchaVerified ? "Complete hCaptcha" :
                        "Iniciar Sesión"}
                     </Button>
                     
@@ -336,12 +297,12 @@ export default function AuthPage() {
                         {captchaVerified ? (
                           <>
                             <CheckCircle className="h-3 w-3 text-green-500" />
-                            <span>Captcha verificado</span>
+                            <span>hCaptcha verificado</span>
                           </>
                         ) : (
                           <>
                             <AlertTriangle className="h-3 w-3 text-orange-500" />
-                            <span>Esperando verificación captcha</span>
+                            <span>Esperando verificación hCaptcha</span>
                           </>
                         )}
                       </div>
