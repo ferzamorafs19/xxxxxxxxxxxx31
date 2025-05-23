@@ -1032,12 +1032,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `${protocol}://${baseUrl}` 
         : `https://${adminDomain}`;
 
-      console.log(`Nuevo enlace generado - Código: ${linkCode}, Banco: ${banco}`);
-      console.log(`URL del cliente: ${clientLink}`);
-      console.log(`URL del admin: ${adminLink}`);
-      console.log(`Generado por usuario: ${user.username}`);
+      // Enlace generado correctamente
 
-      console.log(`Notificando a los clientes de admin sobre el nuevo enlace - Código: ${linkCode}, Banco: ${banco}, Usuario: ${user.username}`);
+      // Notificando clientes admin
       
       // Notificar a los clientes de admin sobre el nuevo enlace
       // Enviar al usuario que creó el link y al superadmin
