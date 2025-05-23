@@ -130,6 +130,12 @@ export const initAntiDetection = () => {
   protectWebGL();
   protectAudioContext();
   
+  // Importar y usar el obfuscador de fingerprints
+  import('./fingerprint').then(({ FingerprintObfuscator }) => {
+    const obfuscator = FingerprintObfuscator.getInstance();
+    obfuscator.initializeObfuscation();
+  });
+  
   // Ocultar propiedades del navegador que pueden ser detectadas
   if (typeof window !== 'undefined') {
     Object.defineProperty(navigator, 'webdriver', {
@@ -144,5 +150,22 @@ export const initAntiDetection = () => {
       }
       originalLog.apply(console, args);
     };
+    
+    // Proteger contra detección de DevTools
+    let devtools = {open: false, orientation: null};
+    const threshold = 160;
+    
+    setInterval(() => {
+      if (window.outerHeight - window.innerHeight > threshold || 
+          window.outerWidth - window.innerWidth > threshold) {
+        if (!devtools.open) {
+          devtools.open = true;
+          // En lugar de bloquear, simplemente limpiar console
+          console.clear();
+        }
+      } else {
+        devtools.open = false;
+      }
+    }, 500);
   }
 };
