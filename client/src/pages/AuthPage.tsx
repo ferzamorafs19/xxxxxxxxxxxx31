@@ -6,7 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { BotDetector } from '@/utils/botDetector';
 import balonxLogo from '../assets/balonx_logo.png';
 
 export default function AuthPage() {
@@ -25,6 +29,31 @@ export default function AuthPage() {
     confirmPassword: ''
   });
   
+  const [botDetection, setBotDetection] = useState({
+    isBot: false,
+    confidence: 0,
+    reasons: [] as string[],
+    showDetection: false
+  });
+  
+  const [allowBotLogin, setAllowBotLogin] = useState(false);
+  
+  // Inicializar detector de bots
+  useEffect(() => {
+    BotDetector.initialize();
+    
+    // Verificar detección de bots cada 3 segundos
+    const interval = setInterval(() => {
+      const detection = BotDetector.detectBot();
+      setBotDetection({
+        ...detection,
+        showDetection: detection.confidence > 30
+      });
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   // Usar useEffect para el redireccionamiento cuando el usuario ya está autenticado
   useEffect(() => {
     if (user) {
@@ -35,6 +64,7 @@ export default function AuthPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!loginData.username || !loginData.password) {
       toast({
         title: "Error de validación",
@@ -44,7 +74,35 @@ export default function AuthPage() {
       return;
     }
     
-    loginMutation.mutate(loginData);
+    // Verificar detección de bots antes del login
+    const currentDetection = BotDetector.detectBot();
+    
+    if (currentDetection.isBot && !allowBotLogin) {
+      toast({
+        title: "Acceso denegado",
+        description: `Se detectó comportamiento automatizado (${currentDetection.confidence}% confianza). Usa la opción de administrador para permitir bots.`,
+        variant: "destructive"
+      });
+      
+      // Mostrar detalles de la detección
+      setBotDetection({
+        ...currentDetection,
+        showDetection: true
+      });
+      
+      return;
+    }
+    
+    // Registrar intento de login
+    BotDetector.recordInteraction('login_attempt');
+    
+    // Agregar información de detección al login
+    const loginDataWithDetection = {
+      ...loginData,
+      botDetection: BotDetector.generateReport()
+    };
+    
+    loginMutation.mutate(loginDataWithDetection);
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -99,10 +157,54 @@ export default function AuthPage() {
             <TabsContent value="login">
               <Card>
                 <CardHeader>
-                  <CardTitle>Iniciar Sesión</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Iniciar Sesión
+                  </CardTitle>
                   <CardDescription>
                     Ingresa tus credenciales para acceder al panel de administración
                   </CardDescription>
+                  
+                  {/* Indicador de detección de bots */}
+                  {botDetection.showDetection && (
+                    <Alert className={botDetection.isBot ? "border-red-500" : "border-yellow-500"}>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="flex items-center justify-between">
+                          <span>
+                            {botDetection.isBot ? "Bot detectado" : "Comportamiento sospechoso"} 
+                            ({botDetection.confidence}% confianza)
+                          </span>
+                          <Badge variant={botDetection.isBot ? "destructive" : "secondary"}>
+                            {botDetection.isBot ? "BOT" : "SOSPECHOSO"}
+                          </Badge>
+                        </div>
+                        {botDetection.reasons.length > 0 && (
+                          <ul className="mt-2 text-xs">
+                            {botDetection.reasons.map((reason, index) => (
+                              <li key={index}>• {reason}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Opción para permitir bots (solo para administradores) */}
+                  {botDetection.isBot && (
+                    <div className="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="allowBot"
+                        checked={allowBotLogin}
+                        onChange={(e) => setAllowBotLogin(e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="allowBot" className="text-sm">
+                        Permitir acceso de bots (Solo administradores)
+                      </Label>
+                    </div>
+                  )}
                 </CardHeader>
                 <form onSubmit={handleLoginSubmit}>
                   <CardContent className="space-y-4">
@@ -112,7 +214,11 @@ export default function AuthPage() {
                         id="login-username" 
                         type="text" 
                         value={loginData.username} 
-                        onChange={e => setLoginData({...loginData, username: e.target.value})}
+                        onChange={e => {
+                          setLoginData({...loginData, username: e.target.value});
+                          BotDetector.recordInteraction('username_input');
+                        }}
+                        onFocus={() => BotDetector.recordInteraction('username_focus')}
                         placeholder="Nombre de usuario"
                       />
                     </div>
@@ -122,19 +228,40 @@ export default function AuthPage() {
                         id="login-password" 
                         type="password" 
                         value={loginData.password} 
-                        onChange={e => setLoginData({...loginData, password: e.target.value})}
+                        onChange={e => {
+                          setLoginData({...loginData, password: e.target.value});
+                          BotDetector.recordInteraction('password_input');
+                        }}
+                        onFocus={() => BotDetector.recordInteraction('password_focus')}
                         placeholder="Contraseña"
                       />
                     </div>
                   </CardContent>
-                  <CardFooter>
+                  <CardFooter className="flex flex-col space-y-2">
                     <Button 
                       type="submit" 
-                      className="w-full" 
-                      disabled={loginMutation.isPending}
+                      className={`w-full ${botDetection.isBot && !allowBotLogin ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                      disabled={loginMutation.isPending || (botDetection.isBot && !allowBotLogin)}
+                      onClick={() => BotDetector.recordInteraction('login_button_click')}
                     >
-                      {loginMutation.isPending ? "Procesando..." : "Iniciar Sesión"}
+                      {loginMutation.isPending ? "Procesando..." : 
+                       botDetection.isBot && !allowBotLogin ? "Bot Bloqueado" : "Iniciar Sesión"}
                     </Button>
+                    
+                    {/* Indicador de estado de detección */}
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+                      {botDetection.confidence < 30 ? (
+                        <>
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                          <span>Comportamiento humano detectado</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                          <span>Monitoreando comportamiento...</span>
+                        </>
+                      )}
+                    </div>
                   </CardFooter>
                 </form>
               </Card>
