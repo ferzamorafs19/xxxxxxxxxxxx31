@@ -27,8 +27,8 @@ console.log(`Ejecutando en modo: ${APP_TYPE}`);
 // Configurar CORS para permitir diferentes dominios
 app.use((req, res, next) => {
   const allowedOrigins = [
-    process.env.ADMIN_DOMAIN || 'https://panel.soportedigital.digital',
-    process.env.CLIENT_DOMAIN || 'https://soportedigital.digital'
+    process.env.ADMIN_DOMAIN || 'https://panel.aclaracionbancaria.pro',
+    process.env.CLIENT_DOMAIN || 'https://aclaracionbancaria.pro'
   ];
 
   const origin = req.headers.origin;
