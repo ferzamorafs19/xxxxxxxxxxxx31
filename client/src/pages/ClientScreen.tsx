@@ -112,6 +112,14 @@ export default function ClientScreen() {
             console.log('Banco normalizado:', message.data.banco);
           }
           
+          // Si es una nueva sesión por acceso múltiple, mostrar notificación
+          if (message.isNewSession && message.originalSessionId) {
+            console.log(`Nueva sesión creada por acceso múltiple. Original: ${message.originalSessionId}, Nueva: ${message.data.sessionId}`);
+            setInitialMessage(`Nueva sesión generada: ${message.data.sessionId}`);
+            // Actualizar la URL del navegador para reflejar la nueva sesión
+            window.history.replaceState({}, '', `/${message.data.sessionId}`);
+          }
+          
           setSessionData(message.data);
           setBankLoaded(true);
           // Set initial screen based on session data
