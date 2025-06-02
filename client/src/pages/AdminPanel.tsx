@@ -282,18 +282,6 @@ export default function AdminPanel() {
           console.log(`Recibidas ${data.data.length} sesiones vía WebSocket`);
           setSessions(data.data);
         }
-        else if (data.type === 'MULTIPLE_ACCESS_DETECTED') {
-          // Notificar sobre acceso múltiple detectado
-          const { originalSessionId, newSessionId, banco, message } = data.data;
-          toast({
-            title: "Acceso múltiple detectado",
-            description: `${message} | Original: ${originalSessionId} | Banco: ${banco}`,
-            variant: "default",
-          });
-          
-          // Actualizar la lista de sesiones para mostrar la nueva sesión
-          queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-        }
         else if (data.type === 'SESSION_UPDATE') {
           // Solo actualizar la sesión en la pestaña actual
           if ((activeTab === 'current' && !data.data.saved) || 

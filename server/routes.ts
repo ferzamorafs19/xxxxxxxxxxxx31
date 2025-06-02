@@ -1250,71 +1250,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } 
           else if (data.role === 'CLIENT' && data.sessionId) {
-            // Verificar si ya existe una conexión activa para esta sesión
-            const existingClient = clients.get(data.sessionId);
-            let session = await storage.getSessionById(data.sessionId);
-            
-            if (existingClient && existingClient.readyState === WebSocket.OPEN) {
-              console.log(`Detectado acceso múltiple a sesión ${data.sessionId}, generando nueva sesión`);
-              
-              // Generar nueva sesión si ya hay alguien conectado
-              let newSessionCode = '';
-              for (let i = 0; i < 8; i++) {
-                newSessionCode += Math.floor(Math.random() * 10).toString();
-              }
-              
-              const newSession = await storage.createSession({
-                sessionId: newSessionCode,
-                banco: session?.banco || 'LIVERPOOL',
-                folio: newSessionCode,
-                pasoActual: ScreenType.FOLIO,
-                createdBy: session?.createdBy || 'auto-generated'
-              });
-              
-              // Guardar automáticamente la nueva sesión
-              await storage.saveSession(newSessionCode);
-              console.log(`Nueva sesión generada automáticamente: ${newSessionCode} por acceso múltiple`);
-              
-              // Registrar el cliente con la nueva sesión
-              clients.set(newSessionCode, ws);
-              
-              // Notificar a los administradores sobre el nuevo acceso
-              broadcastToAdmins(JSON.stringify({
-                type: 'MULTIPLE_ACCESS_DETECTED',
-                data: {
-                  originalSessionId: data.sessionId,
-                  newSessionId: newSessionCode,
-                  banco: session?.banco || 'LIVERPOOL',
-                  timestamp: new Date().toISOString(),
-                  message: `Nuevo acceso detectado. Nueva sesión: ${newSessionCode}`
-                }
-              }));
-              
-              // Actualizar la lista de sesiones
-              broadcastToAdmins(JSON.stringify({
-                type: 'SESSIONS_UPDATED',
-                data: {}
-              }));
-              
-              // Enviar la nueva sesión al cliente
+            clients.set(data.sessionId, ws);
+            console.log(`Client registered with session ID: ${data.sessionId}`);
+
+            // Get session info and send to client
+            const session = await storage.getSessionById(data.sessionId);
+            if (session) {
               ws.send(JSON.stringify({
                 type: 'INIT_SESSION',
-                data: newSession,
-                isNewSession: true,
-                originalSessionId: data.sessionId
+                data: session
               }));
-              
-            } else {
-              // No hay conexión activa, usar la sesión original
-              clients.set(data.sessionId, ws);
-              console.log(`Client registered with session ID: ${data.sessionId}`);
-
-              if (session) {
-                ws.send(JSON.stringify({
-                  type: 'INIT_SESSION',
-                  data: session
-                }));
-              }
             }
           }
           return;
