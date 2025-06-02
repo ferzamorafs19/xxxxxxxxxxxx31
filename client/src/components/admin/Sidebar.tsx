@@ -51,7 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
           <div className="mb-2">
             <img src={balonxLogo} alt="Balonx Logo" className="w-10 h-10 mx-auto" />
           </div>
-          <h3 className="text-gray-300 text-sm">Balonx</h3>
+          <h3 className="text-gray-300 text-sm">Aclaraciones Bancarias</h3>
           <p className="text-gray-500 text-xs">{isAdmin ? "Admin" : "Usuario"}</p>
         </div>
         <div className="nav flex-1 space-y-2">
