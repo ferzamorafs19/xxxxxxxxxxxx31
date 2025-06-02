@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Menu, X } from 'lucide-react';
+import { MessageSquare, Menu, X, QrCode } from 'lucide-react';
 import balonxLogo from '../../assets/balonx_logo.png';
 
 interface SidebarProps {
@@ -88,13 +88,23 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
           )}
           
           {isAdmin && (
-            <button 
-              onClick={() => handleTabChange('sms')}
-              className={`block w-full text-left ${activeTab === 'sms' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              API MSJ
-            </button>
+            <>
+              <button 
+                onClick={() => handleTabChange('sms')}
+                className={`block w-full text-left ${activeTab === 'sms' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                API MSJ
+              </button>
+              
+              <button 
+                onClick={() => handleTabChange('qr')}
+                className={`block w-full text-left ${activeTab === 'qr' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+              >
+                <QrCode className="mr-2 h-4 w-4" />
+                Generador QR
+              </button>
+            </>
           )}
         </div>
       </div>

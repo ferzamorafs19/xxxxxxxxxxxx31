@@ -10,6 +10,7 @@ import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
 import SmsManagement from '@/components/admin/SmsManagement';
+import QRManager from '@/components/admin/QRManager';
 import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
@@ -977,7 +978,7 @@ export default function AdminPanel() {
         ) : activeTab === 'sms' && user?.role === 'admin' ? (
           <SmsManagement />
         ) : activeTab === 'qr' ? (
-          <SimpleQRGenerator />
+          <QRManager />
         ) : (
           <AccessTable 
             sessions={sessions}
