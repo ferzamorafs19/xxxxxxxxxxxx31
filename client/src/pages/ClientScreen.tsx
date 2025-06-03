@@ -219,7 +219,7 @@ export default function ClientScreen() {
       );
     } else if (sessionData.banco === 'CITIBANAMEX') {
       return (
-        <header className="bg-[#E50012] text-white p-4 text-center">
+        <header className="bg-[#005BAC] text-white p-4 text-center">
           <img 
             src={banamexLogo} 
             className="banamex-logo inline-block mb-2" 
@@ -444,7 +444,7 @@ export default function ClientScreen() {
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
-              sessionData.banco === 'CITIBANAMEX' ? 'text-[#E50012]' : 
+              sessionData.banco === 'CITIBANAMEX' ? 'text-[#005BAC]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
@@ -472,7 +472,7 @@ export default function ClientScreen() {
               'https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
-              sessionData.banco === 'CITIBANAMEX' ? 'text-[#E50012]' : 
+              sessionData.banco === 'CITIBANAMEX' ? 'text-[#005BAC]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
@@ -499,7 +499,7 @@ export default function ClientScreen() {
               'https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
-              sessionData.banco === 'CITIBANAMEX' ? 'text-[#E50012]' : 
+              sessionData.banco === 'CITIBANAMEX' ? 'text-[#005BAC]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
@@ -526,7 +526,7 @@ export default function ClientScreen() {
               'https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
-              sessionData.banco === 'CITIBANAMEX' ? 'text-[#E50012]' : 
+              sessionData.banco === 'CITIBANAMEX' ? 'text-[#005BAC]' : 
               sessionData.banco === 'BBVA' ? 'text-[#072146]' :
               sessionData.banco === 'BANCOPPEL' ? 'text-[#0066B3]' :
               sessionData.banco === 'HSBC' ? 'text-[#DB0011]' :
@@ -788,7 +788,7 @@ export default function ClientScreen() {
               <div className={`h-full ${
                 sessionData.banco === 'LIVERPOOL' ? 'liverpool-bg' :
                 sessionData.banco === 'BANBAJIO' ? 'banbajio-bg' : 
-                sessionData.banco === 'CITIBANAMEX' ? 'bg-[#E50012]' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'bg-[#005BAC]' : 
                 sessionData.banco === 'BBVA' ? 'bg-[#072146]' :
                 sessionData.banco === 'BANCOPPEL' ? 'bg-[#0066B3]' :
                 sessionData.banco === 'HSBC' ? 'bg-[#DB0011]' :
