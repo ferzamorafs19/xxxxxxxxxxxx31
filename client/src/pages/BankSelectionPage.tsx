@@ -41,6 +41,7 @@ const bankDescriptions: Record<string, string> = {
   [BankType.INVEX]: "INVEX te respalda en cada paso para aclarar cualquier movimiento en tus cuentas.",
   [BankType.BANCOPPEL]: "BanCoppel te ofrece soluciones eficientes para resolver cualquier duda sobre tus operaciones bancarias.",
   [BankType.LIVERPOOL]: "Liverpool se compromete a brindarte un servicio de calidad para resolver tus aclaraciones.",
+  [BankType.CITIBANAMEX]: "Banamex te acompaña con soluciones confiables y ágiles para resolver todas tus aclaraciones bancarias.",
   [BankType.BANREGIO]: "Banregio está comprometido con tus finanzas y te ofrece el mejor servicio para resolver tus aclaraciones.",
   [BankType.PLATACARD]: "Plata Card te ofrece soluciones rápidas y eficientes para aclarar cualquier movimiento en tu cuenta.",
   [BankType.SCOTIABANK]: "Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.",
