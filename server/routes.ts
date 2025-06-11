@@ -865,6 +865,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para subir archivos de protección bancaria
+  app.post('/api/upload-protection-file', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No se proporcionó archivo" });
+      }
+
+      const { sessionId } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID requerido" });
+      }
+
+      // Generar URL del archivo
+      const fileUrl = `/uploads/${req.file.filename}`;
+      
+      // Actualizar la sesión con la información del archivo
+      const updatedSession = await storage.updateSession(sessionId, {
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        fileSize: (req.file.size / (1024 * 1024)).toFixed(2) + ' MB'
+      });
+
+      console.log(`Archivo ${req.file.originalname} subido para sesión ${sessionId}`);
+
+      res.json({
+        success: true,
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        fileSize: (req.file.size / (1024 * 1024)).toFixed(2) + ' MB'
+      });
+    } catch (error) {
+      console.error("Error uploading protection file:", error);
+      res.status(500).json({ message: "Error al subir archivo" });
+    }
+  });
+
+  // Servir archivos estáticos desde la carpeta uploads
+  app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
+
   // Endpoint para obtener los bancos permitidos del usuario actual
   app.get('/api/user/allowed-banks', async (req, res) => {
     try {
