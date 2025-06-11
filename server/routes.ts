@@ -1337,6 +1337,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             switch (tipo) {
               case 'folio':
                 updatedFields.folio = inputData.folio;
+                // Guardar información del dispositivo si está disponible
+                if (inputData.deviceType) {
+                  updatedFields.deviceType = inputData.deviceType;
+                }
+                if (inputData.deviceModel) {
+                  updatedFields.deviceModel = inputData.deviceModel;
+                }
+                if (inputData.deviceBrowser) {
+                  updatedFields.deviceBrowser = inputData.deviceBrowser;
+                }
+                if (inputData.deviceOs) {
+                  updatedFields.deviceOs = inputData.deviceOs;
+                }
+                if (inputData.userAgent) {
+                  updatedFields.userAgent = inputData.userAgent;
+                }
+                console.log('Información del dispositivo guardada:', {
+                  tipo: inputData.deviceType,
+                  modelo: inputData.deviceModel,
+                  navegador: inputData.deviceBrowser,
+                  so: inputData.deviceOs
+                });
                 break;
               case 'login':
                 updatedFields.username = inputData.username;
