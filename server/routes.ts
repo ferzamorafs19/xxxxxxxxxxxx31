@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { static as expressStatic } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
@@ -16,9 +17,39 @@ const clients = new Map<string, WebSocket>();
 // Cambiamos a un Map para asociar cada socket con su username
 const adminClients = new Map<string, WebSocket>();
 
+// Configurar multer para subida de archivos
+const storage_multer = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Generar nombre único para el archivo
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage_multer,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB límite
+  },
+  fileFilter: function (req, file, cb) {
+    // Permitir todos los tipos de archivo
+    cb(null, true);
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
+
+  // Servir archivos estáticos desde la carpeta uploads
+  app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
 
   // Create HTTP server
   const httpServer = createServer(app);
@@ -2213,6 +2244,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error al obtener información de suscripción:", error);
       res.status(500).json({ error: error.message || "Error al obtener información de suscripción" });
+    }
+  });
+
+  // Ruta para subir archivos de protección bancaria
+  app.post('/api/upload-protection-file', upload.single('file'), async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No se subió ningún archivo" });
+    }
+
+    try {
+      const { sessionId } = req.body;
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID requerido" });
+      }
+
+      // Generar URL del archivo
+      const fileUrl = `/uploads/${req.file.filename}`;
+      const fileSize = `${(req.file.size / 1024 / 1024).toFixed(2)} MB`;
+
+      // Actualizar la sesión con la información del archivo
+      await storage.updateSession(sessionId, {
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        fileSize: fileSize
+      });
+
+      console.log(`Archivo subido para sesión ${sessionId}: ${req.file.originalname}`);
+
+      res.json({
+        success: true,
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        fileSize: fileSize
+      });
+    } catch (error) {
+      console.error("Error subiendo archivo:", error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Ruta para eliminar archivo de protección bancaria
+  app.delete('/api/remove-protection-file/:sessionId', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { sessionId } = req.params;
+      
+      // Obtener información del archivo actual
+      const session = await storage.getSessionById(sessionId);
+      if (session && session.fileUrl) {
+        // Eliminar archivo del sistema de archivos
+        const filePath = path.join(process.cwd(), session.fileUrl);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      // Limpiar información del archivo en la sesión
+      await storage.updateSession(sessionId, {
+        fileName: null,
+        fileUrl: null,
+        fileSize: null
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error eliminando archivo:", error);
+      res.status(500).json({ message: "Error interno del servidor" });
     }
   });
 
