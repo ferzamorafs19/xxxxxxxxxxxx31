@@ -7,6 +7,9 @@ import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, Inse
 import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification } from './telegramService';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();

