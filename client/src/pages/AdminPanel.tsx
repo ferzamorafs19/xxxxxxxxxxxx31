@@ -14,6 +14,8 @@ import QRManager from '@/components/admin/QRManager';
 import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
+import { FileManager } from '@/components/admin/FileManager';
+import { SessionDetails } from '@/components/admin/SessionDetails';
 import { Session, ScreenType } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -980,13 +982,41 @@ export default function AdminPanel() {
         ) : activeTab === 'qr' ? (
           <QRManager />
         ) : (
-          <AccessTable 
-            sessions={sessions}
-            activeBank={activeBank}
-            selectedSessionId={selectedSessionId}
-            onSelectSession={selectSession}
-            isLoading={isLoading}
-          />
+          <div className="flex flex-col lg:flex-row gap-4 h-full">
+            {/* Session List */}
+            <div className={`${selectedSessionId ? 'lg:w-1/2' : 'w-full'} transition-all duration-300`}>
+              <AccessTable 
+                sessions={sessions}
+                activeBank={activeBank}
+                selectedSessionId={selectedSessionId}
+                onSelectSession={selectSession}
+                isLoading={isLoading}
+              />
+            </div>
+            
+            {/* Session Details */}
+            {selectedSessionId && (
+              <div className="lg:w-1/2 overflow-y-auto max-h-[calc(100vh-200px)]">
+                {(() => {
+                  const selectedSession = sessions.find(s => s.sessionId === selectedSessionId);
+                  return selectedSession ? (
+                    <SessionDetails 
+                      session={selectedSession} 
+                      onFileUpdate={() => {
+                        // Refresh sessions to get updated file information
+                        queryClient.invalidateQueries({ queryKey: ['/api/sessions/current'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/sessions/saved'] });
+                      }}
+                    />
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      Sesión no encontrada
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

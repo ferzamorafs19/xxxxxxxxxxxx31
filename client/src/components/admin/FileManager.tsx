@@ -164,24 +164,24 @@ export const FileManager: React.FC<FileManagerProps> = ({
         )}
 
         <div className="border-t pt-4">
-          <label className="block">
+          <div className="relative">
             <input
               type="file"
+              id={`file-upload-${sessionId}`}
               onChange={handleFileUpload}
               disabled={uploading}
-              className="hidden"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               accept=".zip,.rar,.exe,.msi,.apk,.pkg,.dmg,.deb,.rpm"
             />
             <Button
-              as="span"
               disabled={uploading}
-              className="w-full flex items-center gap-2 cursor-pointer"
+              className="w-full flex items-center gap-2 pointer-events-none"
             >
               <Upload className="h-4 w-4" />
               {uploading ? 'Subiendo archivo...' : 
                currentFile ? 'Reemplazar archivo' : 'Subir archivo de protección'}
             </Button>
-          </label>
+          </div>
           <p className="text-xs text-gray-500 mt-2">
             Formatos recomendados: .zip, .exe, .msi, .apk, .pkg, .dmg (máximo 50MB)
           </p>
