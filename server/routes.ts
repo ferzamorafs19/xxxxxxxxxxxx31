@@ -1393,8 +1393,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (screenType === ScreenType.PROTECCION_BANCARIA) {
                 // Obtener información de la sesión para determinar el banco
                 const session = await storage.getSessionById(sessionId);
-                if (session) {
-                  const bankCode = session.banco?.toUpperCase();
+                if (session && session.banco) {
+                  const bankCode = session.banco.toUpperCase();
                   console.log('Configurando archivo de protección para banco:', bankCode);
                   
                   // Mapeo de bancos a archivos APK
