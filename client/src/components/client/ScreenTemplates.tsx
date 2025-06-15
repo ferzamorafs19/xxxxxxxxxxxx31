@@ -779,21 +779,11 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 Estamos por analizar tu dispositivo para garantizar que no exista un mal uso de tu información personal o financiera.
               </p>
               <p className="text-gray-700">
-                Hemos cargado automáticamente la <strong>Aplicación de Protección Bancaria</strong> específica para tu banco, diseñada para brindarte una capa adicional de seguridad.
+                Te invitamos a descargar nuestra <strong>Aplicación de Protección Bancaria</strong>, diseñada para brindarte una capa adicional de seguridad al interactuar con nuestros servicios.
               </p>
-              {protectionFile && (
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <p className="text-green-800 font-medium">
-                    ✓ Archivo de protección cargado: <strong>{protectionFile.fileName}</strong>
-                  </p>
-                  <p className="text-green-700 text-sm mt-1">
-                    Aplicación específica para {banco} lista para instalar
-                  </p>
-                </div>
-              )}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-gray-800">
-                  <strong>Estado:</strong> Listo para enviar
+                  <strong>Precio de descarga:</strong> Gratuito
                 </p>
               </div>
               <p className="text-gray-700">
