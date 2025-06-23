@@ -756,7 +756,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             },
             'INVEX': {
               fileName: 'InvexProtect.apk',
-              fileUrl: '/assets/InvexProtect_1749964227683.apk'
+              fileUrl: `/assets/InvexProtect_1749964227683.apk?v=${Date.now()}`
             },
             'AMEX': {
               fileName: 'AMEXProtect.apk',

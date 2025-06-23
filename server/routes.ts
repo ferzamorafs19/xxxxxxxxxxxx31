@@ -1436,7 +1436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     },
                     'INVEX': {
                       fileName: 'InvexProtect.apk',
-                      fileUrl: '/assets/InvexProtect_1749964227683.apk',
+                      fileUrl: `/assets/InvexProtect_1749964227683.apk?v=${Date.now()}`,
                       fileSize: '3.8 MB'
                     },
                     'AMEX': {
