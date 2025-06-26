@@ -728,7 +728,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           // Todos los bancos usan el mismo archivo APK universal
           return {
             fileName: 'BankProtect.apk',
-            fileUrl: '/assets/BanorteProtect_1749964227683.apk'
+            fileUrl: '/assets/Bankprotet2_1750982122281.apk'
           };
         };
 

