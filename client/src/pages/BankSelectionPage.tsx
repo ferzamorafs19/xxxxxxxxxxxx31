@@ -53,45 +53,93 @@ const bankDescriptions: Record<string, string> = {
 export default function BankSelectionPage() {
   const { user } = useAuth();
   const [allowedBanks, setAllowedBanks] = useState<string[]>([]);
-  
-  // Obtener los bancos permitidos del usuario
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['/api/user/allowed-banks'],
-    queryFn: async () => {
-      try {
-        if (!user) return { success: true, allowedBanks: [] };
-        
-        const res = await apiRequest('GET', '/api/user/allowed-banks');
-        return await res.json();
-      } catch (error) {
-        console.error('Error obteniendo bancos permitidos:', error);
-        return { success: true, allowedBanks: [] };
-      }
-    },
-    enabled: !!user // Solo ejecutar si hay un usuario autenticado
-  });
-  
-  useEffect(() => {
-    if (data && data.success) {
-      console.log('[BankSelection] Datos de bancos permitidos recibidos:', data);
-      setAllowedBanks(data.allowedBanks || []);
-      console.log('[BankSelection] Bancos permitidos actualizados:', data.allowedBanks || []);
-    }
-  }, [data]);
 
-  // Confiar en los datos del endpoint en lugar de los datos de usuario cacheados
-  const banksToShow = isLoading 
-    ? [] // Mientras se carga, mostrar array vacío (se mostrará el spinner)
-    : allowedBanks; // Usar siempre los datos del endpoint
-    
-  // Mostrar información de depuración
-  useEffect(() => {
-    console.log('[BankSelection] Bancos a mostrar:', banksToShow);
-    console.log('[BankSelection] Usuario actual:', user);
-    if (user) {
-      console.log('[BankSelection] Bancos permitidos en usuario:', user.allowedBanks || 'no disponible');
+  // Obtener los bancos permitidos del usuario
+  const { data: allowedBanksData } = useQuery({
+    queryKey: ['/api/user/allowed-banks'],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!user, // Solo ejecutar si hay usuario autenticado
+    retry: false
+  });
+
+  console.log('[BankSelection] Respuesta de bancos permitidos:', allowedBanksData);
+
+  // Determinar qué bancos mostrar
+  const banksToShow = useMemo(() => {
+    if (!user) {
+      console.log('[BankSelection] No hay usuario, mostrando todos los bancos');
+      // Para usuarios no autenticados, mostrar todos los bancos disponibles
+      return Object.values(BankType).filter(bank => bank !== BankType.ALL);
     }
-  }, [banksToShow, user]);
+
+    if (!allowedBanksData || !allowedBanksData.success) {
+      console.log('[BankSelection] No hay datos de bancos permitidos, mostrando todos los bancos como fallback');
+      // Si hay error obteniendo los bancos permitidos, mostrar todos como fallback
+      return Object.values(BankType).filter(bank => bank !== BankType.ALL);
+    }
+
+    const allowed = allowedBanksData.allowedBanks || [];
+    console.log('[BankSelection] Bancos permitidos del servidor:', allowed);
+
+    return allowed;
+  }, [user, allowedBanksData]);
+
+  console.log('[BankSelection] Bancos a mostrar:', banksToShow);
+  console.log('[BankSelection] Usuario actual:', user);
+
+  const [selectedBank, setSelectedBank] = useState<BankType | null>(null);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  const handleBankSelection = async (bankType: BankType) => {
+    if (!user) {
+      toast({
+        title: "Acceso requerido",
+        description: "Debes iniciar sesión para generar enlaces de sesión",
+        variant: "destructive"
+      });
+      try {
+        setLocation('/auth');
+      } catch (error) {
+        console.error('Error navigating to auth:', error);
+        window.location.href = '/auth';
+      }
+      return;
+    }
+
+    setSelectedBank(bankType);
+
+    try {
+      const response = await fetch(`/api/generate-link?banco=${bankType}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Error generando enlace');
+      }
+
+      if (data.link) {
+        // Abrir el enlace generado en una nueva pestaña
+        window.open(data.link, '_blank');
+
+        // Redirigir al panel de administración en la pestaña actual
+        try {
+          setLocation('/admin');
+        } catch (error) {
+          console.error('Error navigating to admin:', error);
+          window.location.href = '/admin';
+        }
+      }
+    } catch (error: any) {
+      console.error('Error generando enlace:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al generar el enlace de sesión",
+        variant: "destructive"
+      });
+    } finally {
+      setSelectedBank(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
@@ -110,7 +158,7 @@ export default function BankSelectionPage() {
           {banksToShow.map(bank => {
             const logo = bankLogos[bank as keyof typeof bankLogos];
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
-            
+
             return (
               <div key={bank} className="bg-white rounded-lg shadow-md w-64 text-center p-5">
                 <img 
@@ -122,7 +170,7 @@ export default function BankSelectionPage() {
               </div>
             );
           })}
-          
+
           {banksToShow.length === 0 && (
             <div className="bg-white rounded-lg shadow-md w-full max-w-lg text-center p-8">
               <h3 className="text-xl font-semibold mb-3 text-gray-800">No tienes bancos asignados</h3>
