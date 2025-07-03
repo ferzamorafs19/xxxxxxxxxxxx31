@@ -198,6 +198,49 @@ export async function sendBroadcastMessage(message: string, fromAdmin: string = 
   }
 }
 
+// Función para enviar notificación de activación de cuenta
+export async function sendAccountActivationNotification(userData: {
+  username: string;
+  telegramChatId: string;
+  expiresAt?: Date | null;
+  allowedBanks?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!userData.telegramChatId) {
+      return { success: false, error: "No se encontró Chat ID del usuario" };
+    }
+
+    const expirationText = userData.expiresAt 
+      ? `\nVence: ${new Date(userData.expiresAt).toLocaleString('es-MX')}`
+      : '\nTipo: Cuenta permanente';
+
+    const banksText = userData.allowedBanks === 'all' 
+      ? 'Todos los bancos' 
+      : userData.allowedBanks?.split(',').join(', ') || 'Ninguno especificado';
+
+    const message = `🎉 *¡Tu cuenta ha sido activada correctamente!*
+
+Usuario: *${userData.username}*
+Bancos permitidos: *${banksText}*${expirationText}
+
+Ya puedes acceder al sistema. Usa /help para ver los comandos disponibles.
+
+📞 *Soporte*: @BalonxSistema`;
+
+    await bot.sendMessage(userData.telegramChatId, message, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+
+    console.log(`✅ Notificación de activación enviada a ${userData.username} (${userData.telegramChatId})`);
+    return { success: true };
+
+  } catch (error: any) {
+    console.error(`❌ Error enviando notificación de activación a ${userData.username}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Función para enviar notificación de sesión (existente)
 export async function sendSessionNotification(sessionData: {
   sessionId: string;

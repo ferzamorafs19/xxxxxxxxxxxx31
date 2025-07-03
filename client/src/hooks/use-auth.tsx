@@ -139,9 +139,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (data) => {
+      console.log("[Auth] Login response:", data);
+      
+      // Detectar si requiere 2FA
+      if (data.requiresTwoFactor) {
+        console.log("[Auth] 2FA requerido, redirigiendo a verificación");
+        toast({
+          title: "Código de verificación enviado",
+          description: data.message || "Revisa tu Telegram para el código de verificación",
+        });
+        // Redirigir a la página de verificación 2FA
+        window.location.href = "/2fa-verify";
+        return;
+      }
+      
+      // Login exitoso completo
       console.log("[Auth] Login exitoso:", data);
       queryClient.setQueryData(["/api/user"], data);
-      // También refrescar explícitamente para asegurar que tenemos los datos más recientes
       refetch();
       toast({
         title: "Inicio de sesión exitoso",

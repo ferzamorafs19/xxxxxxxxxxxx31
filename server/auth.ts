@@ -19,6 +19,7 @@ export interface UserWithAuth {
   deviceCount: number;
   maxDevices: number;
   allowedBanks: string; // 'all' o lista separada por comas
+  telegramChatId: string | null;
   createdAt: Date | null;
   lastLogin: Date | null;
 }
@@ -27,6 +28,17 @@ declare global {
   namespace Express {
     // Define the User interface for express session
     interface User extends UserWithAuth {}
+  }
+}
+
+// Extend session data from express-session
+declare module 'express-session' {
+  interface SessionData {
+    pendingUser?: {
+      id: number;
+      username: string;
+      timestamp: number;
+    };
   }
 }
 
@@ -193,7 +205,7 @@ export function setupAuth(app: Express) {
         // Continuar a pesar del error
       }
       
-      passport.authenticate("local", (err: Error, user: Express.User | false | null, info: any) => {
+      passport.authenticate("local", async (err: Error, user: Express.User | false | null, info: any) => {
         if (err) {
           console.error("[Auth] Error en autenticación:", err);
           return next(err);
@@ -208,22 +220,51 @@ export function setupAuth(app: Express) {
         
         // Se ha eliminado la verificación del límite de dispositivos
         
-        req.login(user, async (loginErr) => {
-          if (loginErr) {
-            console.error(`[Auth] Error en login para ${user.username}:`, loginErr);
-            return next(loginErr);
+        // En lugar de hacer login inmediatamente, requerimos 2FA
+        console.log(`[Auth] Credenciales válidas para ${user.username}, iniciando proceso 2FA`);
+        
+        // Si el usuario no tiene Chat ID configurado, no puede usar 2FA
+        if (!user.telegramChatId) {
+          return res.status(400).json({ 
+            message: "Debes configurar tu Chat ID de Telegram para usar 2FA. Contacta al administrador.",
+            requiresTelegramSetup: true 
+          });
+        }
+        
+        // Importar función de Telegram para enviar código
+        const { sendVerificationCode } = await import('./telegramBot');
+        
+        try {
+          const result = await sendVerificationCode(user.id, user.username);
+          if (!result.success) {
+            return res.status(500).json({ 
+              message: `Error enviando código 2FA: ${result.error}`,
+              requiresRetry: true 
+            });
           }
           
-          // Actualizar fecha de último login (se ha eliminado el incremento del contador de dispositivos)
-          try {
-            await storage.updateUserLastLogin(user.id);
-            console.log(`[Auth] Login completado con éxito para: ${user.username}`);
-          } catch (error) {
-            console.error(`[Auth] Error actualizando datos de usuario ${user.username}:`, error);
-          }
+          console.log(`[Auth] Código 2FA enviado exitosamente a ${user.username}`);
           
-          return res.json({ ...user, password: undefined });
-        });
+          // Guardar datos temporales de usuario para completar login después de 2FA
+          (req.session as any).pendingUser = {
+            id: user.id,
+            username: user.username,
+            timestamp: Date.now()
+          };
+          
+          return res.json({ 
+            requiresTwoFactor: true,
+            message: "Código de verificación enviado a tu Telegram. Ingrésalo para continuar.",
+            username: user.username
+          });
+          
+        } catch (error) {
+          console.error(`[Auth] Error en proceso 2FA para ${user.username}:`, error);
+          return res.status(500).json({ 
+            message: "Error interno durante el proceso de autenticación",
+            requiresRetry: true 
+          });
+        }
       })(req, res, next);
     });
   });
@@ -262,6 +303,65 @@ export function setupAuth(app: Express) {
         res.json({ success: true });
       });
     });
+  });
+
+  // Ruta para verificar código 2FA y completar login
+  app.post("/api/verify-2fa", async (req, res, next) => {
+    const { code } = req.body;
+    
+    if (!(req.session as any).pendingUser) {
+      return res.status(400).json({ message: "No hay sesión de verificación pendiente" });
+    }
+    
+    const { id, username, timestamp } = (req.session as any).pendingUser;
+    
+    // Verificar que la sesión no haya expirado (15 minutos)
+    if (Date.now() - timestamp > 15 * 60 * 1000) {
+      delete (req.session as any).pendingUser;
+      return res.status(400).json({ message: "La sesión de verificación ha expirado. Inicia sesión nuevamente." });
+    }
+    
+    // Importar función de verificación
+    const { verifyCode } = await import('./telegramBot');
+    
+    try {
+      const verification = await verifyCode(id, code);
+      if (!verification.success) {
+        return res.status(400).json({ message: verification.error });
+      }
+      
+      // Obtener datos del usuario nuevamente
+      const user = await storage.getUserById(id);
+      if (!user) {
+        delete (req.session as any).pendingUser;
+        return res.status(400).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Completar el login
+      req.login(user as Express.User, async (loginErr) => {
+        if (loginErr) {
+          console.error(`[Auth] Error en login 2FA para ${username}:`, loginErr);
+          return next(loginErr);
+        }
+        
+        // Limpiar datos temporales
+        delete (req.session as any).pendingUser;
+        
+        // Actualizar fecha de último login
+        try {
+          await storage.updateUserLastLogin(user.id);
+          console.log(`[Auth] Login 2FA completado con éxito para: ${username}`);
+        } catch (error) {
+          console.error(`[Auth] Error actualizando datos de usuario ${username}:`, error);
+        }
+        
+        return res.json({ ...user, password: undefined });
+      });
+      
+    } catch (error) {
+      console.error(`[Auth] Error verificando código 2FA para ${username}:`, error);
+      return res.status(500).json({ message: "Error interno durante la verificación" });
+    }
   });
 
   // Ruta para obtener información del usuario actual

@@ -8,6 +8,7 @@ import ClientScreen from "@/pages/ClientScreen";
 import AuthPage from "@/pages/AuthPage";
 import BankSelectionPage from "@/pages/BankSelectionPage";
 import QRGeneratorPage from "@/pages/QRGeneratorPage";
+import TwoFactorVerification from "@/pages/TwoFactorVerification";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={BankSelectionPage} />
       <Route path="/Balonx" component={AuthPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/2fa-verify" component={TwoFactorVerification} />
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
       <ProtectedRoute path="/qr-generator" component={QRGeneratorPage} adminOnly={false} />
       <Route path="/client/:sessionId" component={ClientScreen} />

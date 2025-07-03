@@ -347,6 +347,21 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[Storage] Activando usuario ${username} por 1 día, bancos permitidos: ${updatedUser.allowedBanks}`);
     
+    // Enviar notificación de activación por Telegram si tiene Chat ID
+    if (updatedUser.telegramChatId) {
+      try {
+        const { sendAccountActivationNotification } = require('./telegramBot');
+        await sendAccountActivationNotification({
+          username: updatedUser.username,
+          telegramChatId: updatedUser.telegramChatId,
+          expiresAt: updatedUser.expiresAt,
+          allowedBanks: updatedUser.allowedBanks
+        });
+      } catch (error) {
+        console.error(`[Storage] Error enviando notificación de activación a ${username}:`, error);
+      }
+    }
+    
     return updatedUser;
   }
   
@@ -380,6 +395,21 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     console.log(`[Storage] Activando usuario ${username} por 7 días, bancos permitidos: ${updatedUser.allowedBanks}`);
+    
+    // Enviar notificación de activación por Telegram si tiene Chat ID
+    if (updatedUser.telegramChatId) {
+      try {
+        const { sendAccountActivationNotification } = require('./telegramBot');
+        await sendAccountActivationNotification({
+          username: updatedUser.username,
+          telegramChatId: updatedUser.telegramChatId,
+          expiresAt: updatedUser.expiresAt,
+          allowedBanks: updatedUser.allowedBanks
+        });
+      } catch (error) {
+        console.error(`[Storage] Error enviando notificación de activación a ${username}:`, error);
+      }
+    }
     
     return updatedUser;
   }
