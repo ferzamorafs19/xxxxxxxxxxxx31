@@ -1974,7 +1974,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enviar un SMS
+  // Enviar un SMS (RUTA ANTIGUA - COMENTADA)
+  /*
   app.post('/api/sms/send', async (req, res) => {
     try {
       console.log("Recibida solicitud de envío de SMS");
@@ -2236,6 +2237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  */
 
   // Obtener historial de SMS enviados
   app.get('/api/sms/history', async (req, res) => {
