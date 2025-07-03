@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UserRole } from '@shared/schema';
-import { User, UserPlus, Lock, AlertTriangle, UserCheck, UserX, Clock } from 'lucide-react';
+import { User, UserPlus, Lock, AlertTriangle, UserCheck, UserX, Clock, MessageCircle } from 'lucide-react';
 
 // Interfaces
 type UserData = {
@@ -24,6 +24,9 @@ const UserManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isChatIdModalOpen, setIsChatIdModalOpen] = useState<boolean>(false);
+  const [selectedUserForChatId, setSelectedUserForChatId] = useState<UserData | null>(null);
+  const [chatIdInput, setChatIdInput] = useState<string>('');
   const [newUser, setNewUser] = useState<{ username: string; password: string; role: UserRole; telegramChatId: string }>({
     username: '',
     password: '',
@@ -100,10 +103,53 @@ const UserManagement = () => {
     },
   });
 
+  // Mutation para configurar Chat ID
+  const configureChatIdMutation = useMutation({
+    mutationFn: async ({ username, telegramChatId }: { username: string; telegramChatId: string }) => {
+      const res = await apiRequest('PUT', `/api/users/${username}/chat-id`, { telegramChatId });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setIsChatIdModalOpen(false);
+      setSelectedUserForChatId(null);
+      setChatIdInput('');
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: "Chat ID configurado",
+        description: `Chat ID configurado exitosamente para ${data.user?.username}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al configurar Chat ID",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Manejador de creación de usuario
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     createUserMutation.mutate(newUser);
+  };
+
+  // Abrir modal para configurar Chat ID
+  const openChatIdModal = (user: UserData) => {
+    setSelectedUserForChatId(user);
+    setChatIdInput('');
+    setIsChatIdModalOpen(true);
+  };
+
+  // Configurar Chat ID
+  const handleConfigureChatId = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUserForChatId || !chatIdInput.trim()) return;
+    
+    configureChatIdMutation.mutate({
+      username: selectedUserForChatId.username,
+      telegramChatId: chatIdInput.trim()
+    });
   };
 
   return (
@@ -186,20 +232,32 @@ const UserManagement = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleUserStatusMutation.mutate(user.username)}
-                        disabled={toggleUserStatusMutation.isPending}
-                        title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
-                        className="px-2"
-                      >
-                        {user.active ? (
-                          <UserX className="h-4 w-4 text-red-500" />
-                        ) : (
-                          <UserCheck className="h-4 w-4 text-green-500" />
-                        )}
-                      </Button>
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleUserStatusMutation.mutate(user.username)}
+                          disabled={toggleUserStatusMutation.isPending}
+                          title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+                          className="px-2"
+                        >
+                          {user.active ? (
+                            <UserX className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <UserCheck className="h-4 w-4 text-green-500" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openChatIdModal(user)}
+                          disabled={configureChatIdMutation.isPending}
+                          title="Configurar Chat ID de Telegram"
+                          className="px-2"
+                        >
+                          <MessageCircle className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -267,7 +325,19 @@ const UserManagement = () => {
                       )}
                     </div>
                     
-                    <div className="border-t border-gray-700 pt-3 flex justify-end">
+                    <div className="border-t border-gray-700 pt-3 flex justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openChatIdModal(user)}
+                        disabled={configureChatIdMutation.isPending}
+                        className="px-3 py-1"
+                      >
+                        <div className="flex items-center text-blue-500">
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Chat ID</span>
+                        </div>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -375,6 +445,73 @@ const UserManagement = () => {
                   <>
                     <Lock className="mr-2 h-4 w-4" />
                     Crear Usuario
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Configure Chat ID Modal */}
+      <Dialog open={isChatIdModalOpen} onOpenChange={setIsChatIdModalOpen}>
+        <DialogContent className="bg-[#1e1e1e] text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <MessageCircle className="mr-2 h-5 w-5 text-blue-500" />
+              Configurar Chat ID de Telegram
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleConfigureChatId}>
+            <div className="space-y-4 py-4">
+              <div className="bg-blue-900/20 border border-blue-600 rounded-lg p-3">
+                <p className="text-sm text-blue-300">
+                  <strong>Usuario:</strong> {selectedUserForChatId?.username}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Configura el Chat ID para que este usuario reciba códigos 2FA y notificaciones por Telegram.
+                </p>
+              </div>
+              
+              <div className="grid w-full items-center gap-2">
+                <label htmlFor="chatId" className="text-sm text-gray-400">
+                  Chat ID de Telegram
+                </label>
+                <Input
+                  type="text"
+                  id="chatId"
+                  value={chatIdInput}
+                  onChange={(e) => setChatIdInput(e.target.value)}
+                  className="bg-[#2c2c2c] border-gray-700"
+                  placeholder="Ej: 1234567890"
+                  required
+                />
+                <div className="text-xs text-gray-500 space-y-1">
+                  <p>• El usuario puede obtener su Chat ID enviando <code className="bg-gray-800 px-1 rounded">/id</code> al bot</p>
+                  <p>• También puede usar <code className="bg-gray-800 px-1 rounded">/start</code> para asociación automática</p>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => setIsChatIdModalOpen(false)}
+                className="border-gray-600 text-gray-300"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-[#00aaff] hover:bg-[#0088cc]"
+                disabled={configureChatIdMutation.isPending || !chatIdInput.trim()}
+              >
+                {configureChatIdMutation.isPending ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Configurar Chat ID
                   </>
                 )}
               </Button>

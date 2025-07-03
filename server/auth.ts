@@ -163,9 +163,7 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username and password are required" });
       }
       
-      if (!telegramChatId) {
-        return res.status(400).json({ message: "Telegram Chat ID is required" });
-      }
+      // El telegramChatId ahora es opcional - puede configurarse después por administradores
       
       // Verificar si el usuario ya existe
       const existingUser = await storage.getUserByUsername(username);

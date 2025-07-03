@@ -490,6 +490,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Configurar Chat ID para cualquier usuario (solo administradores)
+  app.put('/api/users/:username/chat-id', async (req, res) => {
+    console.log('[API] Solicitud para configurar Chat ID de usuario');
+
+    if (!req.isAuthenticated()) {
+      console.log('[API] Error: Usuario no autenticado');
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const currentUser = req.user;
+    console.log(`[API] Usuario actual: ${currentUser.username}, rol: ${currentUser.role}`);
+
+    // Solo permitir a administradores configurar Chat IDs
+    if (currentUser.role !== UserRole.ADMIN) {
+      console.log('[API] Error: Usuario no autorizado (no es admin)');
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    const { username } = req.params;
+    const { telegramChatId } = req.body;
+
+    if (!telegramChatId) {
+      return res.status(400).json({ message: "Chat ID requerido" });
+    }
+
+    try {
+      console.log(`[API] Configurando Chat ID para usuario: ${username}`);
+      
+      // Verificar que el usuario existe
+      const existingUser = await storage.getUserByUsername(username);
+      if (!existingUser) {
+        console.log(`[API] Error: Usuario ${username} no encontrado`);
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      // Actualizar el Chat ID
+      const updatedUser = await storage.updateUser(existingUser.id, {
+        telegramChatId: telegramChatId.toString()
+      });
+
+      console.log(`[API] Chat ID configurado exitosamente para ${username}: ${telegramChatId}`);
+
+      // Notificar al usuario mediante Telegram si es posible
+      try {
+        const { sendAdminMessage } = await import('./telegramBot');
+        const welcomeMessage = `🎉 *¡Tu Chat ID ha sido configurado!*
+
+Hola *${username}*,
+
+Tu Chat ID ha sido configurado correctamente por un administrador.
+
+✅ *Ahora puedes recibir:*
+• Códigos de verificación 2FA
+• Notificaciones del sistema
+• Mensajes del administrador
+
+💡 Tu cuenta está lista para usar todas las funciones del sistema.
+
+📞 *Soporte*: @BalonxSistema`;
+
+        await sendAdminMessage(telegramChatId, welcomeMessage, 'Sistema');
+        console.log(`[API] Mensaje de bienvenida enviado a ${username}`);
+      } catch (error) {
+        console.log(`[API] No se pudo enviar mensaje de bienvenida: ${error}`);
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Chat ID configurado para ${username}`,
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          role: updatedUser.role,
+          isActive: updatedUser.isActive,
+          telegramChatId: updatedUser.telegramChatId,
+          expiresAt: updatedUser.expiresAt,
+          deviceCount: updatedUser.deviceCount,
+          maxDevices: updatedUser.maxDevices,
+          allowedBanks: updatedUser.allowedBanks
+        } 
+      });
+    } catch (error: any) {
+      console.log(`[API] Error al configurar Chat ID: ${error.message}`);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get('/api/admin/user', async (req, res) => {
     try {
       // Obtener el username de la cookie de autenticación

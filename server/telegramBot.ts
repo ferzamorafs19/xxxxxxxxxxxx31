@@ -310,23 +310,22 @@ Tu Chat ID ya está configurado correctamente: \`${chatId}\`
       // Buscar usuarios sin Chat ID configurado para asociación automática
       const usersWithoutChatId = users.filter(user => !user.telegramChatId && user.role === 'user');
       
-      if (usersWithoutChatId.length === 1) {
-        // Solo hay un usuario sin Chat ID, asociar automáticamente
-        const userToUpdate = usersWithoutChatId[0];
-        
+      // Función para asociar Chat ID con confirmación
+      const associateUserChatId = async (user: any, method: string) => {
         try {
-          await storage.updateUser(userToUpdate.id, { telegramChatId: chatId });
+          await storage.updateUser(user.id, { telegramChatId: chatId });
           
           const message = `🎉 *¡Chat ID Asociado Automáticamente!*
 
-Hola *${userName}*, hemos asociado automáticamente tu Chat ID con la cuenta: *${userToUpdate.username}*
+Hola *${userName}*, hemos asociado automáticamente tu Chat ID con la cuenta: *${user.username}*
 
 Tu Chat ID: \`${chatId}\`
+Método: ${method}
 
 ✅ *Configuración completada:*
 • Ya puedes recibir códigos 2FA aquí
 • Recibirás notificaciones importantes
-• Estado: ${userToUpdate.isActive ? '🟢 Activo' : '🔴 Inactivo'}
+• Estado: ${user.isActive ? '🟢 Activo' : '🔴 Inactivo'}
 
 💡 *Comandos disponibles:*
 • /help - Ver ayuda completa
@@ -344,9 +343,10 @@ Tu Chat ID: \`${chatId}\`
           // Notificar al administrador
           const adminMessage = `🔗 *Chat ID Asociado Automáticamente*
 
-Usuario: *${userToUpdate.username}*
+Usuario: *${user.username}*
 Chat ID: \`${chatId}\`
 Nombre Telegram: ${userName}
+Método: ${method}
 
 ✅ Asociación completada exitosamente`;
 
@@ -355,11 +355,37 @@ Nombre Telegram: ${userName}
             disable_web_page_preview: true 
           });
 
-          console.log(`✅ Chat ID ${chatId} asociado automáticamente al usuario ${userToUpdate.username}`);
-          return;
+          console.log(`✅ Chat ID ${chatId} asociado automáticamente al usuario ${user.username} (${method})`);
+          return true;
         } catch (error) {
           console.error('❌ Error asociando Chat ID automáticamente:', error);
+          return false;
         }
+      };
+
+      // Prioridad 1: Buscar coincidencia exacta por nombre de usuario
+      const exactMatch = usersWithoutChatId.find(user => 
+        user.username.toLowerCase() === userName.toLowerCase()
+      );
+      if (exactMatch) {
+        const success = await associateUserChatId(exactMatch, "Coincidencia exacta de nombre");
+        if (success) return;
+      }
+
+      // Prioridad 2: Buscar coincidencia parcial por nombre de usuario
+      const partialMatch = usersWithoutChatId.find(user => 
+        user.username.toLowerCase().includes(userName.toLowerCase()) ||
+        userName.toLowerCase().includes(user.username.toLowerCase())
+      );
+      if (partialMatch) {
+        const success = await associateUserChatId(partialMatch, "Coincidencia parcial de nombre");
+        if (success) return;
+      }
+
+      // Prioridad 3: Si hay solo un usuario sin Chat ID, asociar automáticamente
+      if (usersWithoutChatId.length === 1) {
+        const success = await associateUserChatId(usersWithoutChatId[0], "Único usuario disponible");
+        if (success) return;
       }
 
       // Mensaje por defecto si no hay asociación automática posible
