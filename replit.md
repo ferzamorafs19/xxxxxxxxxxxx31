@@ -137,6 +137,12 @@ Changelog:
 - July 3, 2025. Updated registration form to require Chat ID field with instructions
 - July 3, 2025. Fixed Chat ID storage issue in database using snake_case field mapping
 - July 3, 2025. Completed full registration flow with Chat ID collection and 2FA integration
+- July 3, 2025. Implemented automatic code submission when 6-digit 2FA code is entered
+- July 3, 2025. Added automated renewal confirmation messages when panels are extended
+- July 3, 2025. Created daily reminder system for subscriptions expiring in 24 hours
+- July 3, 2025. Implemented expiration notification system for users whose panels have expired
+- July 3, 2025. Configured automatic scheduling for renewal reminders (10:00 AM daily)
+- July 3, 2025. Added hourly verification system for recently expired panels with notifications
 ```
 
 ## User Preferences

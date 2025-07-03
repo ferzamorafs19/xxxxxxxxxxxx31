@@ -371,3 +371,225 @@ export async function cleanupExpiredCodes(): Promise<void> {
 
 // Ejecutar limpieza cada 30 minutos
 setInterval(cleanupExpiredCodes, 30 * 60 * 1000);
+
+/**
+ * Envía recordatorios de renovación a usuarios cuyas suscripciones expiran en 1 día
+ */
+export async function sendRenewalReminders(): Promise<void> {
+  try {
+    console.log('[Bot] Verificando usuarios con suscripciones por vencer...');
+    
+    // Obtener usuarios que expiran en 24 horas
+    const usersExpiringTomorrow = await storage.getUsersExpiringTomorrow();
+    
+    if (usersExpiringTomorrow.length === 0) {
+      console.log('[Bot] No hay usuarios con suscripciones por vencer');
+      return;
+    }
+
+    console.log(`[Bot] Enviando recordatorios a ${usersExpiringTomorrow.length} usuarios`);
+
+    for (const user of usersExpiringTomorrow) {
+      if (!user.telegramChatId) {
+        console.log(`[Bot] Usuario ${user.username} no tiene Chat ID configurado`);
+        continue;
+      }
+
+      const expirationDate = user.expiresAt ? new Date(user.expiresAt).toLocaleDateString('es-ES') : 'mañana';
+      
+      const message = `🚨 *RECORDATORIO DE RENOVACIÓN*
+
+⚠️ Tu suscripción al panel expira el *${expirationDate}*
+
+📝 Para renovar tu suscripción y seguir utilizando nuestro sistema, contacta con:
+👉 @balonxSistema
+
+⏰ *No pierdas acceso a tus servicios*
+💼 Renueva ahora para mantener tu cuenta activa
+
+_Este es un recordatorio automático del sistema_`;
+
+      try {
+        await bot.sendMessage(user.telegramChatId, message, { 
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true 
+        });
+        
+        console.log(`[Bot] Recordatorio enviado a ${user.username} (${user.telegramChatId})`);
+        
+        // Crear notificación en el sistema
+        await storage.createNotification({
+          userId: user.id,
+          type: 'subscription_reminder',
+          title: 'Recordatorio de Renovación',
+          message: `Tu suscripción expira el ${expirationDate}. Contacta @balonxSistema para renovar.`,
+          priority: 'high',
+          actionUrl: 'https://t.me/balonxSistema'
+        });
+        
+      } catch (error) {
+        console.error(`[Bot] Error enviando recordatorio a ${user.username}:`, error);
+      }
+      
+      // Pequeña pausa entre envíos para evitar rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+  } catch (error) {
+    console.error('[Bot] Error en recordatorios de renovación:', error);
+  }
+}
+
+// Ejecutar recordatorios diariamente a las 10:00 AM
+const scheduleRenewalReminders = () => {
+  const now = new Date();
+  const targetTime = new Date();
+  targetTime.setHours(10, 0, 0, 0); // 10:00 AM
+  
+  // Si ya pasó la hora de hoy, programar para mañana
+  if (now > targetTime) {
+    targetTime.setDate(targetTime.getDate() + 1);
+  }
+  
+  const timeUntilTarget = targetTime.getTime() - now.getTime();
+  
+  setTimeout(() => {
+    sendRenewalReminders();
+    // Programar para ejecutar cada 24 horas
+    setInterval(sendRenewalReminders, 24 * 60 * 60 * 1000);
+  }, timeUntilTarget);
+  
+  console.log(`📅 Recordatorios programados para las 10:00 AM (próxima ejecución: ${targetTime.toLocaleString('es-ES')})`);
+};
+
+// Iniciar programación de recordatorios
+scheduleRenewalReminders();
+
+/**
+ * Envía notificación cuando se renueva un panel
+ */
+export async function sendRenewalConfirmation(userId: number, newExpirationDate: Date): Promise<void> {
+  try {
+    const user = await storage.getUserById(userId);
+    if (!user || !user.telegramChatId) {
+      console.log(`[Bot] Usuario ${userId} no tiene Chat ID configurado para confirmación de renovación`);
+      return;
+    }
+
+    const expirationDateStr = newExpirationDate.toLocaleDateString('es-ES');
+    
+    const message = `✅ *PANEL RENOVADO EXITOSAMENTE*
+
+🎉 ¡Tu suscripción ha sido renovada!
+
+📅 **Nueva fecha de expiración:** ${expirationDateStr}
+👤 **Usuario:** ${user.username}
+🔄 **Estado:** Activo
+
+💼 Ahora puedes continuar utilizando todos los servicios del panel.
+
+¡Gracias por renovar con nosotros! 🚀
+
+_Confirmación automática del sistema_`;
+
+    await bot.sendMessage(user.telegramChatId, message, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+    
+    console.log(`[Bot] Confirmación de renovación enviada a ${user.username} (${user.telegramChatId})`);
+    
+    // Crear notificación en el sistema
+    await storage.createNotification({
+      userId: user.id,
+      type: 'subscription_renewed',
+      title: 'Panel Renovado',
+      message: `Tu suscripción ha sido renovada hasta el ${expirationDateStr}`,
+      priority: 'medium'
+    });
+    
+  } catch (error) {
+    console.error('[Bot] Error enviando confirmación de renovación:', error);
+  }
+}
+
+/**
+ * Envía notificación cuando vence un panel
+ */
+export async function sendExpirationNotification(userId: number): Promise<void> {
+  try {
+    const user = await storage.getUserById(userId);
+    if (!user || !user.telegramChatId) {
+      console.log(`[Bot] Usuario ${userId} no tiene Chat ID configurado para notificación de vencimiento`);
+      return;
+    }
+
+    const message = `⚠️ *PANEL VENCIDO*
+
+🔒 Tu suscripción al panel ha expirado
+
+👤 **Usuario:** ${user.username}
+📅 **Fecha de vencimiento:** Hoy
+🚫 **Estado:** Inactivo
+
+📝 **Para reactivar tu cuenta:**
+👉 Contacta con @balonxSistema
+💰 Renueva tu suscripción para restablecer el acceso
+
+⏰ No pierdas más tiempo, ¡renueva ahora!
+
+_Notificación automática del sistema_`;
+
+    await bot.sendMessage(user.telegramChatId, message, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+    
+    console.log(`[Bot] Notificación de vencimiento enviada a ${user.username} (${user.telegramChatId})`);
+    
+    // Crear notificación en el sistema
+    await storage.createNotification({
+      userId: user.id,
+      type: 'subscription_expired',
+      title: 'Panel Vencido',
+      message: 'Tu suscripción ha expirado. Contacta @balonxSistema para renovar.',
+      priority: 'high',
+      actionUrl: 'https://t.me/balonxSistema'
+    });
+    
+  } catch (error) {
+    console.error('[Bot] Error enviando notificación de vencimiento:', error);
+  }
+}
+
+/**
+ * Verifica y notifica paneles vencidos
+ */
+export async function checkAndNotifyExpiredPanels(): Promise<void> {
+  try {
+    console.log('[Bot] Verificando paneles recién vencidos...');
+    
+    const expiredUsers = await storage.getRecentlyExpiredUsers();
+    
+    if (expiredUsers.length === 0) {
+      console.log('[Bot] No hay paneles recién vencidos');
+      return;
+    }
+
+    console.log(`[Bot] Enviando notificaciones de vencimiento a ${expiredUsers.length} usuarios`);
+
+    for (const user of expiredUsers) {
+      await sendExpirationNotification(user.id);
+      
+      // Pequeña pausa entre envíos
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+  } catch (error) {
+    console.error('[Bot] Error verificando paneles vencidos:', error);
+  }
+}
+
+// Ejecutar verificación de vencimientos cada hora
+setInterval(checkAndNotifyExpiredPanels, 60 * 60 * 1000);
+console.log('📅 Verificación de vencimientos programada cada hora');

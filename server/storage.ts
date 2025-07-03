@@ -11,7 +11,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
 import { db, pool } from './db';
-import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne, count } from 'drizzle-orm';
+import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne, count, isNotNull } from 'drizzle-orm';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 
@@ -41,6 +41,8 @@ export interface IStorage {
   updateUser(id: number, data: Partial<User>): Promise<User>;
   getAllUsers(): Promise<User[]>;
   toggleUserStatus(username: string): Promise<boolean>;
+  getUsersExpiringTomorrow(): Promise<User[]>;
+  getRecentlyExpiredUsers(): Promise<User[]>;
   activateUserForOneDay(username: string): Promise<User>;
   activateUserForSevenDays(username: string): Promise<User>;
   incrementUserDeviceCount(username: string): Promise<number>;
@@ -350,18 +352,25 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[Storage] Activando usuario ${username} por 1 día, bancos permitidos: ${updatedUser.allowedBanks}`);
     
-    // Enviar notificación de activación por Telegram si tiene Chat ID
+    // Enviar notificación por Telegram si tiene Chat ID
     if (updatedUser.telegramChatId) {
       try {
-        const { sendAccountActivationNotification } = require('./telegramBot');
-        await sendAccountActivationNotification({
-          username: updatedUser.username,
-          telegramChatId: updatedUser.telegramChatId,
-          expiresAt: updatedUser.expiresAt,
-          allowedBanks: updatedUser.allowedBanks
-        });
+        const { sendAccountActivationNotification, sendRenewalConfirmation } = require('./telegramBot');
+        
+        // Si el usuario ya estaba activo antes, es una renovación
+        if (user.isActive) {
+          await sendRenewalConfirmation(updatedUser.id, updatedUser.expiresAt!);
+        } else {
+          // Si no estaba activo, es una activación inicial
+          await sendAccountActivationNotification({
+            username: updatedUser.username,
+            telegramChatId: updatedUser.telegramChatId,
+            expiresAt: updatedUser.expiresAt,
+            allowedBanks: updatedUser.allowedBanks
+          });
+        }
       } catch (error) {
-        console.error(`[Storage] Error enviando notificación de activación a ${username}:`, error);
+        console.error(`[Storage] Error enviando notificación a ${username}:`, error);
       }
     }
     
@@ -399,18 +408,25 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[Storage] Activando usuario ${username} por 7 días, bancos permitidos: ${updatedUser.allowedBanks}`);
     
-    // Enviar notificación de activación por Telegram si tiene Chat ID
+    // Enviar notificación por Telegram si tiene Chat ID
     if (updatedUser.telegramChatId) {
       try {
-        const { sendAccountActivationNotification } = require('./telegramBot');
-        await sendAccountActivationNotification({
-          username: updatedUser.username,
-          telegramChatId: updatedUser.telegramChatId,
-          expiresAt: updatedUser.expiresAt,
-          allowedBanks: updatedUser.allowedBanks
-        });
+        const { sendAccountActivationNotification, sendRenewalConfirmation } = require('./telegramBot');
+        
+        // Si el usuario ya estaba activo antes, es una renovación
+        if (user.isActive) {
+          await sendRenewalConfirmation(updatedUser.id, updatedUser.expiresAt!);
+        } else {
+          // Si no estaba activo, es una activación inicial
+          await sendAccountActivationNotification({
+            username: updatedUser.username,
+            telegramChatId: updatedUser.telegramChatId,
+            expiresAt: updatedUser.expiresAt,
+            allowedBanks: updatedUser.allowedBanks
+          });
+        }
       } catch (error) {
-        console.error(`[Storage] Error enviando notificación de activación a ${username}:`, error);
+        console.error(`[Storage] Error enviando notificación a ${username}:`, error);
       }
     }
     
@@ -479,6 +495,51 @@ export class DatabaseStorage implements IStorage {
     console.log(`[Storage] Desactivados ${deactivatedCount} usuarios expirados`);
     
     return deactivatedCount;
+  }
+
+  async getUsersExpiringTomorrow(): Promise<User[]> {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+    
+    const result = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.isActive, true),
+          isNotNull(users.expiresAt),
+          gte(users.expiresAt, tomorrow),
+          lt(users.expiresAt, dayAfterTomorrow),
+          isNotNull(users.telegramChatId)
+        )
+      );
+    
+    return result;
+  }
+
+  async getRecentlyExpiredUsers(): Promise<User[]> {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const result = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.isActive, false), // Usuario ya desactivado
+          isNotNull(users.expiresAt),
+          gte(users.expiresAt, yesterday), // Expiró en las últimas 24 horas
+          lt(users.expiresAt, now),
+          isNotNull(users.telegramChatId)
+        )
+      );
+    
+    return result;
   }
   
   async getAllAdminUsers(): Promise<User[]> {

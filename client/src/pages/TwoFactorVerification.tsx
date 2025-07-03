@@ -49,6 +49,13 @@ export default function TwoFactorVerification() {
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setCode(value);
+    
+    // Envío automático cuando se completan los 6 dígitos
+    if (value.length === 6) {
+      setTimeout(() => {
+        verifyMutation.mutate(value);
+      }, 500); // Pequeño delay para mejor UX
+    }
   };
 
   return (
