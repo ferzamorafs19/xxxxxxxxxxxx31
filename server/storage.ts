@@ -169,17 +169,17 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`El usuario ${data.username} ya existe`);
     }
     
-    // Preparar los datos del usuario
+    // Preparar los datos del usuario usando los nombres de campo de Drizzle
     const userData: any = {
       username: data.username,
       password: data.password, // La contraseña ya viene hasheada de auth.ts
       role: data.role || UserRole.USER,
-      is_active: data.role === UserRole.ADMIN ? true : false, // Los usuarios normales inician inactivos
-      device_count: 0,
-      max_devices: 3,
-      allowed_banks: data.allowedBanks || 'all',
-      telegram_chat_id: data.telegramChatId || null,
-      created_at: new Date()
+      isActive: data.role === UserRole.ADMIN ? true : false, // Los usuarios normales inician inactivos
+      deviceCount: 0,
+      maxDevices: 3,
+      allowedBanks: data.allowedBanks || 'all',
+      telegramChatId: data.telegramChatId || null,
+      createdAt: new Date()
     };
     
     // Insertar en la base de datos

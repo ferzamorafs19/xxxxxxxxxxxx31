@@ -153,6 +153,9 @@ Changelog:
 - July 3, 2025. Implemented mandatory administrator approval system - users cannot login until admin activates account
 - July 3, 2025. Updated registration flow with @BalonxSistema contact message and automatic login tab redirection
 - July 3, 2025. Enhanced authentication error messages to guide users toward admin approval process
+- July 3, 2025. Fixed Chat ID storage issue in user registration - now properly saves telegramChatId field
+- July 3, 2025. Completed end-to-end 2FA flow: registration → admin approval → automatic 2FA on login
+- July 3, 2025. Verified full workflow: Chat ID configured during registration, 2FA sent automatically on login attempt
 ```
 
 ## User Preferences
