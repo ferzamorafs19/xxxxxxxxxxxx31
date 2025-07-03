@@ -273,6 +273,23 @@ export function setupAuth(app: Express) {
     res.json({ ...user, password: undefined });
   });
 
+  // Ruta para actualizar el perfil del usuario (Chat ID de Telegram)
+  app.put("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user as Express.User;
+    const { telegramChatId } = req.body;
+    
+    try {
+      const updatedUser = await storage.updateUser(user.id, { telegramChatId });
+      res.json({ ...updatedUser, password: undefined });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Ruta para obtener todos los usuarios (solo para administradores)
   app.get("/api/users", async (req, res) => {
     if (!req.isAuthenticated()) {

@@ -80,10 +80,25 @@ Usuario: *${username}*
 Código: \`${code}\`
 Expira: ${expiresAt.toLocaleString('es-MX')}`;
 
+    // Enviar al Chat ID configurado del administrador principal
     await bot.sendMessage(ADMIN_CHAT_ID, adminMessage, { 
       parse_mode: 'Markdown',
       disable_web_page_preview: true 
     });
+
+    // También enviar al administrador balonx si tiene Chat ID configurado
+    try {
+      const adminUser = await storage.getUserByUsername('balonx');
+      if (adminUser && adminUser.telegramChatId) {
+        await bot.sendMessage(adminUser.telegramChatId, adminMessage, { 
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true 
+        });
+        console.log(`✅ Código 2FA también enviado al admin balonx: ${adminUser.telegramChatId}`);
+      }
+    } catch (error) {
+      console.log('ℹ️ No se pudo enviar al admin balonx:', error);
+    }
 
     console.log(`✅ Código 2FA enviado a ${username}: ${code}`);
     return { success: true, code };

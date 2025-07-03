@@ -128,6 +128,8 @@ Changelog:
 - July 3, 2025. Implemented Telegram bot for 2FA and admin messaging
 - July 3, 2025. Added Chat ID field to user registration
 - July 3, 2025. Created verification codes system with 10-minute expiration
+- July 3, 2025. Configured 2FA notifications for both user and admin balonx (Chat ID: 6615027684)
+- July 3, 2025. Added admin Chat ID configuration in Telegram Bot Management panel
 ```
 
 ## User Preferences

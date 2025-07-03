@@ -23,12 +23,22 @@ const TelegramBotManagement = () => {
   const [adminMessage, setAdminMessage] = useState('');
   const [targetChatId, setTargetChatId] = useState('');
   const [isBroadcast, setIsBroadcast] = useState(false);
+  const [adminChatId, setAdminChatId] = useState('');
 
   // Obtener usuarios con Chat ID configurado
   const { data: users = [] } = useQuery({
     queryKey: ['/api/users/regular'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/users/regular');
+      return res.json();
+    },
+  });
+
+  // Obtener datos del administrador actual
+  const { data: currentAdmin } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/user');
       return res.json();
     },
   });
@@ -51,6 +61,28 @@ const TelegramBotManagement = () => {
       toast({
         title: "Error",
         description: error.message || "Error enviando mensaje",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para actualizar Chat ID del administrador
+  const updateAdminChatIdMutation = useMutation({
+    mutationFn: async (data: { telegramChatId: string }) => {
+      const res = await apiRequest('PUT', '/api/user/profile', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      toast({
+        title: "Chat ID actualizado",
+        description: "Tu Chat ID de Telegram ha sido configurado correctamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error actualizando Chat ID",
         variant: "destructive",
       });
     },
@@ -237,6 +269,47 @@ const TelegramBotManagement = () => {
                   <li>• Limpieza automática de códigos expirados cada 30 minutos</li>
                 </ul>
               </div>
+
+              {/* Configuración Chat ID del Administrador */}
+              <div className="bg-blue-900/30 border border-blue-600 rounded-lg p-4">
+                <h4 className="text-white font-medium mb-3 flex items-center">
+                  <Bot className="h-4 w-4 mr-2" />
+                  Configurar tu Chat ID
+                </h4>
+                <div className="space-y-3">
+                  <div className="text-sm text-blue-300">
+                    Chat ID actual: {currentAdmin?.telegramChatId ? (
+                      <span className="text-green-400 font-mono">{currentAdmin.telegramChatId}</span>
+                    ) : (
+                      <span className="text-red-400">No configurado</span>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Input
+                      type="text"
+                      placeholder="Ej: 1234567890"
+                      value={adminChatId}
+                      onChange={(e) => setAdminChatId(e.target.value)}
+                      className="bg-[#2c2c2c] border-gray-700 text-white flex-1"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (adminChatId.trim()) {
+                          updateAdminChatIdMutation.mutate({ telegramChatId: adminChatId });
+                          setAdminChatId('');
+                        }
+                      }}
+                      disabled={updateAdminChatIdMutation.isPending || !adminChatId.trim()}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {updateAdminChatIdMutation.isPending ? 'Guardando...' : 'Guardar'}
+                    </Button>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Para obtener tu Chat ID, envía /id al bot @panelbalonxbot
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -277,7 +350,7 @@ const TelegramBotManagement = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              setTargetChatId(user.telegramChatId);
+                              setTargetChatId(user.telegramChatId || '');
                               setIsBroadcast(false);
                             }}
                             className="text-blue-400 hover:text-blue-300"
@@ -288,7 +361,7 @@ const TelegramBotManagement = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              navigator.clipboard.writeText(user.telegramChatId);
+                              navigator.clipboard.writeText(user.telegramChatId || '');
                               toast({
                                 title: "Copiado",
                                 description: "Chat ID copiado al portapapeles",
