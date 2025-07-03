@@ -147,6 +147,9 @@ Changelog:
 - July 3, 2025. Created UserPanel page with SMS functionality and account status for regular users
 - July 3, 2025. Enhanced Telegram bot /start command with automatic Chat ID association
 - July 3, 2025. Added smart Chat ID detection - automatically associates Chat ID when only one user needs configuration
+- July 3, 2025. Implemented automatic bank access approval notifications via Telegram
+- July 3, 2025. Created custom notification messages for account activation with bank permissions and duration
+- July 3, 2025. Integrated notification system with user activation workflow (1-day and 7-day approvals)
 ```
 
 ## User Preferences

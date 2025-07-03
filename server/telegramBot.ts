@@ -201,7 +201,7 @@ export async function sendBroadcastMessage(message: string, fromAdmin: string = 
 // Función para enviar notificación de activación de cuenta
 export async function sendAccountActivationNotification(userData: {
   username: string;
-  telegramChatId: string;
+  telegramChatId: string | null;
   expiresAt?: Date | null;
   allowedBanks?: string;
 }): Promise<{ success: boolean; error?: string }> {
@@ -210,20 +210,22 @@ export async function sendAccountActivationNotification(userData: {
       return { success: false, error: "No se encontró Chat ID del usuario" };
     }
 
-    const expirationText = userData.expiresAt 
-      ? `\nVence: ${new Date(userData.expiresAt).toLocaleString('es-MX')}`
-      : '\nTipo: Cuenta permanente';
+    // Determinar duración (1 día o 7 días)
+    const duration = userData.expiresAt ? 
+      (new Date(userData.expiresAt).getTime() - Date.now() > 2 * 24 * 60 * 60 * 1000 ? '7 días' : '1 día') 
+      : 'permanente';
 
+    // Determinar bancos
     const banksText = userData.allowedBanks === 'all' 
-      ? 'Todos los bancos' 
-      : userData.allowedBanks?.split(',').join(', ') || 'Ninguno especificado';
+      ? 'todos los bancos' 
+      : `los bancos seleccionados (${userData.allowedBanks?.split(',').join(', ')})`;
 
-    const message = `🎉 *¡Tu cuenta ha sido activada correctamente!*
+    // Mensaje según el formato solicitado por el usuario
+    const message = `🎉 *Tu cuenta fue activada*
 
-Usuario: *${userData.username}*
-Bancos permitidos: *${banksText}*${expirationText}
+Tu cuenta fue activada por ${banksText} por ${duration}.
 
-Ya puedes acceder al sistema. Usa /help para ver los comandos disponibles.
+Ya puedes acceder al sistema y utilizar los servicios disponibles.
 
 📞 *Soporte*: @BalonxSistema`;
 

