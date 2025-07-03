@@ -2590,6 +2590,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { phoneNumbers, message, prefix = '+52' } = req.body;
       
+      console.log('Datos recibidos para SMS:', { 
+        phoneNumbers, 
+        messageLength: message?.length, 
+        prefix 
+      });
+
+      // Validar que se proporcione número de teléfono
+      if (!phoneNumbers || phoneNumbers.trim() === '') {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Se requiere número de teléfono" 
+        });
+      }
+
       // Validar el mensaje
       const messageValidation = validateSMSMessage(message);
       if (!messageValidation.valid) {
@@ -2629,7 +2643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📱 Enviando ${processedNumbers.length} SMS desde panel admin por usuario ${user.username}`);
 
-      // Enviar SMS usando Sofmex API
+      // Enviar SMS usando Sofmex API directamente (sin verificar configuración)
       const smsResult = await sendBulkSMS(processedNumbers, message);
       
       let successCount = 0;
@@ -2639,14 +2653,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (smsResult.success) {
         successCount = processedNumbers.length;
         // Descontar créditos solo si el envío fue exitoso
-        const remainingCredits = userCredits - requiredCredits;
-        await storage.useSmsCredit(user.id);
-        
-        // Actualizar créditos manualmente para asegurar la cantidad correcta
-        for (let i = 1; i < requiredCredits; i++) {
+        for (let i = 0; i < requiredCredits; i++) {
           await storage.useSmsCredit(user.id);
         }
-        
         creditedUsed = true;
         console.log(`✅ SMS enviados exitosamente. Créditos descontados: ${requiredCredits}`);
       } else {

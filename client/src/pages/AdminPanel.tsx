@@ -9,7 +9,7 @@ import Sidebar from '@/components/admin/Sidebar';
 import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
-import SmsManagement from '@/components/admin/SmsManagement';
+import SmsManagementSimple from '@/components/admin/SmsManagementSimple';
 import QRManager from '@/components/admin/QRManager';
 import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
@@ -983,7 +983,7 @@ export default function AdminPanel() {
         ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
         ) : activeTab === 'sms' && user?.role === 'admin' ? (
-          <SmsManagement />
+          <SmsManagementSimple />
         ) : activeTab === 'qr' ? (
           <QRManager />
         ) : (

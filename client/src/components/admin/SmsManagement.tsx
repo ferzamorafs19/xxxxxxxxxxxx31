@@ -46,30 +46,12 @@ const SmsManagement = () => {
   // Estados locales
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [creditsToAdd, setCreditsToAdd] = useState<number>(0);
-  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [isSendSmsDialogOpen, setIsSendSmsDialogOpen] = useState(false);
   
   // Estados para el formulario de envío de SMS
   const [phoneNumbers, setPhoneNumbers] = useState("");
   const [smsMessage, setSmsMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
-
-  // Configuración SMS
-  const [smsConfig, setSmsConfig] = useState<Partial<SmsConfig>>({
-    username: "",
-    password: "",
-    apiUrl: "https://www.sofmex.com/api/sms/v3/asignacion"
-  });
-
-  // Obtener configuración de SMS
-  const { data: config } = useQuery({
-    queryKey: ['/api/sms/config'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/sms/config');
-      const data = await res.json();
-      return data.config;
-    }
-  });
 
   // Obtener lista de usuarios
   const { data: users = [] } = useQuery({
