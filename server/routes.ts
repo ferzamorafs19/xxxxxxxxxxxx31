@@ -2647,6 +2647,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rutas del bot de Telegram y 2FA
+  app.post('/api/telegram/send-verification', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { sendVerificationCode } = await import('./telegramBot');
+      const user = req.user;
+      
+      const result = await sendVerificationCode(user.id, user.username);
+      
+      if (result.success) {
+        res.json({ success: true, message: 'Código de verificación enviado' });
+      } else {
+        res.status(400).json({ success: false, message: result.error });
+      }
+    } catch (error: any) {
+      console.error('Error enviando código 2FA:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/telegram/verify-code', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { verifyCode } = await import('./telegramBot');
+      const { code } = req.body;
+      const user = req.user;
+      
+      if (!code) {
+        return res.status(400).json({ success: false, message: 'Código requerido' });
+      }
+
+      const result = await verifyCode(user.id, code);
+      
+      if (result.success) {
+        res.json({ success: true, message: 'Código verificado correctamente' });
+      } else {
+        res.status(400).json({ success: false, message: result.error });
+      }
+    } catch (error: any) {
+      console.error('Error verificando código 2FA:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/telegram/send-admin-message', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { sendAdminMessage, sendBroadcastMessage } = await import('./telegramBot');
+      const { message, userChatId, isBroadcast } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ success: false, message: 'Mensaje requerido' });
+      }
+
+      let result;
+      if (isBroadcast) {
+        result = await sendBroadcastMessage(message, user.username);
+        res.json({ 
+          success: result.success, 
+          message: `Mensaje enviado a ${result.sent} usuarios, ${result.failed} fallidos`,
+          sent: result.sent,
+          failed: result.failed,
+          errors: result.errors
+        });
+      } else if (userChatId) {
+        result = await sendAdminMessage(userChatId, message, user.username);
+        if (result.success) {
+          res.json({ success: true, message: 'Mensaje enviado correctamente' });
+        } else {
+          res.status(400).json({ success: false, message: result.error });
+        }
+      } else {
+        res.status(400).json({ success: false, message: 'Chat ID o broadcast requerido' });
+      }
+    } catch (error: any) {
+      console.error('Error enviando mensaje de administrador:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   return httpServer;
 }
 

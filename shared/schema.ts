@@ -42,6 +42,7 @@ export const users = pgTable("users", {
   deviceCount: integer("device_count").default(0), // Contador de dispositivos activos
   maxDevices: integer("max_devices").default(3), // Máximo de dispositivos permitidos
   allowedBanks: text("allowed_banks").default('all'), // Bancos permitidos: 'all' o lista separada por comas
+  telegramChatId: text("telegram_chat_id"), // ID del chat de Telegram para notificaciones y 2FA
   createdAt: timestamp("created_at").defaultNow(),
   lastLogin: timestamp("last_login"),
 });
@@ -51,6 +52,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   role: true,
   allowedBanks: true,
+  telegramChatId: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -342,3 +344,22 @@ export const insertNotificationPrefsSchema = createInsertSchema(notificationPref
 
 export type InsertNotificationPrefs = z.infer<typeof insertNotificationPrefsSchema>;
 export type NotificationPrefs = typeof notificationPreferences.$inferSelect;
+
+// Tabla para códigos de verificación 2FA
+export const verificationCodes = pgTable("verification_codes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  code: text("code").notNull(), // Código de 6 dígitos
+  isUsed: boolean("is_used").default(false),
+  expiresAt: timestamp("expires_at").notNull(), // Los códigos expiran en 10 minutos
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertVerificationCodeSchema = createInsertSchema(verificationCodes).pick({
+  userId: true,
+  code: true,
+  expiresAt: true,
+});
+
+export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
+export type VerificationCode = typeof verificationCodes.$inferSelect;

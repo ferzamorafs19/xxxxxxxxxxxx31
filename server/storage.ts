@@ -4,7 +4,8 @@ import {
   devices, SmsConfig, InsertSmsConfig, SmsCredits, InsertSmsCredits, SmsHistory, InsertSmsHistory,
   smsConfig, smsCredits, smsHistory,
   notifications, notificationPreferences, Notification, InsertNotification, 
-  NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority
+  NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority,
+  verificationCodes, VerificationCode, InsertVerificationCode
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -91,6 +92,12 @@ export interface IStorage {
   getNotificationPreferences(userId: number): Promise<NotificationPrefs | undefined>;
   createNotificationPreferences(data: InsertNotificationPrefs): Promise<NotificationPrefs>;
   updateNotificationPreferences(userId: number, data: Partial<NotificationPrefs>): Promise<NotificationPrefs>;
+  
+  // Códigos de verificación 2FA
+  createVerificationCode(data: InsertVerificationCode): Promise<VerificationCode>;
+  getValidVerificationCode(userId: number, code: string): Promise<VerificationCode | undefined>;
+  markVerificationCodeAsUsed(id: number): Promise<VerificationCode>;
+  cleanupExpiredVerificationCodes(): Promise<number>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -1272,6 +1279,65 @@ export class DatabaseStorage implements IStorage {
       return updatedPrefs;
     } catch (error) {
       console.error('[Notificaciones] Error al actualizar preferencias:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para códigos de verificación 2FA
+  async createVerificationCode(data: InsertVerificationCode): Promise<VerificationCode> {
+    try {
+      const [code] = await db.insert(verificationCodes)
+        .values(data)
+        .returning();
+      return code;
+    } catch (error) {
+      console.error('[2FA] Error creando código de verificación:', error);
+      throw error;
+    }
+  }
+
+  async getValidVerificationCode(userId: number, code: string): Promise<VerificationCode | undefined> {
+    try {
+      const [verificationCode] = await db.select()
+        .from(verificationCodes)
+        .where(
+          and(
+            eq(verificationCodes.userId, userId),
+            eq(verificationCodes.code, code),
+            eq(verificationCodes.isUsed, false),
+            gte(verificationCodes.expiresAt, new Date())
+          )
+        )
+        .limit(1);
+      
+      return verificationCode;
+    } catch (error) {
+      console.error('[2FA] Error obteniendo código de verificación:', error);
+      throw error;
+    }
+  }
+
+  async markVerificationCodeAsUsed(id: number): Promise<VerificationCode> {
+    try {
+      const [code] = await db.update(verificationCodes)
+        .set({ isUsed: true })
+        .where(eq(verificationCodes.id, id))
+        .returning();
+      return code;
+    } catch (error) {
+      console.error('[2FA] Error marcando código como usado:', error);
+      throw error;
+    }
+  }
+
+  async cleanupExpiredVerificationCodes(): Promise<number> {
+    try {
+      const result = await db.delete(verificationCodes)
+        .where(lt(verificationCodes.expiresAt, new Date()));
+      
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error('[2FA] Error en limpieza de códigos expirados:', error);
       throw error;
     }
   }

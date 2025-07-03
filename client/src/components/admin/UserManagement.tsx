@@ -24,10 +24,11 @@ const UserManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [newUser, setNewUser] = useState<{ username: string; password: string; role: UserRole }>({
+  const [newUser, setNewUser] = useState<{ username: string; password: string; role: UserRole; telegramChatId: string }>({
     username: '',
     password: '',
     role: UserRole.USER,
+    telegramChatId: '',
   });
 
   // Formatear fechas para visualización
@@ -61,7 +62,7 @@ const UserManagement = () => {
     },
     onSuccess: () => {
       setIsCreateModalOpen(false);
-      setNewUser({ username: '', password: '', role: UserRole.USER });
+      setNewUser({ username: '', password: '', role: UserRole.USER, telegramChatId: '' });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({
         title: "Usuario creado",
@@ -330,6 +331,22 @@ const UserManagement = () => {
                   placeholder="Contraseña"
                   required
                 />
+              </div>
+              <div className="grid w-full items-center gap-2">
+                <label htmlFor="telegramChatId" className="text-sm text-gray-400">
+                  Chat ID de Telegram
+                </label>
+                <Input
+                  type="text"
+                  id="telegramChatId"
+                  value={newUser.telegramChatId}
+                  onChange={(e) => setNewUser({ ...newUser, telegramChatId: e.target.value })}
+                  className="bg-[#2c2c2c] border-gray-700"
+                  placeholder="Ej: 1234567890"
+                />
+                <div className="text-xs text-gray-500">
+                  El usuario puede obtener su Chat ID enviando /id al bot de Telegram
+                </div>
               </div>
               <div className="grid w-full items-center gap-2">
                 <label htmlFor="role" className="text-sm text-gray-400">

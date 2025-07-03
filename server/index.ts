@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { obfuscateHeaders, serverMasking, botDetection, errorObfuscation, dynamicRateLimit } from "./middleware/security";
+import "./telegramBot"; // Inicializar bot de Telegram
 
 // Cargar variables de entorno
 dotenv.config();

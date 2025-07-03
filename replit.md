@@ -125,6 +125,9 @@ Changelog:
 - July 3, 2025. Added credits-based SMS system for users
 - July 3, 2025. Fixed user visibility in credit management
 - July 3, 2025. Updated SMS routes to allow normal users
+- July 3, 2025. Implemented Telegram bot for 2FA and admin messaging
+- July 3, 2025. Added Chat ID field to user registration
+- July 3, 2025. Created verification codes system with 10-minute expiration
 ```
 
 ## User Preferences
