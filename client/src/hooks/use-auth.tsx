@@ -9,6 +9,7 @@ import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 type AuthContextType = {
   user: User | null;
@@ -35,6 +36,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   // Referencia para el temporizador de inactividad
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   // Estado para controlar cuándo se está por cerrar sesión
@@ -143,10 +145,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], data);
       // También refrescar explícitamente para asegurar que tenemos los datos más recientes
       refetch();
-      toast({
-        title: "Inicio de sesión exitoso",
-        description: "Bienvenido al panel de administración",
-      });
+      
+      // Redirigir según el rol del usuario
+      if (data.role === UserRole.ADMIN) {
+        console.log("[Auth] Usuario administrador, redirigiendo al panel de administración");
+        setLocation("/admin");
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: "Bienvenido al panel de administración",
+        });
+      } else {
+        console.log("[Auth] Usuario regular, redirigiendo al dashboard");
+        setLocation("/dashboard");
+        toast({
+          title: "Inicio de sesión exitoso",
+          description: "Bienvenido a tu dashboard",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({

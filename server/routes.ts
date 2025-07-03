@@ -2582,16 +2582,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enviar SMS
+  // Enviar SMS (permite tanto administradores como usuarios regulares)
   app.post('/api/sms/send', async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
 
     const user = req.user;
-    if (user.role !== UserRole.ADMIN) {
-      return res.status(403).json({ message: "No autorizado" });
-    }
 
     try {
       const { phoneNumbers, message, prefix = '+52' } = req.body;
@@ -2703,6 +2700,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       console.error('Error enviando SMS:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Ruta para obtener créditos de SMS del usuario
+  app.get('/api/sms/credits', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const user = req.user as Express.User;
+      const credits = await storage.getUserSmsCredits(user.id);
+      
+      res.json({
+        id: 1, // ID dummy para compatibilidad
+        userId: user.id,
+        credits,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo créditos SMS:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Ruta para obtener historial de SMS del usuario
+  app.get('/api/sms/history', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const user = req.user as Express.User;
+      const history = await storage.getUserSmsHistory(user.id);
+      
+      res.json(history);
+    } catch (error: any) {
+      console.error('Error obteniendo historial SMS:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Ruta para administradores: agregar créditos a usuarios
+  app.post('/api/admin/sms/add-credits', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user as Express.User;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    try {
+      const { username, credits } = req.body;
+      
+      if (!username || !credits || credits <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Se requiere nombre de usuario y cantidad de créditos válida" 
+        });
+      }
+
+      // Buscar el usuario por nombre de usuario
+      const targetUser = await storage.getUserByUsername(username);
+      if (!targetUser) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Usuario no encontrado" 
+        });
+      }
+
+      // Agregar créditos
+      await storage.addSmsCredits(targetUser.id, credits);
+      
+      console.log(`[Admin] ${user.username} agregó ${credits} créditos SMS a ${username}`);
+      
+      res.json({ 
+        success: true, 
+        message: `Se agregaron ${credits} créditos SMS a ${username}` 
+      });
+    } catch (error: any) {
+      console.error('Error agregando créditos SMS:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   });
