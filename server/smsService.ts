@@ -17,12 +17,23 @@ if (!SOFMEX_USERNAME || !SOFMEX_PASSWORD) {
  */
 export async function getSofmexToken(): Promise<string | null> {
   try {
+    console.log('🔑 Solicitando token de Sofmex con credenciales:', { 
+      username: SOFMEX_USERNAME, 
+      passwordSet: !!SOFMEX_PASSWORD,
+      url: SOFMEX_LOGIN_URL 
+    });
+    
     const response = await axios.post(SOFMEX_LOGIN_URL, null, {
       params: {
         username: SOFMEX_USERNAME,
         password: SOFMEX_PASSWORD
       },
       timeout: 30000
+    });
+    
+    console.log('📡 Respuesta de login Sofmex:', { 
+      status: response.status, 
+      data: response.data 
     });
     
     if (response.status === 200 && response.data) {
@@ -34,6 +45,9 @@ export async function getSofmexToken(): Promise<string | null> {
     return null;
   } catch (error: any) {
     console.error('❌ Error obteniendo token de Sofmex:', error.message);
+    if (error.response) {
+      console.error('Respuesta de error:', error.response.data);
+    }
     return null;
   }
 }
@@ -67,10 +81,18 @@ export async function sendBulkSMS(
     const data = { registros: registros };
 
     console.log(`📤 Enviando ${registros.length} mensajes a la API de Sofmex`);
+    console.log('📋 Datos del envío:', JSON.stringify(data, null, 2));
+    console.log('🔐 Headers:', headers);
 
     const response = await axios.post(SOFMEX_SMS_URL, data, {
       headers: headers,
       timeout: 60000 // Timeout aumentado para lotes grandes
+    });
+
+    console.log('📡 Respuesta completa de envío SMS:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
     });
 
     if (response.status === 200) {
