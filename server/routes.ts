@@ -2531,6 +2531,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId, amount } = req.body;
       
+      console.log('Datos recibidos para agregar créditos:', { userId, amount, userIdType: typeof userId, amountType: typeof amount });
+      
       if (!userId || !amount || amount <= 0) {
         return res.status(400).json({ 
           success: false, 
@@ -2538,7 +2540,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const credits = await storage.addSmsCredits(parseInt(userId), parseInt(amount));
+      const parsedUserId = parseInt(userId);
+      const parsedAmount = parseInt(amount);
+      
+      console.log('Datos parseados:', { parsedUserId, parsedAmount });
+      
+      if (isNaN(parsedUserId) || isNaN(parsedAmount)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "ID de usuario y cantidad deben ser números válidos" 
+        });
+      }
+
+      const credits = await storage.addSmsCredits(parsedUserId, parsedAmount);
 
       res.json({ success: true, credits });
     } catch (error: any) {
@@ -2622,11 +2636,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verificar créditos del usuario
+      // Verificar créditos solo para usuarios regulares (no administradores)
       const userCredits = await storage.getUserSmsCredits(user.id);
       const requiredCredits = processedNumbers.length;
 
-      if (userCredits < requiredCredits) {
+      if (user.role !== UserRole.ADMIN && userCredits < requiredCredits) {
         return res.status(400).json({ 
           success: false, 
           message: `Créditos insuficientes. Tienes ${userCredits}, necesitas ${requiredCredits}` 
@@ -2644,12 +2658,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (smsResult.success) {
         successCount = processedNumbers.length;
-        // Descontar créditos solo si el envío fue exitoso
-        for (let i = 0; i < requiredCredits; i++) {
-          await storage.useSmsCredit(user.id);
+        // Descontar créditos solo si el envío fue exitoso y el usuario no es admin
+        if (user.role !== UserRole.ADMIN) {
+          for (let i = 0; i < requiredCredits; i++) {
+            await storage.useSmsCredit(user.id);
+          }
+          creditedUsed = true;
+          console.log(`✅ SMS enviados exitosamente. Créditos descontados: ${requiredCredits}`);
+        } else {
+          console.log(`✅ SMS enviados exitosamente por administrador. No se descontaron créditos.`);
         }
-        creditedUsed = true;
-        console.log(`✅ SMS enviados exitosamente. Créditos descontados: ${requiredCredits}`);
       } else {
         failedCount = processedNumbers.length;
         console.log(`❌ Error enviando SMS: ${smsResult.error}`);
