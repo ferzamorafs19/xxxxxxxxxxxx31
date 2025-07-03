@@ -168,21 +168,24 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Preparar los datos del usuario
-    const userData = {
+    const userData: any = {
       username: data.username,
       password: data.password, // La contraseña ya viene hasheada de auth.ts
       role: data.role || UserRole.USER,
-      isActive: data.role === UserRole.ADMIN ? true : false, // Los usuarios normales inician inactivos
-      deviceCount: 0,
-      maxDevices: 3,
-      allowedBanks: data.allowedBanks || 'all',
-      createdAt: new Date()
+      is_active: data.role === UserRole.ADMIN ? true : false, // Los usuarios normales inician inactivos
+      device_count: 0,
+      max_devices: 3,
+      allowed_banks: data.allowedBanks || 'all',
+      telegram_chat_id: data.telegramChatId || null,
+      created_at: new Date()
     };
     
     // Insertar en la base de datos
     const [user] = await db.insert(users).values(userData).returning();
     
     console.log(`[Storage] Usuario creado: ${data.username} (rol: ${data.role || UserRole.USER})`);
+    console.log(`[Storage] Chat ID recibido: ${data.telegramChatId}`);
+    console.log(`[Storage] Datos a insertar:`, userData);
     return user;
   }
   

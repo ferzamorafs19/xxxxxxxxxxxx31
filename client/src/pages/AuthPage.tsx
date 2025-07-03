@@ -370,10 +370,15 @@ export default function AuthPage() {
                         <Info className="h-4 w-4" />
                         <AlertDescription className="text-xs">
                           <strong>¿Cómo obtener tu Chat ID?</strong><br/>
-                          1. Abre Telegram y busca el bot "@userinfobot"<br/>
+                          <strong>Opción 1 (Recomendada):</strong><br/>
+                          1. Busca nuestro bot en Telegram<br/>
                           2. Envía el comando /start<br/>
-                          3. El bot te dará tu Chat ID (número que comienza con dígitos)<br/>
-                          4. Copia ese número aquí para recibir notificaciones
+                          3. El bot te dará tu Chat ID directamente<br/>
+                          <strong>Opción 2:</strong><br/>
+                          1. Abre Telegram y busca el bot "@userinfobot"<br/>
+                          2. Envía /start y copia el número que te proporciona<br/>
+                          <br/>
+                          <strong>Nota:</strong> Necesitas este Chat ID para recibir códigos 2FA
                         </AlertDescription>
                       </Alert>
                     </div>

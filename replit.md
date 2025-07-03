@@ -133,6 +133,10 @@ Changelog:
 - July 3, 2025. Implemented mandatory 2FA authentication for ALL users including administrators
 - July 3, 2025. Created TwoFactorVerification page and integrated 2FA flow in login process
 - July 3, 2025. Added account activation notifications sent via Telegram when users are approved
+- July 3, 2025. Modified Telegram bot /start command to provide Chat ID and registration instructions
+- July 3, 2025. Updated registration form to require Chat ID field with instructions
+- July 3, 2025. Fixed Chat ID storage issue in database using snake_case field mapping
+- July 3, 2025. Completed full registration flow with Chat ID collection and 2FA integration
 ```
 
 ## User Preferences

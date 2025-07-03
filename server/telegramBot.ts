@@ -275,12 +275,31 @@ const setupBotCommands = () => {
   
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id.toString();
+    const userName = msg.from?.first_name || 'Usuario';
     console.log(`👋 Comando /start recibido de chat ID: ${chatId}`);
     
-    await sendWelcomeMessage(chatId);
-    
-    // Opcional: Registrar el chat ID si el usuario ya existe
-    // Esto requeriría implementar lógica para asociar chats con usuarios existentes
+    const welcomeMessage = `🎉 *¡Hola ${userName}!*
+
+Tu Chat ID es: \`${chatId}\`
+
+🔐 *Para registrarte en nuestro panel:*
+1. Ve al panel de registro
+2. Completa tu información
+3. **Usa este Chat ID:** \`${chatId}\`
+4. Una vez registrado, recibirás códigos 2FA aquí
+
+💡 *Comandos disponibles:*
+• /help - Ver ayuda completa
+• /id - Ver tu Chat ID nuevamente
+
+📞 *Soporte*: @BalonxSistema
+
+¡Gracias por utilizar nuestro sistema!`;
+
+    await bot.sendMessage(chatId, welcomeMessage, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
   });
 
   bot.onText(/\/help/, async (msg) => {
