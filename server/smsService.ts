@@ -122,9 +122,9 @@ export async function sendSingleSMS(
  * Valida formato de número de teléfono
  */
 export function validatePhoneNumber(numero: string): boolean {
-  // Permite números con o sin prefijo de país
-  const phoneRegex = /^(\+\d{1,3})?\d{10}$/;
-  return phoneRegex.test(numero.replace(/\s/g, ''));
+  // Solo números de 10 dígitos sin prefijo (igual que el código del bot que funciona)
+  const cleanNumber = numero.replace(/\s/g, '').replace(/^\+\d{1,3}/, '');
+  return /^\d{10}$/.test(cleanNumber);
 }
 
 /**
@@ -149,15 +149,15 @@ export function normalizePhoneNumber(numero: string, defaultPrefix: string = '+5
 }
 
 /**
- * Procesa una lista de números separados por comas
+ * Procesa una lista de números separados por comas (igual que el código del bot que funciona)
  */
 export function parsePhoneNumbers(numbersString: string, defaultPrefix: string = '+52'): string[] {
-  return numbersString
-    .split(',')
-    .map(num => num.trim())
-    .filter(num => num.length > 0)
-    .map(num => normalizePhoneNumber(num, defaultPrefix))
-    .filter(num => validatePhoneNumber(num));
+  const numeros = numbersString.split(',').map(n => n.trim()).filter(n => /^\d{10}$/.test(n));
+  console.log(`📱 Números procesados: ${numeros.length} de entrada: "${numbersString}"`);
+  console.log(`📋 Números válidos:`, numeros);
+  
+  // Agregar prefijo a números válidos
+  return numeros.map(numero => `${defaultPrefix}${numero}`);
 }
 
 /**
