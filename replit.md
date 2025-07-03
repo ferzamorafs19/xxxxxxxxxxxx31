@@ -143,6 +143,10 @@ Changelog:
 - July 3, 2025. Implemented expiration notification system for users whose panels have expired
 - July 3, 2025. Configured automatic scheduling for renewal reminders (10:00 AM daily)
 - July 3, 2025. Added hourly verification system for recently expired panels with notifications
+- July 3, 2025. Implemented automatic redirection to /panel for users after successful 2FA (not homepage)
+- July 3, 2025. Created UserPanel page with SMS functionality and account status for regular users
+- July 3, 2025. Enhanced Telegram bot /start command with automatic Chat ID association
+- July 3, 2025. Added smart Chat ID detection - automatically associates Chat ID when only one user needs configuration
 ```
 
 ## User Preferences

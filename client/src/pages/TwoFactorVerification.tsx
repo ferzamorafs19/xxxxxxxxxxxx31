@@ -27,11 +27,11 @@ export default function TwoFactorVerification() {
     },
     onSuccess: (data) => {
       console.log("[2FA] Verificación exitosa:", data);
-      // Redirigir según el rol del usuario
+      // Redirigir automáticamente al panel según el rol del usuario
       if (data.role === "admin") {
         setLocation("/admin");
       } else {
-        setLocation("/");
+        setLocation("/panel");
       }
     },
     onError: (error: any) => {

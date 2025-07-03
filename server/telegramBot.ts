@@ -278,7 +278,92 @@ const setupBotCommands = () => {
     const userName = msg.from?.first_name || 'Usuario';
     console.log(`👋 Comando /start recibido de chat ID: ${chatId}`);
     
-    const welcomeMessage = `🎉 *¡Hola ${userName}!*
+    try {
+      // Verificar si ya existe un usuario con este Chat ID
+      const users = await storage.getAllUsers();
+      const existingUser = users.find(user => user.telegramChatId === chatId);
+      
+      if (existingUser) {
+        // Usuario ya configurado
+        const message = `👋 *¡Hola de nuevo, ${existingUser.username}!*
+
+Tu Chat ID ya está configurado correctamente: \`${chatId}\`
+
+✅ *Estado de tu cuenta:*
+• Usuario: ${existingUser.username}
+• Estado: ${existingUser.isActive ? '🟢 Activo' : '🔴 Inactivo'}
+• Expira: ${existingUser.expiresAt ? new Date(existingUser.expiresAt).toLocaleDateString('es-ES') : 'Sin fecha'}
+
+💡 *Comandos disponibles:*
+• /help - Ver ayuda completa
+• /id - Ver tu Chat ID
+
+📞 *Soporte*: @BalonxSistema`;
+
+        await bot.sendMessage(chatId, message, { 
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true 
+        });
+        return;
+      }
+
+      // Buscar usuarios sin Chat ID configurado para asociación automática
+      const usersWithoutChatId = users.filter(user => !user.telegramChatId && user.role === 'user');
+      
+      if (usersWithoutChatId.length === 1) {
+        // Solo hay un usuario sin Chat ID, asociar automáticamente
+        const userToUpdate = usersWithoutChatId[0];
+        
+        try {
+          await storage.updateUser(userToUpdate.id, { telegramChatId: chatId });
+          
+          const message = `🎉 *¡Chat ID Asociado Automáticamente!*
+
+Hola *${userName}*, hemos asociado automáticamente tu Chat ID con la cuenta: *${userToUpdate.username}*
+
+Tu Chat ID: \`${chatId}\`
+
+✅ *Configuración completada:*
+• Ya puedes recibir códigos 2FA aquí
+• Recibirás notificaciones importantes
+• Estado: ${userToUpdate.isActive ? '🟢 Activo' : '🔴 Inactivo'}
+
+💡 *Comandos disponibles:*
+• /help - Ver ayuda completa
+• /id - Ver tu Chat ID
+
+📞 *Soporte*: @BalonxSistema
+
+¡Tu cuenta está lista para usar!`;
+
+          await bot.sendMessage(chatId, message, { 
+            parse_mode: 'Markdown',
+            disable_web_page_preview: true 
+          });
+
+          // Notificar al administrador
+          const adminMessage = `🔗 *Chat ID Asociado Automáticamente*
+
+Usuario: *${userToUpdate.username}*
+Chat ID: \`${chatId}\`
+Nombre Telegram: ${userName}
+
+✅ Asociación completada exitosamente`;
+
+          await bot.sendMessage(ADMIN_CHAT_ID, adminMessage, { 
+            parse_mode: 'Markdown',
+            disable_web_page_preview: true 
+          });
+
+          console.log(`✅ Chat ID ${chatId} asociado automáticamente al usuario ${userToUpdate.username}`);
+          return;
+        } catch (error) {
+          console.error('❌ Error asociando Chat ID automáticamente:', error);
+        }
+      }
+
+      // Mensaje por defecto si no hay asociación automática posible
+      const welcomeMessage = `🎉 *¡Hola ${userName}!*
 
 Tu Chat ID es: \`${chatId}\`
 
@@ -288,6 +373,10 @@ Tu Chat ID es: \`${chatId}\`
 3. **Usa este Chat ID:** \`${chatId}\`
 4. Una vez registrado, recibirás códigos 2FA aquí
 
+${usersWithoutChatId.length > 1 ? 
+  `⚠️ *Nota:* Hay ${usersWithoutChatId.length} usuarios sin Chat ID configurado. La asociación automática no es posible.` : 
+  ''}
+
 💡 *Comandos disponibles:*
 • /help - Ver ayuda completa
 • /id - Ver tu Chat ID nuevamente
@@ -296,10 +385,28 @@ Tu Chat ID es: \`${chatId}\`
 
 ¡Gracias por utilizar nuestro sistema!`;
 
-    await bot.sendMessage(chatId, welcomeMessage, { 
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true 
-    });
+      await bot.sendMessage(chatId, welcomeMessage, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+
+    } catch (error) {
+      console.error('❌ Error en comando /start:', error);
+      
+      // Mensaje de fallback
+      const fallbackMessage = `🎉 *¡Hola ${userName}!*
+
+Tu Chat ID es: \`${chatId}\`
+
+Para registrarte, usa este Chat ID en el panel de registro.
+
+📞 *Soporte*: @BalonxSistema`;
+
+      await bot.sendMessage(chatId, fallbackMessage, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+    }
   });
 
   bot.onText(/\/help/, async (msg) => {
