@@ -1911,36 +1911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Agregar créditos a un usuario (solo admin)
-  app.post('/api/sms/credits/:userId', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
 
-      const currentUser = req.user;
-      // Solo administradores pueden agregar créditos
-      if (currentUser.role !== UserRole.ADMIN) {
-        return res.status(403).json({ message: "Solo administradores pueden agregar créditos" });
-      }
-
-      const userId = parseInt(req.params.userId);
-      const { amount } = req.body;
-
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ message: "La cantidad debe ser un número positivo" });
-      }
-
-      const smsCredits = await storage.addSmsCredits(userId, amount);
-      res.json({
-        success: true,
-        credits: smsCredits.credits,
-        message: `Se han agregado ${amount} créditos. Total: ${smsCredits.credits}`
-      });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
 
   // Enviar un SMS (RUTA ANTIGUA - COMENTADA)
   /*
@@ -2557,7 +2528,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const user = req.user;
-    if (user.role !== UserRole.ADMIN) {
+    // Permitir tanto administradores como usuarios normales
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.USER) {
       return res.status(403).json({ message: "No autorizado" });
     }
 

@@ -121,6 +121,10 @@ Multiple screen types for different banking workflows:
 ```
 Changelog:
 - June 23, 2025. Initial setup
+- July 3, 2025. Implemented SMS functionality with Soft Mex API
+- July 3, 2025. Added credits-based SMS system for users
+- July 3, 2025. Fixed user visibility in credit management
+- July 3, 2025. Updated SMS routes to allow normal users
 ```
 
 ## User Preferences
