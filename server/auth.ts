@@ -156,11 +156,15 @@ export function setupAuth(app: Express) {
   // Ruta para registro de usuarios
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, role = UserRole.USER, allowedBanks = 'all' } = req.body;
+      const { username, password, telegramChatId, role = UserRole.USER, allowedBanks = 'all' } = req.body;
       
       // Validar datos
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      if (!telegramChatId) {
+        return res.status(400).json({ message: "Telegram Chat ID is required" });
       }
       
       // Verificar si el usuario ya existe
@@ -184,6 +188,7 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         role,
         allowedBanks: normalizedAllowedBanks,
+        telegramChatId,
       });
       
       // Iniciar sesión automáticamente

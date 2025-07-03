@@ -28,6 +28,7 @@ type LoginData = {
 type RegisterData = {
   username: string;
   password: string;
+  telegramChatId?: string;
   role?: UserRole;
 };
 

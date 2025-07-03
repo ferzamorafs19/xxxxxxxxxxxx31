@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, MessageCircle, Info } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { BotDetector } from '@/utils/botDetector';
 import { HCaptcha, useHCaptcha } from '@/components/ReCaptcha';
@@ -27,7 +27,8 @@ export default function AuthPage() {
   const [registerData, setRegisterData] = useState({
     username: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    telegramChatId: ''
   });
   
   const [botDetection, setBotDetection] = useState({
@@ -120,10 +121,10 @@ export default function AuthPage() {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!registerData.username || !registerData.password) {
+    if (!registerData.username || !registerData.password || !registerData.telegramChatId) {
       toast({
         title: "Error de validación",
-        description: "Por favor ingresa todos los campos requeridos",
+        description: "Por favor ingresa todos los campos requeridos, incluyendo tu Chat ID de Telegram",
         variant: "destructive"
       });
       return;
@@ -140,7 +141,8 @@ export default function AuthPage() {
     
     registerMutation.mutate({
       username: registerData.username,
-      password: registerData.password
+      password: registerData.password,
+      telegramChatId: registerData.telegramChatId
     });
   };
 
@@ -351,6 +353,29 @@ export default function AuthPage() {
                         onChange={e => setRegisterData({...registerData, confirmPassword: e.target.value})}
                         placeholder="Confirmar contraseña"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="register-telegram-chat-id" className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        Chat ID de Telegram
+                      </Label>
+                      <Input 
+                        id="register-telegram-chat-id" 
+                        type="text" 
+                        value={registerData.telegramChatId} 
+                        onChange={e => setRegisterData({...registerData, telegramChatId: e.target.value})}
+                        placeholder="Tu Chat ID de Telegram"
+                      />
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          <strong>¿Cómo obtener tu Chat ID?</strong><br/>
+                          1. Abre Telegram y busca el bot "@userinfobot"<br/>
+                          2. Envía el comando /start<br/>
+                          3. El bot te dará tu Chat ID (número que comienza con dígitos)<br/>
+                          4. Copia ese número aquí para recibir notificaciones
+                        </AlertDescription>
+                      </Alert>
                     </div>
                   </CardContent>
                   <CardFooter>
