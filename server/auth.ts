@@ -99,7 +99,7 @@ export function setupAuth(app: Express) {
         // Verificar si el usuario está activo (solo para usuarios no admin)
         if (user.role !== UserRole.ADMIN && !user.isActive) {
           console.log(`[Auth] Usuario inactivo: ${username}, no puede iniciar sesión`);
-          return done(null, false, { message: "Usuario inactivo. Contacta con el administrador en Telegram: @BalonxSistema" });
+          return done(null, false, { message: "Tu cuenta requiere aprobación del administrador. Una vez aprobada, recibirás una notificación por Telegram. Contacta: @BalonxSistema" });
         }
         
         // Verificar si la cuenta ha vencido (expiresAt en el pasado)
@@ -179,7 +179,7 @@ export function setupAuth(app: Express) {
       
       console.log(`[Auth] Creando usuario ${username} con bancos permitidos: ${normalizedAllowedBanks}`);
       
-      // Crear nuevo usuario con contraseña hasheada
+      // Crear nuevo usuario con contraseña hasheada y estado inactivo por defecto
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username,
@@ -187,12 +187,16 @@ export function setupAuth(app: Express) {
         role,
         allowedBanks: normalizedAllowedBanks,
         telegramChatId,
+        isActive: false, // Los usuarios nuevos requieren aprobación del administrador
       });
       
-      // Iniciar sesión automáticamente
-      req.login(user as Express.User, (err) => {
-        if (err) return next(err);
-        return res.status(201).json({ ...user, password: undefined });
+      console.log(`[Auth] Usuario ${username} registrado exitosamente. Requiere aprobación del administrador.`);
+      
+      // NO iniciar sesión automáticamente - el usuario debe esperar aprobación
+      return res.status(201).json({ 
+        ...user, 
+        password: undefined,
+        message: "Registro exitoso. Tu cuenta requiere aprobación del administrador. Serás notificado por Telegram cuando sea activada."
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -215,8 +219,8 @@ export function setupAuth(app: Express) {
         }
         
         if (!user) {
-          console.log("[Auth] Intento de login fallido (credenciales inválidas)");
-          return res.status(401).json({ message: "Credenciales inválidas" });
+          console.log("[Auth] Intento de login fallido:", info?.message || "credenciales inválidas");
+          return res.status(401).json({ message: info?.message || "Credenciales inválidas" });
         }
         
         console.log(`[Auth] Usuario autenticado: ${user.username}, role: ${user.role}`);

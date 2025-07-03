@@ -183,9 +183,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (data) => {
       toast({
-        title: "Usuario registrado",
-        description: "El usuario ha sido creado correctamente",
+        title: "Registro completado",
+        description: "Envía un mensaje a @BalonxSistema por Telegram para que active tu cuenta. Serás redirigido al inicio de sesión...",
+        duration: 5000,
       });
+      
+      // Redirigir al login después de 3 segundos
+      setTimeout(() => {
+        // Triggering a re-render to switch to login tab
+        window.dispatchEvent(new CustomEvent('switchToLogin'));
+      }, 3000);
     },
     onError: (error: Error) => {
       toast({

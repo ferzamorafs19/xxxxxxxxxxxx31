@@ -39,6 +39,7 @@ export default function AuthPage() {
   });
   
   const [allowBotLogin, setAllowBotLogin] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
   const { token: captchaToken, isVerified: captchaVerified, handleVerify: handleCaptchaVerify } = useHCaptcha();
   
   // Inicializar detector de bots
@@ -57,6 +58,19 @@ export default function AuthPage() {
     return () => clearInterval(interval);
   }, []);
   
+  // Listener para cambiar a la pestaña de login después del registro
+  useEffect(() => {
+    const handleSwitchToLogin = () => {
+      setActiveTab("login");
+    };
+    
+    window.addEventListener('switchToLogin', handleSwitchToLogin);
+    
+    return () => {
+      window.removeEventListener('switchToLogin', handleSwitchToLogin);
+    };
+  }, []);
+
   // Usar useEffect para el redireccionamiento cuando el usuario ya está autenticado
   useEffect(() => {
     if (user) {
@@ -162,7 +176,7 @@ export default function AuthPage() {
       {/* Formularios */}
       <div className="w-full md:w-1/2 flex justify-center items-center p-5">
         <div className="w-full max-w-md">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
               <TabsTrigger value="register">Registrar</TabsTrigger>

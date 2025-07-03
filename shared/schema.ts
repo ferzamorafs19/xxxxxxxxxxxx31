@@ -51,6 +51,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   role: true,
+  isActive: true,
   allowedBanks: true,
   telegramChatId: true,
 });

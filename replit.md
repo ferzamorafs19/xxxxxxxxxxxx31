@@ -150,6 +150,9 @@ Changelog:
 - July 3, 2025. Implemented automatic bank access approval notifications via Telegram
 - July 3, 2025. Created custom notification messages for account activation with bank permissions and duration
 - July 3, 2025. Integrated notification system with user activation workflow (1-day and 7-day approvals)
+- July 3, 2025. Implemented mandatory administrator approval system - users cannot login until admin activates account
+- July 3, 2025. Updated registration flow with @BalonxSistema contact message and automatic login tab redirection
+- July 3, 2025. Enhanced authentication error messages to guide users toward admin approval process
 ```
 
 ## User Preferences
