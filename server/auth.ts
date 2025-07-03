@@ -360,7 +360,12 @@ export function setupAuth(app: Express) {
           console.error(`[Auth] Error actualizando datos de usuario ${username}:`, error);
         }
         
-        return res.json({ ...user, password: undefined });
+        return res.json({ 
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          isActive: user.isActive
+        });
       });
       
     } catch (error) {
