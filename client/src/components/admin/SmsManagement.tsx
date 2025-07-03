@@ -53,11 +53,11 @@ const SmsManagement = () => {
   const [smsMessage, setSmsMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
 
-  // Obtener lista de usuarios
+  // Obtener lista de usuarios regulares
   const { data: users = [] } = useQuery({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/regular'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/users');
+      const res = await apiRequest('GET', '/api/users/regular');
       return await res.json();
     }
   });
