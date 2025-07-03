@@ -2539,16 +2539,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const credits = await storage.addSmsCredits(parseInt(userId), parseInt(amount));
-      
-      // Notificar al usuario sobre los créditos agregados
-      await storage.createNotification({
-        userId: parseInt(userId),
-        type: 'success',
-        title: 'Créditos SMS agregados',
-        message: `Se han agregado ${amount} créditos SMS a tu cuenta`,
-        details: `Total de créditos: ${credits.credits}`,
-        priority: 'medium'
-      });
 
       res.json({ success: true, credits });
     } catch (error: any) {
