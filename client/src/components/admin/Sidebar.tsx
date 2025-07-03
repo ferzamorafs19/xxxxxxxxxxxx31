@@ -87,24 +87,23 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
             </>
           )}
           
+          {/* SMS para todos los usuarios */}
+          <button 
+            onClick={() => handleTabChange('sms')}
+            className={`block w-full text-left ${activeTab === 'sms' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            {isAdmin ? 'API MSJ' : 'Enviar SMS'}
+          </button>
+          
           {isAdmin && (
-            <>
-              <button 
-                onClick={() => handleTabChange('sms')}
-                className={`block w-full text-left ${activeTab === 'sms' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                API MSJ
-              </button>
-              
-              <button 
-                onClick={() => handleTabChange('qr')}
-                className={`block w-full text-left ${activeTab === 'qr' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
-              >
-                <QrCode className="mr-2 h-4 w-4" />
-                Generador QR
-              </button>
-            </>
+            <button 
+              onClick={() => handleTabChange('qr')}
+              className={`block w-full text-left ${activeTab === 'qr' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+            >
+              <QrCode className="mr-2 h-4 w-4" />
+              Generador QR
+            </button>
           )}
         </div>
       </div>

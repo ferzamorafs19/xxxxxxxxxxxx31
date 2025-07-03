@@ -1943,6 +1943,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener el historial de SMS del usuario actual
+  app.get('/api/sms/history', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      const history = await storage.getUserSmsHistory(user.id);
+      res.json(history);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Agregar créditos a un usuario (solo admin)
   app.post('/api/sms/credits/:userId', async (req, res) => {
     try {

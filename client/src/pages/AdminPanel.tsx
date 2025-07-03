@@ -10,6 +10,7 @@ import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
 import SmsManagementSimple from '@/components/admin/SmsManagementSimple';
+import UserSmsPanel from '@/components/user/UserSmsPanel';
 import QRManager from '@/components/admin/QRManager';
 import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
@@ -257,8 +258,8 @@ export default function AdminPanel() {
       setActiveTab('current');
     }
     
-    // Verificamos si estamos en pestañas solo para administradores
-    if (user?.role !== 'admin' && activeTab === 'sms') {
+    // QR solo para administradores
+    if (user?.role !== 'admin' && activeTab === 'qr') {
       setActiveTab('current');
     }
   }, [activeTab, isSuperAdmin, user?.role]);
@@ -937,20 +938,19 @@ export default function AdminPanel() {
                 </div>
               </>
             )}
-            {user?.role === 'admin' && (
-              <div 
-                className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'sms' 
-                  ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
-                  : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
-                onClick={() => setActiveTab('sms')}
-                style={{
-                  padding: '6px 10px',
-                  borderRadius: '6px 6px 0 0'
-                }}
-              >
-                API MSJ
-              </div>
-            )}
+            {/* SMS para todos los usuarios */}
+            <div 
+              className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'sms' 
+                ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
+              onClick={() => setActiveTab('sms')}
+              style={{
+                padding: '6px 10px',
+                borderRadius: '6px 6px 0 0'
+              }}
+            >
+              {user?.role === 'admin' ? 'API MSJ' : 'Enviar SMS'}
+            </div>
             <a 
               href="/qr-generator"
               className="tab cursor-pointer text-sm md:text-base whitespace-nowrap font-bold text-white"
@@ -982,8 +982,8 @@ export default function AdminPanel() {
           <UserManagement />
         ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
-        ) : activeTab === 'sms' && user?.role === 'admin' ? (
-          <SmsManagementSimple />
+        ) : activeTab === 'sms' ? (
+          user?.role === 'admin' ? <SmsManagementSimple /> : <UserSmsPanel />
         ) : activeTab === 'qr' ? (
           <QRManager />
         ) : (
