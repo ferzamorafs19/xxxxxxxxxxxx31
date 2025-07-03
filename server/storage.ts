@@ -1,7 +1,8 @@
 import { 
   sessions, type Session, insertSessionSchema, User, AccessKey, Device, 
   UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, 
-  devices, SmsConfig, InsertSmsConfig, SmsCredits, SmsHistory, InsertSmsHistory,
+  devices, SmsConfig, InsertSmsConfig, SmsCredits, InsertSmsCredits, SmsHistory, InsertSmsHistory,
+  smsConfig, smsCredits, smsHistory,
   notifications, notificationPreferences, Notification, InsertNotification, 
   NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority
 } from "@shared/schema";
@@ -961,8 +962,8 @@ export class DatabaseStorage implements IStorage {
   // === Métodos de historial SMS ===
   async addSmsToHistory(data: InsertSmsHistory): Promise<SmsHistory> {
     // Insertar en la base de datos
-    const [smsHistory] = await db
-      .insert(data)
+    const [smsHistoryRecord] = await db
+      .insert(smsHistory)
       .values({
         userId: data.userId,
         phoneNumber: data.phoneNumber,
@@ -974,7 +975,7 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     
-    return smsHistory;
+    return smsHistoryRecord;
   }
   
   async getUserSmsHistory(userId: number): Promise<SmsHistory[]> {
@@ -1081,7 +1082,7 @@ export class DatabaseStorage implements IStorage {
           [NotificationPriority.URGENT]: 3
         };
         
-        if (priorityLevels[data.priority as NotificationPriority] < priorityLevels[userPrefs.minPriority]) {
+        if (data.priority && userPrefs.minPriority && priorityLevels[data.priority as NotificationPriority] < priorityLevels[userPrefs.minPriority]) {
           console.log(`[Notificaciones] Notificación con prioridad ${data.priority} inferior a la mínima del usuario ${userPrefs.minPriority}`);
           return null as any;
         }
@@ -1107,18 +1108,13 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Obtener notificaciones ordenadas por fecha (más recientes primero)
-      let query = db.select()
+      const query = db.select()
         .from(notifications)
         .where(eq(notifications.userId, userId))
         .orderBy(desc(notifications.createdAt));
       
-      // Aplicar límite si se especifica
-      if (limit) {
-        query = query.limit(limit);
-      }
-      
-      // Ejecutar consulta
-      const userNotifications = await query;
+      // Aplicar límite si se especifica y ejecutar consulta
+      const userNotifications = limit ? await query.limit(limit) : await query;
       return userNotifications;
     } catch (error) {
       console.error('[Notificaciones] Error al obtener notificaciones:', error);

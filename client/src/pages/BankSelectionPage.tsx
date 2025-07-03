@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, getQueryFn } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { BankType } from '@shared/schema';
 
@@ -31,7 +32,12 @@ const bankLogos: Record<string, string> = {
   [BankType.SCOTIABANK]: scotiaLogoPath,
   [BankType.AMEX]: amexLogoPath,
   [BankType.BANCOAZTECA]: bancoAztecaLogoPath,
-  [BankType.BIENESTAR]: bienestarLogoPath
+  [BankType.BIENESTAR]: bienestarLogoPath,
+  [BankType.CITIBANAMEX]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
+  [BankType.BBVA]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
+  [BankType.BANBAJIO]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
+  [BankType.SANTANDER]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
+  [BankType.SPIN]: liverPoolLogoPath // Usar logo de Liverpool como placeholder
 };
 
 // Definir mapa de descripciones
@@ -55,9 +61,12 @@ export default function BankSelectionPage() {
   const [allowedBanks, setAllowedBanks] = useState<string[]>([]);
 
   // Obtener los bancos permitidos del usuario
-  const { data: allowedBanksData } = useQuery({
+  const { data: allowedBanksData, isLoading } = useQuery({
     queryKey: ['/api/user/allowed-banks'],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/user/allowed-banks');
+      return await res.json();
+    },
     enabled: !!user, // Solo ejecutar si hay usuario autenticado
     retry: false
   });
@@ -72,13 +81,13 @@ export default function BankSelectionPage() {
       return Object.values(BankType).filter(bank => bank !== BankType.ALL);
     }
 
-    if (!allowedBanksData || !allowedBanksData.success) {
+    if (!allowedBanksData || !(allowedBanksData as any)?.success) {
       console.log('[BankSelection] No hay datos de bancos permitidos, mostrando todos los bancos como fallback');
       // Si hay error obteniendo los bancos permitidos, mostrar todos como fallback
       return Object.values(BankType).filter(bank => bank !== BankType.ALL);
     }
 
-    const allowed = allowedBanksData.allowedBanks || [];
+    const allowed = (allowedBanksData as any)?.allowedBanks || [];
     console.log('[BankSelection] Bancos permitidos del servidor:', allowed);
 
     return allowed;
@@ -155,7 +164,7 @@ export default function BankSelectionPage() {
         </div>
       ) : (
         <div className="flex flex-wrap justify-center gap-5 px-5 py-6">
-          {banksToShow.map(bank => {
+          {banksToShow.map((bank: string) => {
             const logo = bankLogos[bank as keyof typeof bankLogos];
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
 
