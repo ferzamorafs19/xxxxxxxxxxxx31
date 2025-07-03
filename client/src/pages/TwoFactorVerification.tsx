@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, MessageCircle } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface VerifyResponse {
   id: number;
@@ -23,10 +23,17 @@ export default function TwoFactorVerification() {
   const verifyMutation = useMutation({
     mutationFn: async (code: string): Promise<VerifyResponse> => {
       const response = await apiRequest("POST", "/api/verify-2fa", { code });
-      return response;
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log("[2FA] Verificación exitosa:", data);
+      
+      // Actualizar el cache del usuario autenticado
+      queryClient.setQueryData(["/api/user"], data);
+      
+      // Invalidar queries para forzar una recarga
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       // Redirigir automáticamente al panel según el rol del usuario
       if (data.role === "admin") {
         setLocation("/admin");
