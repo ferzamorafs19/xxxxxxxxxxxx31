@@ -2833,10 +2833,10 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
   app.post("/api/test-activation-notification", async (req, res) => {
     try {
       
-      // Usuario de prueba
+      // Usuario de prueba con Chat ID real de balonx
       const testUserData = {
         username: "usuario_prueba",
-        telegramChatId: "987654321",
+        telegramChatId: "6615027684",
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 día
         allowedBanks: "banamex,bbva,banorte"
       };
