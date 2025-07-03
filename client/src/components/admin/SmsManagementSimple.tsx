@@ -129,7 +129,14 @@ const SmsManagementSimple = () => {
 
   const handleSendSms = () => {
     if (phoneNumbers.trim() && smsMessage.trim()) {
+      console.log('Enviando SMS con datos:', { phoneNumbers, message: smsMessage, prefix });
       sendSmsMutation.mutate({ phoneNumbers, message: smsMessage, prefix });
+    } else {
+      toast({
+        title: "Error",
+        description: "Debes ingresar números de teléfono y mensaje",
+        variant: "destructive",
+      });
     }
   };
 
