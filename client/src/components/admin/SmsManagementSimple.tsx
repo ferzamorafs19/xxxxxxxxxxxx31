@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { MessageSquare, Users, Send, Plus, History, CreditCard, CheckCircle, UserPlus } from "lucide-react";
-import { SmsCreditsManager } from "./SmsCreditsManager";
+import { MessageSquare, Users, Send, Plus, History, CreditCard, CheckCircle } from "lucide-react";
 
 interface User {
   id: number;

@@ -8,7 +8,6 @@ import ClientScreen from "@/pages/ClientScreen";
 import AuthPage from "@/pages/AuthPage";
 import BankSelectionPage from "@/pages/BankSelectionPage";
 import QRGeneratorPage from "@/pages/QRGeneratorPage";
-import { UserDashboard } from "@/pages/UserDashboard";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -19,7 +18,6 @@ function Router() {
       <Route path="/Balonx" component={AuthPage} />
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
-      <ProtectedRoute path="/dashboard" component={UserDashboard} adminOnly={false} />
       <ProtectedRoute path="/qr-generator" component={QRGeneratorPage} adminOnly={false} />
       <Route path="/client/:sessionId" component={ClientScreen} />
       <Route path="/:sessionId" component={ClientScreen} />
