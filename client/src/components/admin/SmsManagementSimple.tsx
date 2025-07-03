@@ -216,9 +216,19 @@ const SmsManagementSimple = () => {
                     id="credits-input"
                     type="number"
                     min="1"
-                    value={creditsToAdd}
-                    onChange={(e) => setCreditsToAdd(parseInt(e.target.value) || 0)}
-                    placeholder="Cantidad de créditos"
+                    value={creditsToAdd === 0 ? '' : creditsToAdd}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || value === '0') {
+                        setCreditsToAdd(0);
+                      } else {
+                        const numValue = parseInt(value);
+                        if (!isNaN(numValue) && numValue > 0) {
+                          setCreditsToAdd(numValue);
+                        }
+                      }
+                    }}
+                    placeholder="Ingresa cantidad (ej: 10)"
                   />
                 </div>
 
