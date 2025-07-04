@@ -604,6 +604,76 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
     }
   });
 
+  // Endpoint para enviar mensajes personalizados a usuarios desde el panel admin
+  app.post('/api/admin/send-message', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const currentUser = req.user;
+      
+      // Solo permitir a administradores enviar mensajes
+      if (currentUser.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+
+      const { username, message } = req.body;
+
+      if (!username || !message) {
+        return res.status(400).json({ message: "Username y mensaje son requeridos" });
+      }
+
+      // Buscar el usuario destinatario
+      const targetUser = await storage.getUserByUsername(username);
+      if (!targetUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      if (!targetUser.telegramChatId) {
+        return res.status(400).json({ message: "Usuario no tiene Chat ID configurado" });
+      }
+
+      // Importar función para enviar mensaje
+      const { sendAdminMessage } = await import('./telegramBot');
+      
+      // Formatear mensaje personalizado
+      const formattedMessage = `📩 *Mensaje del Administrador*
+
+${message}
+
+---
+_Enviado por: ${currentUser.username}_
+_Fecha: ${new Date().toLocaleString('es-MX')}_
+
+📞 *Soporte*: @BalonxSistema`;
+
+      // Enviar mensaje
+      const result = await sendAdminMessage(targetUser.telegramChatId, formattedMessage);
+
+      if (result.success) {
+        // Crear notificación en el sistema
+        await storage.createNotification({
+          userId: targetUser.id,
+          type: 'admin_message',
+          title: 'Mensaje del Administrador',
+          message: message,
+          priority: 'medium'
+        });
+
+        console.log(`✅ Mensaje enviado de ${currentUser.username} a ${username}`);
+        res.json({ success: true, message: "Mensaje enviado correctamente" });
+      } else {
+        console.error(`❌ Error enviando mensaje a ${username}:`, result.error);
+        res.status(500).json({ success: false, message: result.error || "Error enviando mensaje" });
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error en endpoint send-message:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   // Endpoint de depuración para ver todas las sesiones
   app.get('/api/debug/all-sessions', async (req, res) => {
     try {

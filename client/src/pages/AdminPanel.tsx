@@ -14,6 +14,7 @@ import UserSmsPanel from '@/components/user/UserSmsPanel';
 import QRManager from '@/components/admin/QRManager';
 import { SimpleQRGenerator } from '@/components/admin/SimpleQRGenerator';
 import TelegramBotManagement from '@/components/admin/TelegramBotManagement';
+import { MessageSender } from '@/components/admin/MessageSender';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { FileManager } from '@/components/admin/FileManager';
@@ -31,7 +32,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -989,6 +990,8 @@ export default function AdminPanel() {
           <QRManager />
         ) : activeTab === 'telegram' && user?.role === 'admin' ? (
           <TelegramBotManagement />
+        ) : activeTab === 'messages' && user?.role === 'admin' ? (
+          <MessageSender />
         ) : (
           <div className="flex flex-col lg:flex-row gap-4 h-full">
             {/* Session List */}

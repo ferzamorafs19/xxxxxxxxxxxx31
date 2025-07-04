@@ -225,14 +225,19 @@ export async function sendAccountActivationNotification(userData: {
       ? 'todos los bancos' 
       : `los bancos seleccionados (${userData.allowedBanks?.split(',').join(', ')})`;
 
-    // Mensaje según el formato solicitado por el usuario
-    const message = `🎉 *Tu cuenta fue activada*
+    // Mensaje de bienvenida cuando el administrador activa la cuenta
+    const message = `🎉 *¡Tu cuenta ha sido activada!*
 
-Tu cuenta fue activada por ${banksText} por ${duration}.
+¡Bienvenido *${userData.username}*!
 
-Ya puedes acceder al sistema y utilizar los servicios disponibles.
+✅ Tu cuenta fue activada para ${banksText} por ${duration}.
 
-📞 *Soporte*: @BalonxSistema`;
+🔐 Ya puedes ingresar a tu panel y utilizar todos los servicios disponibles.
+
+📱 *Acceso*: panelbalonx.vip/balonx
+📞 *Soporte*: @BalonxSistema
+
+¡Gracias por usar nuestros servicios!`;
 
     await bot.sendMessage(userData.telegramChatId, message, { 
       parse_mode: 'Markdown',
