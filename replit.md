@@ -156,9 +156,6 @@ Changelog:
 - July 3, 2025. Fixed Chat ID storage issue in user registration - now properly saves telegramChatId field
 - July 3, 2025. Completed end-to-end 2FA flow: registration → admin approval → automatic 2FA on login
 - July 3, 2025. Verified full workflow: Chat ID configured during registration, 2FA sent automatically on login attempt
-- July 4, 2025. Updated domain from aclaraciones.info to digitalaclaraciones.com for all new link generation
-- July 4, 2025. Added manual link regeneration functionality in admin panel with new domain support
-- July 4, 2025. Implemented regenerate link API endpoint with permission validation and WebSocket notifications
 ```
 
 ## User Preferences
