@@ -22,6 +22,11 @@ const WELCOME_MESSAGE = `
 
 Gracias por utilizar nuestro sistema de aclaraciones bancarias.
 
+📝 *Para poder registrarte:*
+1. Ingresa a: panelbalonx.vip/balonx
+2. Presiona en "Registrarte"
+3. Ingresa un usuario, una contraseña y tu Chat ID
+
 💬 Para cualquier duda o sugerencia, contacta con @balonxSistema
 
 🔐 *Funciones disponibles:*
