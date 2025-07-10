@@ -402,44 +402,51 @@ const SmsManagement = () => {
                       <SelectValue placeholder="Selecciona una ruta SMS" />
                     </SelectTrigger>
                     <SelectContent>
-                      {smsRoutes.map((route: any) => (
-                        <SelectItem key={route.type} value={route.type} className="py-3">
-                          <div className="flex flex-col w-full">
-                            <div className="flex justify-between items-center w-full">
-                              <span className="font-semibold text-sm">{route.name}</span>
-                              <span className="text-sm font-bold text-green-600">
-                                {route.creditCost} crédito{route.creditCost !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                            <span className="text-xs text-muted-foreground mt-1">
-                              {route.description}
-                            </span>
-                            {route.provider && (
-                              <span className="text-xs text-blue-600 font-medium">
-                                Proveedor: {route.provider}
-                              </span>
-                            )}
+                      <SelectItem value="short_code" className="py-3">
+                        <div className="flex flex-col w-full">
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-semibold text-sm">🚀 Short Code (Sofmex)</span>
+                            <span className="text-sm font-bold text-orange-600">1.0 crédito</span>
                           </div>
-                        </SelectItem>
-                      ))}
+                          <span className="text-xs text-muted-foreground mt-1">
+                            Ruta premium con mayor entregabilidad
+                          </span>
+                          <span className="text-xs text-blue-600 font-medium">
+                            Proveedor: Sofmex
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="long_code" className="py-3">
+                        <div className="flex flex-col w-full">
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-semibold text-sm">💰 Long Code (Ankarex)</span>
+                            <span className="text-sm font-bold text-green-600">0.5 créditos</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground mt-1">
+                            Ruta económica con buena entregabilidad
+                          </span>
+                          <span className="text-xs text-blue-600 font-medium">
+                            Proveedor: Ankarex
+                          </span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                  {smsRoutes.length > 0 && (
-                    <div className="mt-2 p-2 bg-white rounded border border-blue-300">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700">Ruta seleccionada:</span>
-                        <span className="text-sm font-bold text-blue-600">
-                          {smsRoutes.find((r: any) => r.type === routeType)?.name || 'No seleccionada'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-sm font-medium text-gray-700">Costo por SMS:</span>
-                        <span className="text-sm font-bold text-green-600">
-                          {smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1} crédito{(smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1) !== 1 ? 's' : ''}
-                        </span>
-                      </div>
+                  <div className="mt-2 p-2 bg-white rounded border border-blue-300">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Ruta seleccionada:</span>
+                      <span className="text-sm font-bold text-blue-600">
+                        {routeType === 'short_code' ? '🚀 Short Code (Sofmex)' : 
+                         routeType === 'long_code' ? '💰 Long Code (Ankarex)' : 'No seleccionada'}
+                      </span>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-medium text-gray-700">Costo por SMS:</span>
+                      <span className="text-sm font-bold text-green-600">
+                        {routeType === 'short_code' ? '1.0' : routeType === 'long_code' ? '0.5' : '1.0'} crédito{(routeType === 'long_code' ? 's' : '')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="phoneNumbers">Números de Teléfono</Label>
@@ -487,14 +494,14 @@ const SmsManagement = () => {
                       <div className="flex justify-between">
                         <span>Costo por SMS:</span>
                         <span className="font-medium text-green-600">
-                          {smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1} créditos
+                          {routeType === 'short_code' ? '1.0' : '0.5'} créditos
                         </span>
                       </div>
                       <hr className="border-yellow-300" />
                       <div className="flex justify-between font-bold text-lg">
                         <span>Total a consumir:</span>
                         <span className="text-red-600">
-                          {((smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1) * 
+                          {((routeType === 'short_code' ? 1.0 : 0.5) * 
                             phoneNumbers.split(',').filter(n => n.trim()).length).toFixed(1)} créditos
                         </span>
                       </div>
