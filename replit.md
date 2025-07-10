@@ -159,6 +159,9 @@ Changelog:
 - July 4, 2025. Updated session link generation to use digitalaclaraciones.com domain
 - July 4, 2025. Enhanced Telegram bot /start message with registration instructions for panelbalonx.vip/balonx
 - July 8, 2025. Updated all domain references to digitalaclaraciones.com for both client and admin interfaces
+- July 10, 2025. Implemented automatic session cleanup: sessions without user data are automatically deleted after 10 minutes
+- July 10, 2025. Enhanced cleanup system with dual time intervals: 10 minutes for sessions without data, 30 minutes for inactive sessions with data
+- July 10, 2025. Reduced cleanup interval to every 2 minutes for faster removal of empty sessions
 ```
 
 ## User Preferences

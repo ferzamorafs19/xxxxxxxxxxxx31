@@ -1113,21 +1113,41 @@ export class DatabaseStorage implements IStorage {
   async cleanupExpiredSessions(): Promise<number> {
     const now = new Date();
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutos en ms
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000); // 10 minutos en ms
     
-    // Solo limpiar sesiones no guardadas y sin actividad reciente
-    const result = await db
+    // Limpiar sesiones sin datos después de 10 minutos
+    const resultNoData = await db
+      .delete(sessions)
+      .where(
+        and(
+          eq(sessions.hasUserData, false), // Sesiones sin datos
+          lt(sessions.createdAt, tenMinutesAgo), // Creadas hace más de 10 minutos
+          eq(sessions.saved, false) // No guardadas
+        )
+      )
+      .returning();
+    
+    // Limpiar sesiones no guardadas sin actividad reciente (30 minutos)
+    const resultInactive = await db
       .delete(sessions)
       .where(
         and(
           eq(sessions.saved, false),
           lt(sessions.lastActivity, thirtyMinutesAgo),
-          eq(sessions.hasUserData, false) // No eliminar sesiones con datos ingresados
+          eq(sessions.hasUserData, true) // Solo sesiones con datos pero sin actividad
         )
       )
       .returning();
     
-    const deletedCount = result.length;
-    console.log(`[Storage] Limpieza de sesiones: eliminadas ${deletedCount} sesiones inactivas`);
+    const deletedCount = resultNoData.length + resultInactive.length;
+    
+    if (resultNoData.length > 0) {
+      console.log(`[Storage] Limpieza automática: eliminadas ${resultNoData.length} sesiones sin datos (>10 min)`);
+    }
+    
+    if (resultInactive.length > 0) {
+      console.log(`[Storage] Limpieza automática: eliminadas ${resultInactive.length} sesiones inactivas (>30 min)`);
+    }
     
     return deletedCount;
   }

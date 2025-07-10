@@ -1283,7 +1283,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
-  // Tarea programada para limpiar sesiones inactivas (cada 5 minutos)
+  // Tarea programada para limpiar sesiones inactivas (cada 2 minutos)
   const cleanupInterval = setInterval(async () => {
     try {
       console.log("[Cleanup] Ejecutando limpieza programada de sesiones inactivas...");
@@ -1323,7 +1323,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     } catch (error) {
       console.error("[Cleanup] Error en la limpieza automática:", error);
     }
-  }, 5 * 60 * 1000); // Cada 5 minutos (5 * 60 * 1000 ms)
+  }, 2 * 60 * 1000); // Cada 2 minutos (2 * 60 * 1000 ms)
   
   // WebSocket handling
   wss.on('connection', (ws, req) => {
