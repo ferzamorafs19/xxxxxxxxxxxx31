@@ -63,6 +63,24 @@ const SmsManagement = () => {
   const [prefix, setPrefix] = useState("+52");
   const [routeType, setRouteType] = useState("short_code");
 
+  // Rutas SMS por defecto para mostrar mientras se cargan desde el servidor
+  const defaultSmsRoutes = [
+    {
+      type: "short_code",
+      name: "Short Code (Sofmex)",
+      description: "Ruta premium con mayor entregabilidad",
+      creditCost: 1,
+      provider: "Sofmex"
+    },
+    {
+      type: "long_code", 
+      name: "Long Code (Ankarex)",
+      description: "Ruta económica con buena entregabilidad",
+      creditCost: 0.5,
+      provider: "Ankarex"
+    }
+  ];
+
   // Obtener lista de usuarios regulares
   const { data: users = [] } = useQuery({
     queryKey: ['/api/users/regular'],
@@ -95,7 +113,7 @@ const SmsManagement = () => {
   });
 
   // Obtener rutas SMS disponibles
-  const { data: smsRoutes = [] } = useQuery({
+  const { data: smsRoutesFromServer = [] } = useQuery({
     queryKey: ['/api/sms/routes'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/sms/routes');
@@ -103,6 +121,9 @@ const SmsManagement = () => {
       return data.routes;
     }
   });
+
+  // Usar rutas del servidor si están disponibles, sino usar las por defecto
+  const smsRoutes = smsRoutesFromServer.length > 0 ? smsRoutesFromServer : defaultSmsRoutes;
 
   // Obtener configuración SMS
   const { data: config } = useQuery({
