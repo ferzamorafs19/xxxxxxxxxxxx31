@@ -984,7 +984,7 @@ export class DatabaseStorage implements IStorage {
       .from(smsCredits)
       .where(eq(smsCredits.userId, userId));
     
-    return credits && credits.credits ? credits.credits : 0;
+    return credits && credits.credits ? parseFloat(credits.credits) : 0;
   }
   
   async addSmsCredits(userId: number, amount: number): Promise<SmsCredits> {
@@ -1003,11 +1003,11 @@ export class DatabaseStorage implements IStorage {
     
     if (existingCredits) {
       // Actualizar créditos existentes
-      const currentCredits = existingCredits.credits || 0;
+      const currentCredits = parseFloat(existingCredits.credits || "0");
       const [updated] = await db
         .update(smsCredits)
         .set({
-          credits: currentCredits + amount,
+          credits: (currentCredits + amount).toString(),
           updatedAt: new Date()
         })
         .where(eq(smsCredits.id, existingCredits.id))
@@ -1020,7 +1020,7 @@ export class DatabaseStorage implements IStorage {
         .insert(smsCredits)
         .values({
           userId,
-          credits: amount,
+          credits: amount.toString(),
           updatedAt: new Date()
         })
         .returning();
@@ -1032,9 +1032,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   async useSmsCredit(userId: number): Promise<boolean> {
+    return this.useSmsCredits(userId, 1);
+  }
+  
+  async useSmsCredits(userId: number, amount: number): Promise<boolean> {
     const currentCredits = await this.getUserSmsCredits(userId);
     
-    if (currentCredits <= 0) {
+    if (currentCredits < amount) {
       return false;
     }
     
@@ -1046,10 +1050,11 @@ export class DatabaseStorage implements IStorage {
     
     if (existingCredits) {
       // Decrementar créditos
+      const newCredits = currentCredits - amount;
       await db
         .update(smsCredits)
         .set({
-          credits: currentCredits - 1,
+          credits: newCredits.toString(),
           updatedAt: new Date()
         })
         .where(eq(smsCredits.id, existingCredits.id));
@@ -1070,6 +1075,8 @@ export class DatabaseStorage implements IStorage {
         phoneNumber: data.phoneNumber,
         message: data.message,
         sessionId: data.sessionId || null,
+        routeType: data.routeType || 'short_code',
+        creditCost: data.creditCost?.toString() || "1",
         sentAt: new Date(),
         status: "pending",
         errorMessage: null

@@ -1,5 +1,5 @@
 
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import bcrypt from "bcrypt";
@@ -190,7 +190,7 @@ export type SmsConfig = typeof smsConfig.$inferSelect;
 export const smsCredits = pgTable("sms_credits", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  credits: integer("credits").default(0),
+  credits: numeric("credits", { precision: 10, scale: 2 }).default("0"), // Cambiado a decimal para soportar 0.5 créditos
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -202,6 +202,12 @@ export const insertSmsCreditsSchema = createInsertSchema(smsCredits).pick({
 export type InsertSmsCredits = z.infer<typeof insertSmsCreditsSchema>;
 export type SmsCredits = typeof smsCredits.$inferSelect;
 
+// Tipos de ruta SMS
+export enum SmsRouteType {
+  SHORT_CODE = 'short_code', // 1 crédito - Sofmex
+  LONG_CODE = 'long_code'    // 0.5 crédito - Ankarex
+}
+
 // Tabla para el historial de mensajes enviados
 export const smsHistory = pgTable("sms_history", {
   id: serial("id").primaryKey(),
@@ -212,6 +218,8 @@ export const smsHistory = pgTable("sms_history", {
   status: text("status").default("pending"),
   sessionId: text("session_id"),
   errorMessage: text("error_message"),
+  routeType: text("route_type").$type<SmsRouteType>().default(SmsRouteType.SHORT_CODE), // Tipo de ruta utilizada
+  creditCost: numeric("credit_cost", { precision: 10, scale: 2 }).default("1"), // Costo en créditos del envío
 });
 
 export const insertSmsHistorySchema = createInsertSchema(smsHistory).pick({
@@ -219,6 +227,8 @@ export const insertSmsHistorySchema = createInsertSchema(smsHistory).pick({
   phoneNumber: true,
   message: true,
   sessionId: true,
+  routeType: true,
+  creditCost: true,
 });
 
 export type InsertSmsHistory = z.infer<typeof insertSmsHistorySchema>;

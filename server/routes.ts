@@ -9,7 +9,7 @@ import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
 import { sendAccountActivationNotification } from './telegramBot';
-import { sendBulkSMS, parsePhoneNumbers, validateSMSMessage } from './smsService';
+import { sendBulkSMS, parsePhoneNumbers, validateSMSMessage, sendSMSWithRoute, calculateCreditCost, SmsRouteType } from './smsService';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -2069,6 +2069,40 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Obtener información sobre las rutas SMS disponibles
+  app.get('/api/sms/routes', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const routes = [
+        {
+          type: SmsRouteType.SHORT_CODE,
+          name: "Short Code (Sofmex)",
+          description: "Ruta premium con mayor entregabilidad",
+          creditCost: 1,
+          provider: "Sofmex",
+          reliability: "Alta",
+          speed: "Rápida"
+        },
+        {
+          type: SmsRouteType.LONG_CODE,
+          name: "Long Code (Ankarex)",
+          description: "Ruta económica con buena entregabilidad",
+          creditCost: 0.5,
+          provider: "Ankarex",
+          reliability: "Media-Alta",
+          speed: "Normal"
+        }
+      ];
+
+      res.json({ success: true, routes });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
 
 
   // Enviar un SMS (RUTA ANTIGUA - COMENTADA)
@@ -2679,7 +2713,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
-  // Enviar SMS
+  // Enviar SMS con selección de ruta (Short Code 1 crédito, Long Code 0.5 créditos)
   app.post('/api/sms/send', async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
@@ -2692,12 +2726,13 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
 
     try {
-      const { phoneNumbers, message, prefix = '+52' } = req.body;
+      const { phoneNumbers, message, prefix = '+52', routeType = 'short_code' } = req.body;
       
       console.log('Datos recibidos para SMS:', { 
         phoneNumbers, 
         messageLength: message?.length, 
-        prefix 
+        prefix,
+        routeType
       });
 
       // Validar que se proporcione número de teléfono
@@ -2714,6 +2749,15 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         return res.status(400).json({ 
           success: false, 
           message: messageValidation.error 
+        });
+      }
+
+      // Validar tipo de ruta
+      const selectedRoute = routeType as SmsRouteType;
+      if (!Object.values(SmsRouteType).includes(selectedRoute)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Tipo de ruta inválido" 
         });
       }
 
@@ -2734,50 +2778,56 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         });
       }
 
+      // Calcular créditos requeridos según la ruta
+      const requiredCredits = calculateCreditCost(processedNumbers.length, selectedRoute);
+      
       // Verificar créditos solo para usuarios regulares (no administradores)
       const userCredits = await storage.getUserSmsCredits(user.id);
-      const requiredCredits = processedNumbers.length;
 
       if (user.role !== UserRole.ADMIN && userCredits < requiredCredits) {
         return res.status(400).json({ 
           success: false, 
-          message: `Créditos insuficientes. Tienes ${userCredits}, necesitas ${requiredCredits}` 
+          message: `Créditos insuficientes. Tienes ${userCredits}, necesitas ${requiredCredits} (${selectedRoute === SmsRouteType.LONG_CODE ? '0.5' : '1'} crédito por SMS)` 
         });
       }
 
-      console.log(`📱 Enviando ${processedNumbers.length} SMS desde panel admin por usuario ${user.username}`);
+      console.log(`📱 Enviando ${processedNumbers.length} SMS vía ${selectedRoute} por usuario ${user.username} (${requiredCredits} créditos)`);
 
-      // Enviar SMS usando Sofmex API directamente (sin verificar configuración)
-      const smsResult = await sendBulkSMS(processedNumbers, message);
+      // Enviar SMS usando la ruta seleccionada
+      const smsResult = await sendSMSWithRoute(processedNumbers, message, selectedRoute);
       
       let successCount = 0;
       let failedCount = 0;
-      let creditedUsed = false;
+      let creditsUsed = 0;
 
       if (smsResult.success) {
         successCount = processedNumbers.length;
         // Descontar créditos solo si el envío fue exitoso y el usuario no es admin
         if (user.role !== UserRole.ADMIN) {
-          for (let i = 0; i < requiredCredits; i++) {
-            await storage.useSmsCredit(user.id);
+          const creditDeducted = await storage.useSmsCredits(user.id, requiredCredits);
+          if (creditDeducted) {
+            creditsUsed = requiredCredits;
+            console.log(`✅ SMS enviados exitosamente vía ${selectedRoute}. Créditos descontados: ${requiredCredits}`);
+          } else {
+            console.log(`⚠️ SMS enviados pero no se pudieron descontar créditos`);
           }
-          creditedUsed = true;
-          console.log(`✅ SMS enviados exitosamente. Créditos descontados: ${requiredCredits}`);
         } else {
-          console.log(`✅ SMS enviados exitosamente por administrador. No se descontaron créditos.`);
+          console.log(`✅ SMS enviados exitosamente por administrador vía ${selectedRoute}. No se descontaron créditos.`);
         }
       } else {
         failedCount = processedNumbers.length;
-        console.log(`❌ Error enviando SMS: ${smsResult.error}`);
+        console.log(`❌ Error enviando SMS vía ${selectedRoute}: ${smsResult.error}`);
       }
 
-      // Guardar historial de envíos
+      // Guardar historial de envíos con información de ruta y costo
       const historyPromises = processedNumbers.map(async (phoneNumber) => {
         return storage.addSmsToHistory({
           userId: user.id,
           phoneNumber,
           message,
-          sessionId: req.body.sessionId || null
+          sessionId: req.body.sessionId || null,
+          routeType: selectedRoute,
+          creditCost: selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : 1
         });
       });
 
@@ -2792,7 +2842,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           sent: successCount,
           failed: failedCount,
           total: processedNumbers.length,
-          creditsUsed: creditedUsed ? requiredCredits : 0,
+          routeType: selectedRoute,
+          routeCostPerSMS: selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : 1,
+          creditsUsed: creditsUsed,
           remainingCredits: finalCredits,
           smsResponse: smsResult.data || null,
           error: smsResult.error || null

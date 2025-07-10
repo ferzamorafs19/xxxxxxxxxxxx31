@@ -1,12 +1,20 @@
 import axios from 'axios';
 
-// URLs de la API de Sofmex
+// URLs de las APIs SMS
 const SOFMEX_LOGIN_URL = 'https://www.sofmex.com/api/login';
 const SOFMEX_SMS_URL = 'https://www.sofmex.com/api/sms/v3/asignacion';
+const ANKAREX_SMS_URL = 'https://rest.ankarex.ltd';
 
-// Credenciales de Sofmex desde variables de entorno
+// Credenciales desde variables de entorno
 const SOFMEX_USERNAME = process.env.SOFMEX_USERNAME;
 const SOFMEX_PASSWORD = process.env.SOFMEX_PASSWORD;
+const ANKAREX_API_TOKEN = 'MSL3-YQPV-M4LP-ACF3-HNHG-ZMLR-QR7J-6S8U';
+
+// Enum para tipos de rutas SMS
+export enum SmsRouteType {
+  SHORT_CODE = 'short_code', // 1 crédito - Sofmex (ruta actual)
+  LONG_CODE = 'long_code'    // 0.5 crédito - Ankarex (nueva ruta)
+}
 
 if (!SOFMEX_USERNAME || !SOFMEX_PASSWORD) {
   console.warn('⚠️ Las credenciales de Sofmex no están configuradas');
@@ -53,7 +61,70 @@ export async function getSofmexToken(): Promise<string | null> {
 }
 
 /**
- * Envía SMS en lote a múltiples números
+ * Envía SMS en lote usando la ruta Ankarex (Long Code - 0.5 crédito)
+ */
+export async function sendBulkSMSAnkarex(
+  numeros: string[], 
+  mensaje: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    console.log(`📱 Enviando SMS vía Ankarex (Long Code) a ${numeros.length} números`);
+    
+    // Crear lista de números en formato string separado por comas
+    const numerosString = numeros.join(',');
+    
+    console.log(`📤 Enviando a Ankarex API...`);
+    console.log('📋 Números:', numerosString);
+    console.log('💬 Mensaje:', mensaje);
+    
+    const response = await axios.post(ANKAREX_SMS_URL, {
+      token: ANKAREX_API_TOKEN,
+      send: "bulk",
+      to: numerosString,
+      sender_id: "SMS",
+      message_content: mensaje,
+      unicode: false
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'Ankarex-Rest-0.22'
+      },
+      timeout: 30000
+    });
+    
+    console.log('📡 Ankarex Response Status:', response.status);
+    console.log('📡 Ankarex Response Data:', response.data);
+    
+    if (response.status === 200 && response.data) {
+      // Verificar respuestas exitosas de Ankarex
+      const isSuccess = (
+        (response.data.error === "false") || 
+        (response.data.info === "SENT") || 
+        (response.data.info === "CAMPAIGN_SENT") ||
+        (response.data.campaign_id)
+      );
+      
+      if (isSuccess) {
+        const campaignId = response.data.id || response.data.campaign_id || 'N/A';
+        console.log(`✅ SMS enviados exitosamente vía Ankarex. Campaign ID: ${campaignId}`);
+        return { success: true, data: response.data };
+      } else {
+        console.log(`❌ Error en Ankarex API: ${response.data.info || 'Error desconocido'}`);
+        return { success: false, error: response.data.info || 'Error en el envío vía Ankarex' };
+      }
+    } else {
+      console.log(`⚠️ Respuesta no exitosa de Ankarex:`, response.data);
+      return { success: false, error: 'Error en la API de Ankarex' };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error enviando SMS vía Ankarex:`, error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.message || error.message };
+  }
+}
+
+/**
+ * Envía SMS en lote usando la ruta Sofmex (Short Code - 1 crédito)
  */
 export async function sendBulkSMS(
   numeros: string[], 
@@ -146,6 +217,46 @@ export function normalizePhoneNumber(numero: string, defaultPrefix: string = '+5
   
   // Si es un número de más de 10 dígitos, asumir que ya incluye código de país
   return `+${cleanNumber}`;
+}
+
+/**
+ * Función unificada para enviar SMS con selección automática de ruta
+ */
+export async function sendSMSWithRoute(
+  numeros: string[], 
+  mensaje: string,
+  routeType: SmsRouteType = SmsRouteType.SHORT_CODE
+): Promise<{ success: boolean; data?: any; error?: string; creditCost: number }> {
+  console.log(`📱 Enviando SMS usando ruta: ${routeType}`);
+  
+  let result;
+  let creditCost;
+  
+  if (routeType === SmsRouteType.LONG_CODE) {
+    // Usar Ankarex (0.5 crédito por mensaje)
+    result = await sendBulkSMSAnkarex(numeros, mensaje);
+    creditCost = numeros.length * 0.5;
+  } else {
+    // Usar Sofmex (1 crédito por mensaje) - ruta por defecto
+    result = await sendBulkSMS(numeros, mensaje);
+    creditCost = numeros.length;
+  }
+  
+  return {
+    ...result,
+    creditCost
+  };
+}
+
+/**
+ * Obtiene el costo en créditos para un envío
+ */
+export function calculateCreditCost(numeroCount: number, routeType: SmsRouteType): number {
+  if (routeType === SmsRouteType.LONG_CODE) {
+    return numeroCount * 0.5;
+  } else {
+    return numeroCount;
+  }
 }
 
 /**

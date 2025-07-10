@@ -47,11 +47,21 @@ const SmsManagement = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [creditsToAdd, setCreditsToAdd] = useState<number>(0);
   const [isSendSmsDialogOpen, setIsSendSmsDialogOpen] = useState(false);
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [smsConfig, setSmsConfig] = useState<SmsConfig>({
+    username: "",
+    password: "", 
+    apiUrl: "https://api.sofmex.mx/api/sms",
+    isActive: false,
+    updatedAt: "",
+    updatedBy: ""
+  });
   
   // Estados para el formulario de envío de SMS
   const [phoneNumbers, setPhoneNumbers] = useState("");
   const [smsMessage, setSmsMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
+  const [routeType, setRouteType] = useState("short_code");
 
   // Obtener lista de usuarios regulares
   const { data: users = [] } = useQuery({
@@ -84,6 +94,25 @@ const SmsManagement = () => {
     }
   });
 
+  // Obtener rutas SMS disponibles
+  const { data: smsRoutes = [] } = useQuery({
+    queryKey: ['/api/sms/routes'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/sms/routes');
+      const data = await res.json();
+      return data.routes;
+    }
+  });
+
+  // Obtener configuración SMS
+  const { data: config } = useQuery({
+    queryKey: ['/api/sms/config'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/sms/config');
+      return await res.json();
+    }
+  });
+
   // Mutación para actualizar configuración SMS
   const updateConfigMutation = useMutation({
     mutationFn: async (config: Partial<SmsConfig>) => {
@@ -102,6 +131,29 @@ const SmsManagement = () => {
       toast({
         title: "Error",
         description: error.message || "Error al actualizar la configuración",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutación para actualizar configuración SMS
+  const updateConfigMutation = useMutation({
+    mutationFn: async (config: Partial<SmsConfig>) => {
+      const res = await apiRequest('POST', '/api/sms/config', config);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuración actualizada",
+        description: "La configuración de SMS se ha actualizado correctamente",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/sms/config'] });
+      setIsConfigDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar configuración",
         variant: "destructive",
       });
     }
@@ -132,15 +184,16 @@ const SmsManagement = () => {
 
   // Mutación para enviar SMS
   const sendSmsMutation = useMutation({
-    mutationFn: async (data: { phoneNumbers: string; message: string; prefix: string }) => {
+    mutationFn: async (data: { phoneNumbers: string; message: string; prefix: string; routeType: string }) => {
       const res = await apiRequest('POST', '/api/sms/send', data);
       return await res.json();
     },
     onSuccess: (data) => {
       const result = data.data;
+      const routeName = smsRoutes.find((r: any) => r.type === result.routeType)?.name || result.routeType;
       toast({
         title: "SMS enviado",
-        description: `Enviados: ${result.sent}, Fallidos: ${result.failed}. Créditos usados: ${result.creditsUsed}`,
+        description: `Enviados: ${result.sent}, Fallidos: ${result.failed}. Ruta: ${routeName}. Créditos usados: ${result.creditsUsed}`,
       });
       setIsSendSmsDialogOpen(false);
       setPhoneNumbers("");
@@ -185,7 +238,7 @@ const SmsManagement = () => {
       });
       return;
     }
-    sendSmsMutation.mutate({ phoneNumbers, message: smsMessage, prefix });
+    sendSmsMutation.mutate({ phoneNumbers, message: smsMessage, prefix, routeType });
   };
 
   const formatPhoneNumber = (phone: string) => {
@@ -296,6 +349,31 @@ const SmsManagement = () => {
                       <SelectItem value="+34">🇪🇸 España (+34)</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label htmlFor="routeType">Ruta de Envío</Label>
+                  <Select value={routeType} onValueChange={setRouteType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {smsRoutes.map((route: any) => (
+                        <SelectItem key={route.type} value={route.type}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{route.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {route.creditCost} crédito{route.creditCost !== 1 ? 's' : ''} - {route.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {smsRoutes.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Costo: {smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1} crédito{(smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1) !== 1 ? 's' : ''} por SMS
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="phoneNumbers">Números de Teléfono</Label>
