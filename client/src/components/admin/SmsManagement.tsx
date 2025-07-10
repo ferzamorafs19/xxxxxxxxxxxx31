@@ -352,10 +352,32 @@ const SmsManagement = () => {
                 Enviar SMS
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Enviar SMS Masivo</DialogTitle>
               </DialogHeader>
+              
+              {/* Resumen de rutas disponibles */}
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border-2 border-blue-200 mb-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📱 Rutas SMS Disponibles:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white p-3 rounded border border-orange-200 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">🚀 Short Code</span>
+                      <span className="text-lg font-bold text-orange-600">1.0</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">Sofmex - Alta entregabilidad</p>
+                  </div>
+                  <div className="bg-white p-3 rounded border border-green-200 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">💰 Long Code</span>
+                      <span className="text-lg font-bold text-green-600">0.5</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">Ankarex - Económica</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="prefix">Prefijo de País</Label>
@@ -371,29 +393,52 @@ const SmsManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="routeType">Ruta de Envío</Label>
+                <div className="border-2 border-blue-200 rounded-lg p-3 bg-blue-50">
+                  <Label htmlFor="routeType" className="text-sm font-semibold text-blue-900">
+                    🚀 Seleccionar Ruta de Envío
+                  </Label>
                   <Select value={routeType} onValueChange={setRouteType}>
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger className="mt-2 border-blue-300 focus:border-blue-500">
+                      <SelectValue placeholder="Selecciona una ruta SMS" />
                     </SelectTrigger>
                     <SelectContent>
                       {smsRoutes.map((route: any) => (
-                        <SelectItem key={route.type} value={route.type}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{route.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {route.creditCost} crédito{route.creditCost !== 1 ? 's' : ''} - {route.description}
+                        <SelectItem key={route.type} value={route.type} className="py-3">
+                          <div className="flex flex-col w-full">
+                            <div className="flex justify-between items-center w-full">
+                              <span className="font-semibold text-sm">{route.name}</span>
+                              <span className="text-sm font-bold text-green-600">
+                                {route.creditCost} crédito{route.creditCost !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              {route.description}
                             </span>
+                            {route.provider && (
+                              <span className="text-xs text-blue-600 font-medium">
+                                Proveedor: {route.provider}
+                              </span>
+                            )}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {smsRoutes.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Costo: {smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1} crédito{(smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1) !== 1 ? 's' : ''} por SMS
-                    </p>
+                    <div className="mt-2 p-2 bg-white rounded border border-blue-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Ruta seleccionada:</span>
+                        <span className="text-sm font-bold text-blue-600">
+                          {smsRoutes.find((r: any) => r.type === routeType)?.name || 'No seleccionada'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-sm font-medium text-gray-700">Costo por SMS:</span>
+                        <span className="text-sm font-bold text-green-600">
+                          {smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1} crédito{(smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div>
@@ -423,12 +468,46 @@ const SmsManagement = () => {
                     {smsMessage.length}/160 caracteres
                   </p>
                 </div>
+
+                {/* Calculador de costo total */}
+                {phoneNumbers.trim() && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <h4 className="font-semibold text-yellow-800 mb-2">💰 Resumen del Envío</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Números a enviar:</span>
+                        <span className="font-medium">{phoneNumbers.split(',').filter(n => n.trim()).length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Ruta seleccionada:</span>
+                        <span className="font-medium">
+                          {smsRoutes.find((r: any) => r.type === routeType)?.name || 'Short Code'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Costo por SMS:</span>
+                        <span className="font-medium text-green-600">
+                          {smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1} créditos
+                        </span>
+                      </div>
+                      <hr className="border-yellow-300" />
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Total a consumir:</span>
+                        <span className="text-red-600">
+                          {((smsRoutes.find((r: any) => r.type === routeType)?.creditCost || 1) * 
+                            phoneNumbers.split(',').filter(n => n.trim()).length).toFixed(1)} créditos
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Button 
                   onClick={handleSendSms} 
                   disabled={sendSmsMutation.isPending}
-                  className="w-full"
+                  className="w-full text-lg py-3"
                 >
-                  {sendSmsMutation.isPending ? "Enviando..." : "Enviar SMS"}
+                  {sendSmsMutation.isPending ? "Enviando..." : `📤 Enviar SMS ${phoneNumbers.trim() ? `(${phoneNumbers.split(',').filter(n => n.trim()).length} números)` : ''}`}
                 </Button>
               </div>
             </DialogContent>
