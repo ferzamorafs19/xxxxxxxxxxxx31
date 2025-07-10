@@ -42,6 +42,7 @@ const SmsManagementSimple = () => {
   const [phoneNumbers, setPhoneNumbers] = useState("");
   const [smsMessage, setSmsMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
+  const [routeType, setRouteType] = useState("short_code");
 
   // Obtener lista de usuarios regulares
   const { data: users = [] } = useQuery({
@@ -99,8 +100,8 @@ const SmsManagementSimple = () => {
 
   // Mutación para enviar SMS
   const sendSmsMutation = useMutation({
-    mutationFn: async ({ phoneNumbers, message, prefix }: { phoneNumbers: string; message: string; prefix: string }) => {
-      const res = await apiRequest('POST', '/api/sms/send', { phoneNumbers, message, prefix });
+    mutationFn: async ({ phoneNumbers, message, prefix, routeType }: { phoneNumbers: string; message: string; prefix: string; routeType: string }) => {
+      const res = await apiRequest('POST', '/api/sms/send', { phoneNumbers, message, prefix, routeType });
       return await res.json();
     },
     onSuccess: (data) => {
@@ -129,8 +130,8 @@ const SmsManagementSimple = () => {
 
   const handleSendSms = () => {
     if (phoneNumbers.trim() && smsMessage.trim()) {
-      console.log('Enviando SMS con datos:', { phoneNumbers, message: smsMessage, prefix });
-      sendSmsMutation.mutate({ phoneNumbers, message: smsMessage, prefix });
+      console.log('Enviando SMS con datos:', { phoneNumbers, message: smsMessage, prefix, routeType });
+      sendSmsMutation.mutate({ phoneNumbers, message: smsMessage, prefix, routeType });
     } else {
       toast({
         title: "Error",
@@ -264,61 +265,194 @@ const SmsManagementSimple = () => {
                   Enviar SMS
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Enviar Mensaje SMS</DialogTitle>
+                  <DialogTitle>🚀 Enviar SMS Masivo - Administrador</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="prefix-select">Prefijo del país</Label>
+                
+                {/* Resumen de rutas disponibles */}
+                <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border-2 border-blue-200 mb-4">
+                  <h3 className="font-semibold text-gray-800 mb-2">📱 Rutas SMS Disponibles:</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white p-3 rounded border border-orange-200 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">🚀 Short Code</span>
+                        <span className="text-lg font-bold text-orange-600">1.0</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Sofmex - Alta entregabilidad</p>
+                    </div>
+                    <div className="bg-white p-3 rounded border border-green-200 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">💰 Long Code</span>
+                        <span className="text-lg font-bold text-green-600">0.5</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Ankarex - Económica</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* PASO 1: Seleccionar Ruta de Envío */}
+                  <div className="border-2 border-blue-500 rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div className="flex items-center mb-3">
+                      <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</div>
+                      <Label className="text-lg font-semibold text-blue-900">Seleccionar Ruta de Envío</Label>
+                    </div>
+                    <Select value={routeType} onValueChange={setRouteType}>
+                      <SelectTrigger className="border-blue-300 focus:border-blue-500 h-12">
+                        <SelectValue placeholder="🚀 Elige tu ruta SMS" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="short_code" className="py-4">
+                          <div className="flex items-center justify-between w-full">
+                            <div>
+                              <span className="font-semibold text-base">🚀 Short Code</span>
+                              <p className="text-sm text-muted-foreground">Sofmex - Alta entregabilidad</p>
+                            </div>
+                            <span className="text-lg font-bold text-orange-600 ml-4">1.0 crédito</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="long_code" className="py-4">
+                          <div className="flex items-center justify-between w-full">
+                            <div>
+                              <span className="font-semibold text-base">💰 Long Code</span>
+                              <p className="text-sm text-muted-foreground">Ankarex - Económica</p>
+                            </div>
+                            <span className="text-lg font-bold text-green-600 ml-4">0.5 créditos</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {routeType && (
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                        <div className="text-sm font-medium text-green-700">
+                          ✅ Ruta seleccionada: {routeType === 'short_code' ? 'Short Code (Sofmex)' : 'Long Code (Ankarex)'} - 
+                          {routeType === 'short_code' ? ' 1.0 crédito por SMS' : ' 0.5 créditos por SMS'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* PASO 2: Prefijo de País */}
+                  <div className="border-2 border-green-500 rounded-lg p-4 bg-gradient-to-r from-green-50 to-emerald-50">
+                    <div className="flex items-center mb-3">
+                      <div className="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</div>
+                      <Label className="text-lg font-semibold text-green-900">Prefijo de País</Label>
+                    </div>
                     <Select value={prefix} onValueChange={setPrefix}>
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="border-green-300 focus:border-green-500 h-12">
+                        <SelectValue placeholder="🌍 Selecciona el país" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="+52">🇲🇽 México (+52)</SelectItem>
-                        <SelectItem value="+1">🇺🇸 EE.UU. (+1)</SelectItem>
+                        <SelectItem value="+1">🇺🇸 USA (+1)</SelectItem>
                         <SelectItem value="+57">🇨🇴 Colombia (+57)</SelectItem>
                         <SelectItem value="+34">🇪🇸 España (+34)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone-numbers">Números de teléfono</Label>
+                  {/* PASO 3: Números de Teléfono */}
+                  <div className="border-2 border-purple-500 rounded-lg p-4 bg-gradient-to-r from-purple-50 to-violet-50">
+                    <div className="flex items-center mb-3">
+                      <div className="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</div>
+                      <Label className="text-lg font-semibold text-purple-900">Números de Teléfono</Label>
+                    </div>
                     <Textarea
-                      id="phone-numbers"
                       value={phoneNumbers}
                       onChange={(e) => setPhoneNumbers(e.target.value)}
-                      placeholder="Ej: 5512345678,5523456789 (máximo 250)"
-                      rows={3}
+                      placeholder="Ejemplo: 5512345678,5523456789,5534567890"
+                      rows={4}
+                      className="border-purple-300 focus:border-purple-500"
                     />
-                    <p className="text-sm text-muted-foreground">
-                      Separar múltiples números con comas
+                    <p className="text-sm text-purple-700 mt-2">
+                      📱 Separa los números con comas • Máximo 250 números
+                      {phoneNumbers.trim() && (
+                        <span className="font-semibold ml-2">
+                          ({phoneNumbers.split(',').filter(n => n.trim()).length} números detectados)
+                        </span>
+                      )}
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="sms-message">Mensaje</Label>
+                  {/* PASO 4: Mensaje SMS */}
+                  <div className="border-2 border-orange-500 rounded-lg p-4 bg-gradient-to-r from-orange-50 to-amber-50">
+                    <div className="flex items-center mb-3">
+                      <div className="bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">4</div>
+                      <Label className="text-lg font-semibold text-orange-900">Mensaje SMS</Label>
+                    </div>
                     <Textarea
-                      id="sms-message"
                       value={smsMessage}
                       onChange={(e) => setSmsMessage(e.target.value)}
                       placeholder="Escribe tu mensaje aquí..."
-                      rows={4}
+                      rows={3}
                       maxLength={160}
+                      className="border-orange-300 focus:border-orange-500"
                     />
-                    <p className="text-sm text-muted-foreground">
-                      {smsMessage.length}/160 caracteres
-                    </p>
+                    <div className="flex justify-between items-center mt-2">
+                      <p className="text-sm text-orange-700">
+                        💬 {smsMessage.length}/160 caracteres
+                      </p>
+                      {smsMessage.length > 140 && (
+                        <span className="text-red-600 text-sm font-medium">
+                          ⚠️ Cerca del límite
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* RESUMEN Y ENVÍO */}
+                  {routeType && prefix && phoneNumbers.trim() && smsMessage.trim() && (
+                    <div className="border-2 border-red-500 rounded-lg p-4 bg-gradient-to-r from-red-50 to-rose-50">
+                      <div className="flex items-center mb-3">
+                        <div className="bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">5</div>
+                        <Label className="text-lg font-semibold text-red-900">Resumen del Envío</Label>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 border border-red-200">
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                          <div>
+                            <span className="text-gray-600">Ruta:</span>
+                            <p className="font-semibold">{routeType === 'short_code' ? '🚀 Short Code (Sofmex)' : '💰 Long Code (Ankarex)'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">País:</span>
+                            <p className="font-semibold">{prefix === '+52' ? '🇲🇽 México' : prefix === '+1' ? '🇺🇸 USA' : prefix === '+57' ? '🇨🇴 Colombia' : '🇪🇸 España'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Números:</span>
+                            <p className="font-semibold text-blue-600">{phoneNumbers.split(',').filter(n => n.trim()).length} destinatarios</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Costo por SMS:</span>
+                            <p className="font-semibold text-green-600">{routeType === 'short_code' ? '1.0' : '0.5'} créditos</p>
+                          </div>
+                        </div>
+                        <div className="border-t pt-3">
+                          <div className="flex justify-between items-center text-lg">
+                            <span className="font-bold text-gray-800">Total a consumir:</span>
+                            <span className="font-bold text-red-600 text-xl">
+                              {((routeType === 'short_code' ? 1.0 : 0.5) * 
+                                phoneNumbers.split(',').filter(n => n.trim()).length).toFixed(1)} créditos
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <Button 
                     onClick={handleSendSms}
-                    disabled={!phoneNumbers.trim() || !smsMessage.trim() || sendSmsMutation.isPending}
-                    className="w-full"
+                    disabled={sendSmsMutation.isPending || !routeType || !prefix || !phoneNumbers.trim() || !smsMessage.trim()}
+                    className="w-full text-lg py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   >
-                    {sendSmsMutation.isPending ? 'Enviando...' : 'Enviar SMS'}
+                    {sendSmsMutation.isPending ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Enviando SMS...
+                      </div>
+                    ) : (
+                      `🚀 Enviar SMS ${phoneNumbers.trim() ? `(${phoneNumbers.split(',').filter(n => n.trim()).length} números)` : ''}`
+                    )}
                   </Button>
                 </div>
               </DialogContent>

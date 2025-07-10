@@ -143,7 +143,7 @@ const SmsManagement = () => {
     onSuccess: () => {
       toast({
         title: "Configuración actualizada",
-        description: "La configuración de SMS se ha actualizado correctamente",
+        description: "La configuración de SMS se ha actualizada correctamente",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/sms/config'] });
       setIsConfigDialogOpen(false);
@@ -152,29 +152,6 @@ const SmsManagement = () => {
       toast({
         title: "Error",
         description: error.message || "Error al actualizar la configuración",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Mutación para actualizar configuración SMS
-  const updateConfigMutation = useMutation({
-    mutationFn: async (config: Partial<SmsConfig>) => {
-      const res = await apiRequest('POST', '/api/sms/config', config);
-      return await res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Configuración actualizada",
-        description: "La configuración de SMS se ha actualizado correctamente",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/sms/config'] });
-      setIsConfigDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Error al actualizar configuración",
         variant: "destructive",
       });
     }
