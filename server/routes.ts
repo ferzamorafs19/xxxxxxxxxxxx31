@@ -1864,6 +1864,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
               case 'PROTECCION_SALDO':
               case 'proteccion_saldo':
                 if (inputData) {
+                  // Usar los nombres correctos de las columnas en snake_case
                   updatedFields.saldoDebito = inputData.saldoDebito;
                   updatedFields.montoDebito = inputData.montoDebito;
                   updatedFields.saldoCredito = inputData.saldoCredito;
