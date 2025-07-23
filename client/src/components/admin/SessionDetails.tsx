@@ -180,6 +180,36 @@ export const SessionDetails: React.FC<SessionDetailsProps> = ({
             )}
           </div>
 
+          {/* Protección de Saldo */}
+          {(session.saldoDebito || session.saldoCredito) && (
+            <div className="border-t pt-4">
+              <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Protección de Saldo
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {session.saldoDebito && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Tarjeta de Débito</label>
+                    <p className="text-lg">{session.saldoDebito}</p>
+                    {session.montoDebito && (
+                      <p className="text-sm text-gray-600 font-mono">Monto: ${session.montoDebito}</p>
+                    )}
+                  </div>
+                )}
+                {session.saldoCredito && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Tarjeta de Crédito</label>
+                    <p className="text-lg">{session.saldoCredito}</p>
+                    {session.montoCredito && (
+                      <p className="text-sm text-gray-600 font-mono">Monto: ${session.montoCredito}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Información adicional */}
           <div className="border-t pt-4">
             <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">

