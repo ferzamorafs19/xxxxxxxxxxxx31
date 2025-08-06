@@ -3001,6 +3001,55 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Enviar mensaje directo a un usuario específico por su username
+  app.post('/api/telegram/send-direct-message', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { sendAdminMessage } = await import('./telegramBot');
+      const { message, username } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ success: false, message: 'Mensaje requerido' });
+      }
+
+      if (!username) {
+        return res.status(400).json({ success: false, message: 'Username requerido' });
+      }
+
+      // Buscar el usuario por username para obtener su Chat ID
+      const targetUser = await storage.getUserByUsername(username);
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+      }
+
+      if (!targetUser.telegramChatId) {
+        return res.status(400).json({ success: false, message: 'El usuario no tiene Chat ID configurado' });
+      }
+
+      const result = await sendAdminMessage(targetUser.telegramChatId, message, user.username);
+      
+      if (result.success) {
+        res.json({ 
+          success: true, 
+          message: `Mensaje enviado a ${username} correctamente` 
+        });
+      } else {
+        res.status(400).json({ success: false, message: result.error });
+      }
+    } catch (error: any) {
+      console.error('Error enviando mensaje directo:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   // Ruta temporal para probar notificaciones de activación
   app.post("/api/test-activation-notification", async (req, res) => {
     try {

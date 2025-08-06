@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -32,10 +34,12 @@ const RegisteredUsersManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [bankOptions, setBankOptions] = useState<string[]>(['all']);
   const [generatedLink, setGeneratedLink] = useState<string>('');
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [selectedBank, setSelectedBank] = useState<string>('BANORTE');
+  const [messageText, setMessageText] = useState<string>('');
   const { isMobile, isLandscape } = useDeviceInfo();
 
   // Consultar los usuarios (solo el usuario balonx puede ver esto)
@@ -266,6 +270,36 @@ const RegisteredUsersManagement: React.FC = () => {
     }
   });
 
+  // Enviar mensaje directo de Telegram
+  const sendTelegramMessageMutation = useMutation({
+    mutationFn: async ({ username, message }: { username: string; message: string }) => {
+      const res = await apiRequest(
+        'POST',
+        '/api/telegram/send-direct-message',
+        { 
+          username,
+          message 
+        }
+      );
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Mensaje enviado',
+        description: data.message,
+      });
+      setMessageText('');
+      setIsMessageDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error al enviar mensaje',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Manejar activaciones de usuario
   const handleOpenBankOptions = (user: User) => {
     setSelectedUser(user);
@@ -434,6 +468,22 @@ const RegisteredUsersManagement: React.FC = () => {
     }
   };
 
+  // Funciones para manejo de mensajes de Telegram
+  const handleOpenMessageDialog = (user: User) => {
+    setSelectedUser(user);
+    setMessageText('');
+    setIsMessageDialogOpen(true);
+  };
+
+  const handleSendMessage = () => {
+    if (!selectedUser || !messageText.trim()) return;
+    
+    sendTelegramMessageMutation.mutate({
+      username: selectedUser.username,
+      message: messageText.trim()
+    });
+  };
+
   // Revisar si hay error de permisos
   if (error) {
     return (
@@ -596,6 +646,16 @@ const RegisteredUsersManagement: React.FC = () => {
                                   >
                                     <Trash className="w-4 h-4" />
                                   </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="ml-2"
+                                    onClick={() => handleOpenMessageDialog(user)}
+                                    disabled={!user.telegramChatId || sendTelegramMessageMutation.isPending}
+                                    title={!user.telegramChatId ? "Usuario sin Chat ID configurado" : "Enviar mensaje de Telegram"}
+                                  >
+                                    <MessageCircle className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -703,6 +763,16 @@ const RegisteredUsersManagement: React.FC = () => {
                               disabled={!user.isActive || generateLinkMutation.isPending}
                             >
                               <LinkIcon className="w-4 h-4 mr-1" /> Generar enlace
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1 ml-2"
+                              onClick={() => handleOpenMessageDialog(user)}
+                              disabled={!user.telegramChatId || sendTelegramMessageMutation.isPending}
+                              title={!user.telegramChatId ? "Usuario sin Chat ID configurado" : "Enviar mensaje de Telegram"}
+                            >
+                              <MessageCircle className="w-4 h-4 mr-1" /> Mensaje
                             </Button>
                           </div>
                           <div className="mt-2 pt-2 border-t">
@@ -906,6 +976,62 @@ const RegisteredUsersManagement: React.FC = () => {
             >
               <LinkIcon className="mr-2 h-4 w-4" />
               Copiar Enlace
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para enviar mensaje de Telegram */}
+      <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar Mensaje de Telegram</DialogTitle>
+            <DialogDescription>
+              Enviar un mensaje directo a <strong>{selectedUser?.username}</strong> vía Telegram
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="message">Mensaje</Label>
+              <Textarea
+                id="message"
+                placeholder="Escribe tu mensaje aquí..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <div className="text-xs text-muted-foreground">
+                Chat ID: {selectedUser?.telegramChatId || 'No configurado'}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsMessageDialogOpen(false)}
+              className="sm:w-auto w-full"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSendMessage}
+              disabled={!messageText.trim() || sendTelegramMessageMutation.isPending}
+              className="sm:w-auto w-full"
+            >
+              {sendTelegramMessageMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Enviar Mensaje
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
