@@ -441,7 +441,13 @@ export function setupAuth(app: Express) {
         id: u.id,
         username: u.username,
         role: u.role,
-        active: u.isActive,
+        isActive: u.isActive, // Corregido: usar isActive en lugar de active
+        expiresAt: u.expiresAt, // Agregado: fecha de expiración
+        deviceCount: u.deviceCount, // Agregado: conteo de dispositivos
+        maxDevices: u.maxDevices, // Agregado: máximo de dispositivos
+        allowedBanks: u.allowedBanks, // Agregado: bancos permitidos
+        telegramChatId: u.telegramChatId, // Agregado: Chat ID de Telegram
+        createdAt: u.createdAt, // Agregado: fecha de creación
         lastLogin: u.lastLogin
       })));
     } catch (error: any) {
