@@ -48,6 +48,77 @@ const sessionStore = new MemoryStoreSession({
   checkPeriod: 86400000 // Prune expired entries every 24h
 });
 
+// Sistema de control de sesiones concurrentes
+interface ActiveSession {
+  sessionId: string;
+  userId: number;
+  timestamp: number;
+  userAgent?: string;
+}
+
+// Map para rastrear sesiones activas por usuario
+const activeSessions = new Map<number, ActiveSession[]>();
+const MAX_SESSIONS_PER_USER = 2;
+
+// Función para limpiar sesiones de un usuario
+function cleanupUserSessions(userId: number, sessionId?: string) {
+  const userSessions = activeSessions.get(userId) || [];
+  const filteredSessions = sessionId 
+    ? userSessions.filter(session => session.sessionId !== sessionId)
+    : [];
+  
+  if (filteredSessions.length === 0) {
+    activeSessions.delete(userId);
+  } else {
+    activeSessions.set(userId, filteredSessions);
+  }
+}
+
+// Función para agregar sesión activa
+function addActiveSession(userId: number, sessionId: string, userAgent?: string) {
+  const userSessions = activeSessions.get(userId) || [];
+  const newSession: ActiveSession = {
+    sessionId,
+    userId,
+    timestamp: Date.now(),
+    userAgent
+  };
+  
+  userSessions.push(newSession);
+  activeSessions.set(userId, userSessions);
+}
+
+// Función para cerrar sesiones más antiguas
+function closeOldestSessions(userId: number, keepCount: number = MAX_SESSIONS_PER_USER - 1) {
+  const userSessions = activeSessions.get(userId) || [];
+  
+  if (userSessions.length >= MAX_SESSIONS_PER_USER) {
+    // Ordenar por timestamp (más antiguas primero)
+    userSessions.sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Determinar cuántas sesiones cerrar
+    const sessionsToClose = userSessions.length - keepCount;
+    const oldSessions = userSessions.splice(0, sessionsToClose);
+    
+    // Cerrar sesiones en el store
+    oldSessions.forEach(session => {
+      console.log(`[SessionControl] Cerrando sesión antigua ${session.sessionId} del usuario ${userId}`);
+      sessionStore.destroy(session.sessionId, (err) => {
+        if (err) {
+          console.error(`[SessionControl] Error cerrando sesión ${session.sessionId}:`, err);
+        }
+      });
+    });
+    
+    // Actualizar el mapa
+    activeSessions.set(userId, userSessions);
+    
+    return oldSessions.length;
+  }
+  
+  return 0;
+}
+
 // Función para hashear contraseñas
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
@@ -80,6 +151,58 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Middleware para rastrear sesiones activas
+  app.use((req, res, next) => {
+    // Si hay un usuario autenticado y no está registrado en el control de sesiones, agregarlo
+    if (req.isAuthenticated() && req.user) {
+      const user = req.user as Express.User;
+      const sessionId = req.sessionID;
+      const userSessions = activeSessions.get(user.id) || [];
+      
+      // Verificar si esta sesión ya está registrada
+      const sessionExists = userSessions.some(session => session.sessionId === sessionId);
+      if (!sessionExists) {
+        const userAgent = req.get('User-Agent');
+        addActiveSession(user.id, sessionId, userAgent);
+        console.log(`[SessionControl] Sesión existente ${sessionId} agregada al control para usuario ${user.username}`);
+      }
+    }
+    next();
+  });
+
+  // Limpieza periódica de sesiones inválidas cada 5 minutos
+  setInterval(() => {
+    console.log(`[SessionControl] Ejecutando limpieza de sesiones inválidas...`);
+    let cleanedSessions = 0;
+    
+    Array.from(activeSessions.entries()).forEach(([userId, userSessions]) => {
+      const validSessions: ActiveSession[] = [];
+      
+      userSessions.forEach((session) => {
+        // Verificar si la sesión aún existe en el store
+        sessionStore.get(session.sessionId, (err, sessionData) => {
+          if (err || !sessionData) {
+            console.log(`[SessionControl] Sesión inválida ${session.sessionId} removida del usuario ${userId}`);
+            cleanedSessions++;
+          } else {
+            validSessions.push(session);
+          }
+        });
+      });
+      
+      // Actualizar la lista de sesiones válidas
+      if (validSessions.length === 0) {
+        activeSessions.delete(userId);
+      } else if (validSessions.length !== userSessions.length) {
+        activeSessions.set(userId, validSessions);
+      }
+    });
+    
+    if (cleanedSessions > 0) {
+      console.log(`[SessionControl] Limpieza completada: ${cleanedSessions} sesiones inválidas removidas`);
+    }
+  }, 5 * 60 * 1000); // Cada 5 minutos
 
   // Configurar estrategia local (username + password)
   passport.use(
@@ -290,7 +413,10 @@ export function setupAuth(app: Express) {
     
     console.log(`[Auth] Solicitud de cierre de sesión para: ${username}`);
     
-    // Se ha eliminado la lógica de decremento del contador de dispositivos
+    // Limpiar del control de sesiones activas
+    const sessionId = req.sessionID;
+    cleanupUserSessions(user.id, sessionId);
+    console.log(`[SessionControl] Usuario ${username}: Sesión ${sessionId} removida del control. Sesiones restantes: ${activeSessions.get(user.id)?.length || 0}`);
     
     // Cerrar sesión
     req.logout((err) => {
@@ -350,6 +476,20 @@ export function setupAuth(app: Express) {
           console.error(`[Auth] Error en login 2FA para ${username}:`, loginErr);
           return next(loginErr);
         }
+        
+        // Control de sesiones concurrentes
+        const sessionId = req.sessionID;
+        const userAgent = req.get('User-Agent');
+        
+        // Cerrar sesiones más antiguas si excede el límite
+        const closedSessions = closeOldestSessions(user.id);
+        if (closedSessions > 0) {
+          console.log(`[SessionControl] Usuario ${username}: Cerradas ${closedSessions} sesión(es) antigua(s) para permitir nueva sesión`);
+        }
+        
+        // Agregar la nueva sesión
+        addActiveSession(user.id, sessionId, userAgent);
+        console.log(`[SessionControl] Usuario ${username}: Nueva sesión activa ${sessionId}. Total de sesiones: ${activeSessions.get(user.id)?.length || 0}`);
         
         // Limpiar datos temporales
         delete (req.session as any).pendingUser;
@@ -421,6 +561,35 @@ export function setupAuth(app: Express) {
     }
   });
   
+  // Ruta para obtener información de sesiones activas (solo administradores)
+  app.get("/api/sessions/active", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user as Express.User;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    const sessionInfo = Array.from(activeSessions.entries()).map(([userId, sessions]) => ({
+      userId,
+      sessionCount: sessions.length,
+      sessions: sessions.map(session => ({
+        sessionId: session.sessionId,
+        timestamp: session.timestamp,
+        userAgent: session.userAgent,
+        createdAt: new Date(session.timestamp).toISOString()
+      }))
+    }));
+    
+    res.json({
+      totalUsers: sessionInfo.length,
+      maxSessionsPerUser: MAX_SESSIONS_PER_USER,
+      activeSessions: sessionInfo
+    });
+  });
+
   // Ruta para obtener usuarios regulares (solo visible para el usuario "balonx")
   app.get("/api/users/regular", async (req, res) => {
     if (!req.isAuthenticated()) {

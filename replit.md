@@ -164,6 +164,11 @@ Changelog:
 - July 10, 2025. Implemented automatic session cleanup: sessions without user data are automatically deleted after 10 minutes
 - July 10, 2025. Enhanced cleanup system with dual time intervals: 10 minutes for sessions without data, 30 minutes for inactive sessions with data
 - July 10, 2025. Reduced cleanup interval to every 2 minutes for faster removal of empty sessions
+- August 7, 2025. Implemented concurrent session control: users limited to 2 active sessions maximum
+- August 7, 2025. Added automatic session management: oldest sessions are closed when limit is exceeded
+- August 7, 2025. Created session tracking system with user agent information and timestamps
+- August 7, 2025. Added periodic cleanup of invalid sessions (every 5 minutes)
+- August 7, 2025. Implemented admin API endpoint (/api/sessions/active) for monitoring active sessions
 ```
 
 ## User Preferences
