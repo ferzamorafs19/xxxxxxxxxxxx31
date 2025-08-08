@@ -747,6 +747,18 @@ export default function AdminPanel() {
             <SubscriptionInfo />
           </div>
 
+          {/* Mensaje de Soporte Técnico */}
+          <div className="mb-3 p-3 bg-blue-900/30 border border-blue-700/50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-blue-400" />
+              <span className="text-sm font-medium text-blue-200">Soporte Técnico y Suscripciones:</span>
+            </div>
+            <p className="text-sm text-blue-100 mt-1">
+              Para soporte técnico o gestión de suscripciones, comunícate por Telegram con{' '}
+              <span className="font-semibold text-blue-300">@BalonxSistema</span>
+            </p>
+          </div>
+
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 md:gap-0">
             <div>
               <p className="text-[#00aaff]">Panel / Accesos</p>

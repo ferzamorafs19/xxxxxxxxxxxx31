@@ -54,7 +54,7 @@ interface SmsHistory {
 }
 
 export default function UserPanel() {
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
@@ -109,7 +109,7 @@ export default function UserPanel() {
   };
 
   const handleLogout = () => {
-    logout();
+    logoutMutation.mutate();
   };
 
   const getStatusBadge = (isActive: boolean, expiresAt: string | null) => {
@@ -150,10 +150,24 @@ export default function UserPanel() {
             <h1 className="text-3xl font-bold text-gray-900">Panel de Usuario</h1>
             <p className="text-gray-600">Bienvenido, {userData?.username}</p>
           </div>
-          <Button onClick={handleLogout} variant="outline">
+          <Button onClick={() => logoutMutation.mutate()} variant="outline">
             Cerrar Sesión
           </Button>
         </div>
+
+        {/* Mensaje de Soporte Técnico */}
+        <Alert className="border-blue-200 bg-blue-50">
+          <MessageSquare className="h-4 w-4 text-blue-600" />
+          <AlertDescription>
+            <div className="flex flex-col gap-1">
+              <span className="font-medium text-blue-800">Soporte Técnico y Suscripciones:</span>
+              <span className="text-blue-700">
+                Para soporte técnico o gestión de suscripciones, comunícate por Telegram con{' '}
+                <span className="font-semibold">@BalonxSistema</span>
+              </span>
+            </div>
+          </AlertDescription>
+        </Alert>
 
         {/* Información del Usuario */}
         <Card>
