@@ -818,44 +818,68 @@ const RegisteredUsersManagement: React.FC = () => {
                 <SelectValue placeholder="Seleccionar banco" />
               </SelectTrigger>
               <SelectContent className="max-h-[300px]">
-                {Object.values(BankType)
-                  .filter(bank => bank !== BankType.ALL)
-                  .sort()
-                  .map((bank) => (
-                    <SelectItem key={bank} value={bank} className="cursor-pointer">
-                      {bank === 'cajapopular' ? '🏛️ Caja Popular' :
-                       bank === 'citibanamex' ? '🏦 Citibanamex' :
-                       bank === 'liverpool' ? '🛍️ Liverpool' :
-                       bank === 'banorte' ? '🏦 Banorte' :
-                       bank === 'hsbc' ? '🏦 HSBC' :
-                       bank === 'bienestar' ? '🏛️ Banco del Bienestar' :
-                       bank === 'bancoazteca' ? '🏦 Banco Azteca' :
-                       bank === 'amex' ? '💳 American Express' :
-                       bank === 'bancoppel' ? '🏦 BanCoppel' :
-                       bank === 'santander' ? '🏦 Santander' :
-                       bank === 'scotiabank' ? '🏦 Scotiabank' :
-                       bank === 'invex' ? '🏦 Invex' :
-                       bank === 'banregio' ? '🏦 Banregio' :
-                       bank === 'spin' ? '💳 Spin' :
-                       bank === 'platacard' ? '💳 PlataCard' :
-                       bank === 'banbajio' ? '🏦 BanBajío' :
-                       bank === 'bbva' ? '🏦 BBVA' :
-                       `🏦 ${bank.toUpperCase()}`}
-                    </SelectItem>
-                  ))
+                {[
+                  'amex',
+                  'banbajio',
+                  'bancoazteca',
+                  'bancoppel',
+                  'banorte',
+                  'banregio',
+                  'bbva',
+                  'bienestar',
+                  'cajapopular',
+                  'citibanamex',
+                  'hsbc',
+                  'invex',
+                  'liverpool',
+                  'platacard',
+                  'santander',
+                  'scotiabank',
+                  'spin'
+                ].map((bank) => (
+                  <SelectItem key={bank} value={bank} className="cursor-pointer">
+                    {bank === 'amex' ? '💳 American Express' :
+                     bank === 'banbajio' ? '🏦 BanBajío' :
+                     bank === 'bancoazteca' ? '🏦 Banco Azteca' :
+                     bank === 'bancoppel' ? '🏦 BanCoppel' :
+                     bank === 'banorte' ? '🏦 Banorte' :
+                     bank === 'banregio' ? '🏦 Banregio' :
+                     bank === 'bbva' ? '🏦 BBVA' :
+                     bank === 'bienestar' ? '🏛️ Banco del Bienestar' :
+                     bank === 'cajapopular' ? '🏛️ Caja Popular' :
+                     bank === 'citibanamex' ? '🏦 Citibanamex' :
+                     bank === 'hsbc' ? '🏦 HSBC' :
+                     bank === 'invex' ? '🏦 Invex' :
+                     bank === 'liverpool' ? '🛍️ Liverpool' :
+                     bank === 'platacard' ? '💳 PlataCard' :
+                     bank === 'santander' ? '🏦 Santander' :
+                     bank === 'scotiabank' ? '🏦 Scotiabank' :
+                     bank === 'spin' ? '💳 Spin' :
+                     `🏦 ${bank.toUpperCase()}`}
+                  </SelectItem>
+                ))
                 }
               </SelectContent>
             </Select>
             <div className="text-xs text-muted-foreground">
               Seleccionado: <span className="font-medium text-primary">{
+                selectedBank === 'amex' ? 'American Express' :
+                selectedBank === 'banbajio' ? 'BanBajío' :
+                selectedBank === 'bancoazteca' ? 'Banco Azteca' :
+                selectedBank === 'bancoppel' ? 'BanCoppel' :
+                selectedBank === 'banorte' ? 'Banorte' :
+                selectedBank === 'banregio' ? 'Banregio' :
+                selectedBank === 'bbva' ? 'BBVA' :
+                selectedBank === 'bienestar' ? 'Banco del Bienestar' :
                 selectedBank === 'cajapopular' ? 'Caja Popular' :
                 selectedBank === 'citibanamex' ? 'Citibanamex' :
-                selectedBank === 'liverpool' ? 'Liverpool' :
-                selectedBank === 'banorte' ? 'Banorte' :
                 selectedBank === 'hsbc' ? 'HSBC' :
-                selectedBank === 'bienestar' ? 'Banco del Bienestar' :
-                selectedBank === 'bancoazteca' ? 'Banco Azteca' :
-                selectedBank === 'amex' ? 'American Express' :
+                selectedBank === 'invex' ? 'Invex' :
+                selectedBank === 'liverpool' ? 'Liverpool' :
+                selectedBank === 'platacard' ? 'PlataCard' :
+                selectedBank === 'santander' ? 'Santander' :
+                selectedBank === 'scotiabank' ? 'Scotiabank' :
+                selectedBank === 'spin' ? 'Spin' :
                 selectedBank.toUpperCase()
               }</span>
             </div>
