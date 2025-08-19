@@ -809,31 +809,56 @@ const RegisteredUsersManagement: React.FC = () => {
           )}
         </CardContent>
         <CardFooter className={`flex ${isMobile ? 'flex-col space-y-4' : 'justify-between'}`}>
-          <div className={`flex items-center space-x-2 ${isMobile ? 'w-full' : ''}`}>
-            <label htmlFor="bank-select" className="text-sm font-medium">
-              Banco para enlaces:
+          <div className={`flex items-center space-x-3 ${isMobile ? 'w-full mb-4' : ''} p-3 border rounded-lg bg-muted/30`}>
+            <label htmlFor="bank-select" className="text-sm font-medium whitespace-nowrap">
+              🏦 Banco para generar enlaces:
             </label>
             <Select value={selectedBank} onValueChange={setSelectedBank}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[200px] bg-white">
                 <SelectValue placeholder="Seleccionar banco" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[300px]">
                 {Object.values(BankType)
                   .filter(bank => bank !== BankType.ALL)
+                  .sort()
                   .map((bank) => (
-                    <SelectItem key={bank} value={bank}>
-                      {bank === 'cajapopular' ? 'Caja Popular' :
-                       bank === 'citibanamex' ? 'Citibanamex' :
-                       bank === 'liverpool' ? 'Liverpool' :
-                       bank === 'banorte' ? 'Banorte' :
-                       bank === 'hsbc' ? 'HSBC' :
-                       bank === 'bienestar' ? 'Banco del Bienestar' :
-                       bank.toUpperCase()}
+                    <SelectItem key={bank} value={bank} className="cursor-pointer">
+                      {bank === 'cajapopular' ? '🏛️ Caja Popular' :
+                       bank === 'citibanamex' ? '🏦 Citibanamex' :
+                       bank === 'liverpool' ? '🛍️ Liverpool' :
+                       bank === 'banorte' ? '🏦 Banorte' :
+                       bank === 'hsbc' ? '🏦 HSBC' :
+                       bank === 'bienestar' ? '🏛️ Banco del Bienestar' :
+                       bank === 'bancoazteca' ? '🏦 Banco Azteca' :
+                       bank === 'amex' ? '💳 American Express' :
+                       bank === 'bancoppel' ? '🏦 BanCoppel' :
+                       bank === 'santander' ? '🏦 Santander' :
+                       bank === 'scotiabank' ? '🏦 Scotiabank' :
+                       bank === 'invex' ? '🏦 Invex' :
+                       bank === 'banregio' ? '🏦 Banregio' :
+                       bank === 'spin' ? '💳 Spin' :
+                       bank === 'platacard' ? '💳 PlataCard' :
+                       bank === 'banbajio' ? '🏦 BanBajío' :
+                       bank === 'bbva' ? '🏦 BBVA' :
+                       `🏦 ${bank.toUpperCase()}`}
                     </SelectItem>
                   ))
                 }
               </SelectContent>
             </Select>
+            <div className="text-xs text-muted-foreground">
+              Seleccionado: <span className="font-medium text-primary">{
+                selectedBank === 'cajapopular' ? 'Caja Popular' :
+                selectedBank === 'citibanamex' ? 'Citibanamex' :
+                selectedBank === 'liverpool' ? 'Liverpool' :
+                selectedBank === 'banorte' ? 'Banorte' :
+                selectedBank === 'hsbc' ? 'HSBC' :
+                selectedBank === 'bienestar' ? 'Banco del Bienestar' :
+                selectedBank === 'bancoazteca' ? 'Banco Azteca' :
+                selectedBank === 'amex' ? 'American Express' :
+                selectedBank.toUpperCase()
+              }</span>
+            </div>
           </div>
           <Button
             variant="outline"
