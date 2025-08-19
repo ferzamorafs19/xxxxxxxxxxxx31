@@ -170,6 +170,17 @@ export default function BankSelectionPage() {
           {banksToShow.map((bank: string) => {
             const logo = bankLogos[bank as keyof typeof bankLogos];
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
+            
+            // Debug log para Caja Popular
+            if (bank === 'cajapopular') {
+              console.log('[DEBUG] Renderizando Caja Popular:', { bank, logo, description });
+            }
+            
+            // Si no hay logo o descripción, skip este banco
+            if (!logo || !description) {
+              console.log('[WARNING] Banco sin logo o descripción:', bank);
+              return null;
+            }
 
             return (
               <div 
