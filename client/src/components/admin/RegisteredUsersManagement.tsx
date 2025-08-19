@@ -27,6 +27,7 @@ interface User {
   createdAt: string | null;
   lastLogin: string | null;
   allowedBanks?: string;
+  telegramChatId?: string;
 }
 
 const RegisteredUsersManagement: React.FC = () => {
