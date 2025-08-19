@@ -904,7 +904,26 @@ const RegisteredUsersManagement: React.FC = () => {
                       }`}
                       onClick={() => handleBankOptionChange(bank)}
                     >
-                      <span className="capitalize">{bank}</span>
+                      <span className="capitalize">
+                        {bank === 'cajapopular' ? 'Caja Popular' :
+                         bank === 'citibanamex' ? 'Citibanamex' :
+                         bank === 'liverpool' ? 'Liverpool' :
+                         bank === 'banorte' ? 'Banorte' :
+                         bank === 'hsbc' ? 'HSBC' :
+                         bank === 'bienestar' ? 'Banco del Bienestar' :
+                         bank === 'bancoazteca' ? 'Banco Azteca' :
+                         bank === 'amex' ? 'American Express' :
+                         bank === 'bancoppel' ? 'BanCoppel' :
+                         bank === 'santander' ? 'Santander' :
+                         bank === 'scotiabank' ? 'Scotiabank' :
+                         bank === 'invex' ? 'Invex' :
+                         bank === 'banregio' ? 'Banregio' :
+                         bank === 'spin' ? 'Spin' :
+                         bank === 'platacard' ? 'PlataCard' :
+                         bank === 'banbajio' ? 'BanBajío' :
+                         bank === 'bbva' ? 'BBVA' :
+                         bank.toUpperCase()}
+                      </span>
                     </div>
                   ))}
               </div>
@@ -918,7 +937,15 @@ const RegisteredUsersManagement: React.FC = () => {
                 ) : (
                   <p>{bankOptions.map(bank => (
                     <span key={bank} className="inline-block bg-primary/20 rounded px-2 py-1 mr-1 mb-1 capitalize">
-                      {bank}
+                      {bank === 'cajapopular' ? 'Caja Popular' :
+                       bank === 'citibanamex' ? 'Citibanamex' :
+                       bank === 'liverpool' ? 'Liverpool' :
+                       bank === 'banorte' ? 'Banorte' :
+                       bank === 'hsbc' ? 'HSBC' :
+                       bank === 'bienestar' ? 'Banco del Bienestar' :
+                       bank === 'bancoazteca' ? 'Banco Azteca' :
+                       bank === 'amex' ? 'American Express' :
+                       bank.toUpperCase()}
                     </span>
                   ))}</p>
                 )}
