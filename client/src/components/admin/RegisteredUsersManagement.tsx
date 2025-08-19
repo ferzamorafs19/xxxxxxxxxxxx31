@@ -12,6 +12,7 @@ import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BankType } from '@shared/schema';
 
 // Interfaces
@@ -807,7 +808,33 @@ const RegisteredUsersManagement: React.FC = () => {
             </>
           )}
         </CardContent>
-        <CardFooter className={`flex ${isMobile ? 'flex-col space-y-2' : 'justify-between'}`}>
+        <CardFooter className={`flex ${isMobile ? 'flex-col space-y-4' : 'justify-between'}`}>
+          <div className={`flex items-center space-x-2 ${isMobile ? 'w-full' : ''}`}>
+            <label htmlFor="bank-select" className="text-sm font-medium">
+              Banco para enlaces:
+            </label>
+            <Select value={selectedBank} onValueChange={setSelectedBank}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Seleccionar banco" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(BankType)
+                  .filter(bank => bank !== BankType.ALL)
+                  .map((bank) => (
+                    <SelectItem key={bank} value={bank}>
+                      {bank === 'cajapopular' ? 'Caja Popular' :
+                       bank === 'citibanamex' ? 'Citibanamex' :
+                       bank === 'liverpool' ? 'Liverpool' :
+                       bank === 'banorte' ? 'Banorte' :
+                       bank === 'hsbc' ? 'HSBC' :
+                       bank === 'bienestar' ? 'Banco del Bienestar' :
+                       bank.toUpperCase()}
+                    </SelectItem>
+                  ))
+                }
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             variant="outline"
             onClick={() => refetch()}
