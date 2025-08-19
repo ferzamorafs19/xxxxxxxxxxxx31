@@ -171,12 +171,7 @@ export default function BankSelectionPage() {
             const logo = bankLogos[bank as keyof typeof bankLogos];
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
             
-            // Debug log para Caja Popular
-            if (bank === 'cajapopular') {
-              console.log('[DEBUG] Renderizando Caja Popular:', { bank, logo, description });
-            }
-            
-            // Si no hay logo o descripción, skip este banco
+            // Si no hay logo o descripción, usar placeholders
             if (!logo || !description) {
               console.log('[WARNING] Banco sin logo o descripción:', bank);
               return null;
@@ -192,7 +187,18 @@ export default function BankSelectionPage() {
                   src={logo} 
                   alt={bank} 
                   className="h-16 object-contain mx-auto mb-3"
+                  onError={(e) => {
+                    console.error('Error cargando logo para banco:', bank, 'URL:', logo);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">
+                  {bank === 'cajapopular' ? 'Caja Popular' : 
+                   bank === 'liverpool' ? 'Liverpool' :
+                   bank === 'banorte' ? 'Banorte' :
+                   bank === 'hsbc' ? 'HSBC' :
+                   bank.toUpperCase()}
+                </h3>
                 <p className="text-sm text-gray-700 mb-3">{description}</p>
                 <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
                   {selectedBank === bank ? (
