@@ -172,13 +172,27 @@ export default function BankSelectionPage() {
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
 
             return (
-              <div key={bank} className="bg-white rounded-lg shadow-md w-64 text-center p-5">
+              <div 
+                key={bank} 
+                className="bg-white rounded-lg shadow-md w-64 text-center p-5 cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleBankSelection(bank as BankType)}
+              >
                 <img 
                   src={logo} 
                   alt={bank} 
                   className="h-16 object-contain mx-auto mb-3"
                 />
-                <p className="text-sm text-gray-700">{description}</p>
+                <p className="text-sm text-gray-700 mb-3">{description}</p>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
+                  {selectedBank === bank ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                      Generando...
+                    </>
+                  ) : (
+                    'Seleccionar'
+                  )}
+                </button>
               </div>
             );
           })}
