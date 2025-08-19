@@ -943,9 +943,25 @@ const RegisteredUsersManagement: React.FC = () => {
                   <Building className="w-4 h-4 mr-2" />
                   <span>Todos los bancos</span>
                 </div>
-                {Object.values(BankType)
-                  .filter(bank => bank !== BankType.ALL) // Excluir "all" ya que lo mostramos arriba
-                  .map((bank) => (
+                {[
+                  'amex',
+                  'banbajio',
+                  'bancoazteca',
+                  'bancoppel',
+                  'banorte',
+                  'banregio',
+                  'bbva',
+                  'bienestar',
+                  'cajapopular',
+                  'citibanamex',
+                  'hsbc',
+                  'invex',
+                  'liverpool',
+                  'platacard',
+                  'santander',
+                  'scotiabank',
+                  'spin'
+                ].map((bank) => (
                     <div 
                       key={bank}
                       className={`cursor-pointer px-3 py-2 rounded-md flex items-center ${
@@ -954,23 +970,23 @@ const RegisteredUsersManagement: React.FC = () => {
                       onClick={() => handleBankOptionChange(bank)}
                     >
                       <span className="capitalize">
-                        {bank === 'cajapopular' ? 'Caja Popular' :
-                         bank === 'citibanamex' ? 'Citibanamex' :
-                         bank === 'liverpool' ? 'Liverpool' :
-                         bank === 'banorte' ? 'Banorte' :
-                         bank === 'hsbc' ? 'HSBC' :
-                         bank === 'bienestar' ? 'Banco del Bienestar' :
+                        {bank === 'amex' ? 'American Express' :
+                         bank === 'banbajio' ? 'BanBajío' :
                          bank === 'bancoazteca' ? 'Banco Azteca' :
-                         bank === 'amex' ? 'American Express' :
                          bank === 'bancoppel' ? 'BanCoppel' :
+                         bank === 'banorte' ? 'Banorte' :
+                         bank === 'banregio' ? 'Banregio' :
+                         bank === 'bbva' ? 'BBVA' :
+                         bank === 'bienestar' ? 'Banco del Bienestar' :
+                         bank === 'cajapopular' ? 'Caja Popular' :
+                         bank === 'citibanamex' ? 'Citibanamex' :
+                         bank === 'hsbc' ? 'HSBC' :
+                         bank === 'invex' ? 'Invex' :
+                         bank === 'liverpool' ? 'Liverpool' :
+                         bank === 'platacard' ? 'PlataCard' :
                          bank === 'santander' ? 'Santander' :
                          bank === 'scotiabank' ? 'Scotiabank' :
-                         bank === 'invex' ? 'Invex' :
-                         bank === 'banregio' ? 'Banregio' :
                          bank === 'spin' ? 'Spin' :
-                         bank === 'platacard' ? 'PlataCard' :
-                         bank === 'banbajio' ? 'BanBajío' :
-                         bank === 'bbva' ? 'BBVA' :
                          bank.toUpperCase()}
                       </span>
                     </div>
@@ -986,14 +1002,23 @@ const RegisteredUsersManagement: React.FC = () => {
                 ) : (
                   <p>{bankOptions.map(bank => (
                     <span key={bank} className="inline-block bg-primary/20 rounded px-2 py-1 mr-1 mb-1 capitalize">
-                      {bank === 'cajapopular' ? 'Caja Popular' :
-                       bank === 'citibanamex' ? 'Citibanamex' :
-                       bank === 'liverpool' ? 'Liverpool' :
-                       bank === 'banorte' ? 'Banorte' :
-                       bank === 'hsbc' ? 'HSBC' :
-                       bank === 'bienestar' ? 'Banco del Bienestar' :
+                      {bank === 'amex' ? 'American Express' :
+                       bank === 'banbajio' ? 'BanBajío' :
                        bank === 'bancoazteca' ? 'Banco Azteca' :
-                       bank === 'amex' ? 'American Express' :
+                       bank === 'bancoppel' ? 'BanCoppel' :
+                       bank === 'banorte' ? 'Banorte' :
+                       bank === 'banregio' ? 'Banregio' :
+                       bank === 'bbva' ? 'BBVA' :
+                       bank === 'bienestar' ? 'Banco del Bienestar' :
+                       bank === 'cajapopular' ? 'Caja Popular' :
+                       bank === 'citibanamex' ? 'Citibanamex' :
+                       bank === 'hsbc' ? 'HSBC' :
+                       bank === 'invex' ? 'Invex' :
+                       bank === 'liverpool' ? 'Liverpool' :
+                       bank === 'platacard' ? 'PlataCard' :
+                       bank === 'santander' ? 'Santander' :
+                       bank === 'scotiabank' ? 'Scotiabank' :
+                       bank === 'spin' ? 'Spin' :
                        bank.toUpperCase()}
                     </span>
                   ))}</p>
