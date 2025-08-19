@@ -28,6 +28,7 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 import bancoAztecaLogo from '../assets/banco_azteca_logo.png';
 import bienestarLogo from '../assets/banco_bienestar_logo.png';
+import cajaPopularLogo from '../assets/caja_popular_logo.png';
 
 export default function ClientScreen() {
   // Verificar primero la ruta /client/:sessionId

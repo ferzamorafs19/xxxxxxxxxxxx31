@@ -14,6 +14,7 @@ import invexLogo from '@assets/Invex.png';
 import bancoppelLogo from '@assets/bancoppel.png';
 import scotiaLogo from '@assets/Skotia.png';
 import amexLogo from '@assets/Amex.png';
+import cajaPopularLogo from '../../assets/caja_popular_logo.png';
 
 interface QRScannerProps {
   onScanSuccess: (qrData: string, qrImageData?: string) => void;
@@ -51,6 +52,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         return scotiaLogo;
       case BankType.AMEX:
         return amexLogo;
+      case BankType.CAJAPOPULAR:
+        return cajaPopularLogo;
       default:
         // Si no es Plata Card, no debemos mostrar el logo de Plata Card en QR Scanner
         return "";
@@ -78,6 +81,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         return "bg-red-600 hover:bg-red-700";
       case BankType.AMEX:
         return "bg-blue-600 hover:bg-blue-700";
+      case BankType.CAJAPOPULAR:
+        return "bg-green-600 hover:bg-green-700";
       default:
         return "bg-orange-500 hover:bg-orange-600";
     }
@@ -102,6 +107,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         return "bg-yellow-500 text-black";
       case BankType.SCOTIABANK:
         return "bg-red-600 text-white";
+      case BankType.CAJAPOPULAR:
+        return "bg-green-600 text-white";
       case BankType.AMEX:
         return "bg-blue-600 text-white";
       default:

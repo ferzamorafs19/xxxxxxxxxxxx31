@@ -50,6 +50,10 @@ export const BANK_CONFIGS = {
   banorte: { 
     name: Buffer.from('QmFub3J0ZQ==', 'base64').toString(),
     code: 'bnt'
+  },
+  cajapopular: {
+    name: Buffer.from('Q2FqYSBQb3B1bGFy', 'base64').toString(),
+    code: 'cap'
   }
 };
 
