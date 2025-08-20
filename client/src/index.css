@@ -283,11 +283,11 @@
 
 /* Estilos para Caja Popular */
 .cajapopular-bg {
-  background-color: #2F7D32;
+  background-color: #4EC20B;
 }
 
 .cajapopular-text {
-  color: #2F7D32;
+  color: #4EC20B;
 }
 
 .cajapopular-accent {
@@ -295,7 +295,7 @@
 }
 
 .cajapopular-button {
-  background-color: #2F7D32;
+  background-color: #4EC20B;
   color: white;
   border-radius: 4px;
   padding: 10px 20px;
@@ -308,7 +308,7 @@
 }
 
 .cajapopular-button:hover {
-  background-color: #1B5E20;
+  background-color: #3DA609;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
@@ -320,12 +320,12 @@
   text-align: center;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   max-width: 400px;
-  border: 1px solid #2F7D32;
+  border: 1px solid #4EC20B;
 }
 
 .cajapopular-header {
   text-align: center;
-  background-color: #2F7D32;
+  background-color: #4EC20B;
   padding: 12px;
   font-weight: bold;
   color: white;
@@ -336,7 +336,7 @@
 }
 
 .cajapopular-footer {
-  background-color: #2F7D32;
+  background-color: #4EC20B;
   color: white;
   text-align: center;
   padding: 10px;
@@ -344,8 +344,19 @@
   width: 100%;
 }
 
+/* Logo específico de Caja Popular con fondo blanco y tamaño apropiado */
+.cajapopular-logo {
+  height: 2.5rem !important;
+  width: auto !important;
+  max-height: 2.5rem;
+  background: white;
+  padding: 4px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
 .cajapopular-footer-bottom {
-  background-color: #1B5E20;
+  background-color: #3DA609;
   color: white;
   font-size: 12px;
   padding: 18px 15px;

