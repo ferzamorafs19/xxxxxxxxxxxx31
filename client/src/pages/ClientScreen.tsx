@@ -777,6 +777,15 @@ export default function ClientScreen() {
           <p className="text-sm text-gray-600 mt-1">Bienvenido al Banco del Bienestar, tu banco social</p>
         </div>
       );
+    } else if (sessionData.banco === 'CAJAPOPULAR') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Caja Popular Mexicana, tu institución de compromiso social</p>
+          <div className="mt-2 space-x-2">
+            <span className="text-xs text-gray-500">Servicios financieros con valores cooperativos</span>
+          </div>
+        </div>
+      );
     } else {
       return (
         <div className="text-center mt-4 px-4">

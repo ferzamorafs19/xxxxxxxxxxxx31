@@ -655,6 +655,12 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 note: 'Generado desde la app Scotia Móvil más PIN de seguridad de 4 dígitos.',
                 requiresPin: true
               };
+            case 'CAJAPOPULAR':
+              return { 
+                digits: 8, 
+                note: 'Código generado desde la app móvil Caja Popular más PIN de seguridad de 4 dígitos.',
+                requiresPin: true
+              };
             default:
               return { 
                 digits: 8, 
