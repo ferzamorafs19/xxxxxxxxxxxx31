@@ -274,7 +274,7 @@ const RegisteredUsersManagement: React.FC = () => {
                           <div className="flex items-center space-x-1">
                             <Clock className={`h-4 w-4 ${isUserExpired(user) ? 'text-red-500' : isUserExpiringSoon(user) ? 'text-yellow-500' : 'text-green-500'}`} />
                             <span className={isUserExpired(user) ? 'text-red-600 font-medium' : isUserExpiringSoon(user) ? 'text-yellow-600 font-medium' : ''}>
-                              {formatDate(user.expiresAt)}
+                              {formatDate(new Date(user.expiresAt))}
                             </span>
                           </div>
                         ) : (
