@@ -19,7 +19,7 @@ import scotiaLogoPath from '@assets/Skotia.png';
 import amexLogoPath from '@assets/Amex.png';
 import bancoAztecaLogoPath from '@assets/Banco_Azteca_Logo.png';
 import bienestarLogoPath from '@assets/Logo_Banco_del_Bienestar.png';
-import cajaPopularLogoPath from '../assets/caja_popular_logo.png';
+import cajaPopularLogoPath from '@assets/caja-popular-mexicana-seeklogo_1755713724358.png';
 
 // Definir mapa de logos
 const bankLogos: Record<string, string> = {

