@@ -76,8 +76,15 @@ export default function BankSelectionPage() {
 
   console.log('[BankSelection] Respuesta de bancos permitidos:', allowedBanksData);
 
-  // Determinar qué bancos mostrar
+  // Determinar qué bancos mostrar - TEMPORALMENTE mostrando todos para debugging
   const banksToShow = useMemo(() => {
+    console.log('[BankSelection] Forzando mostrar todos los bancos para debugging');
+    const allBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL);
+    console.log('[BankSelection] Todos los bancos (incluye CAJAPOPULAR):', allBanks);
+    return allBanks;
+    
+    // Lógica original comentada para debugging:
+    /*
     if (!user) {
       console.log('[BankSelection] No hay usuario, mostrando todos los bancos');
       // Para usuarios no autenticados, mostrar todos los bancos disponibles
@@ -94,10 +101,12 @@ export default function BankSelectionPage() {
     console.log('[BankSelection] Bancos permitidos del servidor:', allowed);
 
     return allowed;
+    */
   }, [user, allowedBanksData]);
 
   console.log('[BankSelection] Bancos a mostrar:', banksToShow);
   console.log('[BankSelection] Usuario actual:', user);
+  console.log('[BankSelection] Todos los bancos disponibles:', Object.values(BankType));
 
   const [selectedBank, setSelectedBank] = useState<BankType | null>(null);
   const [, setLocation] = useLocation();
