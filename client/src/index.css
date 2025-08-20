@@ -286,6 +286,11 @@
   background-color: #4EC20B;
 }
 
+/* Animación de barra de progreso específica para Caja Popular */
+.cajapopular-bg.animate-progress-bar {
+  background: linear-gradient(to right, #4EC20B, #5FD61C);
+}
+
 .cajapopular-text {
   color: #4EC20B;
 }

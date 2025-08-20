@@ -467,6 +467,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href={
@@ -495,6 +496,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href={
@@ -523,6 +525,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href={
@@ -551,6 +554,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -570,6 +574,7 @@ export default function ClientScreen() {
             sessionData.banco === 'PLATACARD' ? 'bg-[#333333]' :
             sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
             sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
+            sessionData.banco === 'CAJAPOPULAR' ? 'bg-[#4EC20B]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">

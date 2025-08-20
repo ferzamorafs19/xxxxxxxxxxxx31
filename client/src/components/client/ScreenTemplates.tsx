@@ -548,6 +548,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 bankCode === 'SANTANDER' ? 'santander-bg' :
                 bankCode === 'SCOTIABANK' ? 'scotiabank-bg' :
                 bankCode === 'INVEX' ? 'invex-bg' :
+                bankCode === 'CAJAPOPULAR' ? 'cajapopular-bg' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
