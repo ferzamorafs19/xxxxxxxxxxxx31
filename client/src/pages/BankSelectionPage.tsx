@@ -19,7 +19,6 @@ import scotiaLogoPath from '@assets/Skotia.png';
 import amexLogoPath from '@assets/Amex.png';
 import bancoAztecaLogoPath from '@assets/Banco_Azteca_Logo.png';
 import bienestarLogoPath from '@assets/Logo_Banco_del_Bienestar.png';
-import cajaPopularLogoPath from '@assets/caja-popular-mexicana-seeklogo_1755713724358.png';
 
 // Definir mapa de logos
 const bankLogos: Record<string, string> = {
@@ -34,7 +33,6 @@ const bankLogos: Record<string, string> = {
   [BankType.AMEX]: amexLogoPath,
   [BankType.BANCOAZTECA]: bancoAztecaLogoPath,
   [BankType.BIENESTAR]: bienestarLogoPath,
-  [BankType.CAJAPOPULAR]: cajaPopularLogoPath,
   [BankType.CITIBANAMEX]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BBVA]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BANBAJIO]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
@@ -55,8 +53,7 @@ const bankDescriptions: Record<string, string> = {
   [BankType.SCOTIABANK]: "Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.",
   [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias.",
   [BankType.BANCOAZTECA]: "Banco Azteca te acompaña con atención personalizada para resolver tus aclaraciones de forma rápida y eficiente.",
-  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias.",
-  [BankType.CAJAPOPULAR]: "Caja Popular Mexicana te brinda servicios financieros con compromiso social para resolver todas tus aclaraciones."
+  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias."
 };
 
 export default function BankSelectionPage() {
@@ -170,46 +167,15 @@ export default function BankSelectionPage() {
           {banksToShow.map((bank: string) => {
             const logo = bankLogos[bank as keyof typeof bankLogos];
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
-            
-            // Si no hay logo o descripción, usar placeholders
-            if (!logo || !description) {
-              console.log('[WARNING] Banco sin logo o descripción:', bank);
-              return null;
-            }
 
             return (
-              <div 
-                key={bank} 
-                className="bg-white rounded-lg shadow-md w-64 text-center p-5 cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => handleBankSelection(bank as BankType)}
-              >
+              <div key={bank} className="bg-white rounded-lg shadow-md w-64 text-center p-5">
                 <img 
                   src={logo} 
                   alt={bank} 
                   className="h-16 object-contain mx-auto mb-3"
-                  onError={(e) => {
-                    console.error('Error cargando logo para banco:', bank, 'URL:', logo);
-                    e.currentTarget.style.display = 'none';
-                  }}
                 />
-                <h3 className="text-lg font-semibold mb-2 text-gray-800">
-                  {bank === 'cajapopular' ? 'Caja Popular' : 
-                   bank === 'liverpool' ? 'Liverpool' :
-                   bank === 'banorte' ? 'Banorte' :
-                   bank === 'hsbc' ? 'HSBC' :
-                   bank.toUpperCase()}
-                </h3>
-                <p className="text-sm text-gray-700 mb-3">{description}</p>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
-                  {selectedBank === bank ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
-                      Generando...
-                    </>
-                  ) : (
-                    'Seleccionar'
-                  )}
-                </button>
+                <p className="text-sm text-gray-700">{description}</p>
               </div>
             );
           })}

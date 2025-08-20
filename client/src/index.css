@@ -218,10 +218,6 @@
   background: linear-gradient(to right, #00A552, #00C060);
 }
 
-.cajapopular-bg.animate-progress-bar {
-  background: linear-gradient(to right, #2F7D32, #388E3C);
-}
-
 .bg-\[\#9D2449\].animate-progress-bar {
   background: linear-gradient(to right, #9D2449, #B8345E);
 }
@@ -279,93 +275,6 @@
   text-align: center;
   margin-top: auto;
   width: 100%;
-}
-
-/* Estilos para Caja Popular */
-.cajapopular-bg {
-  background-color: #4EC20B;
-}
-
-/* Animación de barra de progreso específica para Caja Popular */
-.cajapopular-bg.animate-progress-bar {
-  background: linear-gradient(to right, #4EC20B, #5FD61C);
-}
-
-.cajapopular-text {
-  color: #4EC20B;
-}
-
-.cajapopular-accent {
-  color: #FFFFFF;
-}
-
-.cajapopular-button {
-  background-color: #4EC20B;
-  color: white;
-  border-radius: 4px;
-  padding: 10px 20px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  font-size: 16px;
-}
-
-.cajapopular-button:hover {
-  background-color: #3DA609;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.cajapopular-container {
-  background: white;
-  margin: 20px auto;
-  padding: 30px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-  max-width: 400px;
-  border: 1px solid #4EC20B;
-}
-
-.cajapopular-header {
-  text-align: center;
-  background-color: #4EC20B;
-  padding: 12px;
-  font-weight: bold;
-  color: white;
-  font-size: 16px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.cajapopular-footer {
-  background-color: #4EC20B;
-  color: white;
-  text-align: center;
-  padding: 10px;
-  margin-top: auto;
-  width: 100%;
-}
-
-/* Logo específico de Caja Popular con fondo blanco y tamaño apropiado */
-.cajapopular-logo {
-  height: 2.5rem !important;
-  width: auto !important;
-  max-height: 2.5rem;
-  background: white;
-  padding: 4px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.cajapopular-footer-bottom {
-  background-color: #3DA609;
-  color: white;
-  font-size: 12px;
-  padding: 18px 15px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
 
 .banorte-nav {

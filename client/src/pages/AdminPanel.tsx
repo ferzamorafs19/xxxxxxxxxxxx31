@@ -255,8 +255,8 @@ export default function AdminPanel() {
   
   // Redirigir a usuarios regulares si intentan acceder a pestañas restringidas por URL
   useEffect(() => {
-    // Solo usuarios no admin son redirigidos de pestañas de administración
-    if (!isAdmin && (activeTab === 'users' || activeTab === 'registered')) {
+    // Verificamos si estamos en pestañas restringidas
+    if (!isSuperAdmin && (activeTab === 'users' || activeTab === 'registered')) {
       setActiveTab('current');
     }
     
@@ -264,7 +264,7 @@ export default function AdminPanel() {
     if (user?.role !== 'admin' && activeTab === 'qr') {
       setActiveTab('current');
     }
-  }, [activeTab, isAdmin, user?.role]);
+  }, [activeTab, isSuperAdmin, user?.role]);
 
   // Efecto para cargar las sesiones (solo se ejecuta al cambiar la pestaña)
   useEffect(() => {
@@ -734,7 +734,7 @@ export default function AdminPanel() {
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as 'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages')}
+        onTabChange={(tab) => setActiveTab(tab as 'current' | 'saved' | 'users' | 'registered' | 'sms')}
         isAdmin={isAdmin}
         isSuperAdmin={isSuperAdmin}
       />
@@ -877,7 +877,6 @@ export default function AdminPanel() {
                 <option value="PLATACARD">PLATACARD</option>
                 <option value="BANCO_AZTECA">BANCO AZTECA</option>
                 <option value="BIENESTAR">BANCO BIENESTAR</option>
-                <option value="CAJAPOPULAR">CAJA POPULAR</option>
               </>
             ) : (
               <>

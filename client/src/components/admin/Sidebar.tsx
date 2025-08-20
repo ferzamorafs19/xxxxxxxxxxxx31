@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
             Accesos Guardados
           </button>
           
-          {isAdmin && (
+          {isSuperAdmin && (
             <>
               <button 
                 onClick={() => handleTabChange('registered')}
