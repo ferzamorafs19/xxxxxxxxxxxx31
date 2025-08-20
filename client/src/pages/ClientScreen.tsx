@@ -452,7 +452,7 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/' :
               sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/' :
               sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop/' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -482,7 +482,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/contacto' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/ayuda/' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/centro-de-ayuda' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/contacto' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop/contacto' :
               'https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -511,7 +511,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/aviso-de-privacidad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/contenido/terminos.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/aviso-de-privacidad' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/terminos' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop/terminos-de-uso-para-redes-sociales' :
               'https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -540,7 +540,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/seguridad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/seguridad.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/seguridad' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cajapopularmexicana.mx/seguridad' :
+              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop/politica-de-privacidad' :
               'https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -640,6 +640,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.facebook.com/SpinByOxxo' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.facebook.com/BancoAzteca' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.facebook.com/BBienestarMX' :
+                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.facebook.com/CajaPopularMexicana' :
                 'https://www.facebook.com/BanorteOficial'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
               <a href={
@@ -656,6 +657,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.youtube.com/channel/UC6LuKC5QzmY2V4qVbJYJavw' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.youtube.com/user/bancoaztecaoficial' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.youtube.com/@BBienestarMX' :
+                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.youtube.com/@CajaPopularMexicana' :
                 'https://www.youtube.com/user/GFBanorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Youtube</a>
             </div>
