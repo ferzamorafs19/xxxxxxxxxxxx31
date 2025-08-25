@@ -82,7 +82,7 @@ export default function ClientScreen() {
     }, 2000);
     
     return () => clearTimeout(connectingTimer);
-  }, []);
+  }, [currentScreen, sessionData.pasoActual]);
   
   // Register with the server when connection is established
   useEffect(() => {
