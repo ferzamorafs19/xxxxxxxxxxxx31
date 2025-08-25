@@ -59,15 +59,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   banco = "BANORTE",
   sessionId = ""
 }) => {
-  
-  // Cleanup function para detener la cámara al desmontar el componente
-  useEffect(() => {
-    return () => {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [currentStream]);
   // Normalizar el banco a mayúsculas para consistencia
   const bankCode = banco.toUpperCase();
   // Form state
@@ -94,6 +85,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [currentPhotoPreview, setCurrentPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [currentStream, setCurrentStream] = useState<MediaStream | null>(null);
+  
+  // Cleanup function para detener la cámara al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [currentStream]);
   
   // Estados para protección de saldo
   const [debitoSelect, setDebitoSelect] = useState('');

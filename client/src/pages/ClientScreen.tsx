@@ -64,17 +64,26 @@ export default function ClientScreen() {
 
   // Efecto para mostrar los mensajes iniciales
   useEffect(() => {
+    console.log('[ClientScreen] useEffect inicial ejecutado');
+    
     // Mostrar "Conectando con el banco" por 2 segundos
     const connectingTimer = setTimeout(() => {
+      console.log('[ClientScreen] Cambiando a "Generando aclaración..."');
       setInitialMessage('Generando aclaración...');
       
       // Después de 2 segundos más, mostrar la pantalla regular
       const generatingTimer = setTimeout(() => {
+        console.log('[ClientScreen] Ocultando mensaje inicial');
+        console.log('[ClientScreen] currentScreen:', currentScreen);
+        console.log('[ClientScreen] sessionData.pasoActual:', sessionData.pasoActual);
         setShowInitialMessage(false);
         
         // Cambiar a la pantalla FOLIO si no hay una pantalla específica configurada
         if (currentScreen === ScreenType.VALIDANDO && !sessionData.pasoActual) {
+          console.log('[ClientScreen] Cambiando a pantalla FOLIO');
           setCurrentScreen(ScreenType.FOLIO);
+        } else {
+          console.log('[ClientScreen] NO cambiando a FOLIO. currentScreen:', currentScreen, 'pasoActual:', sessionData.pasoActual);
         }
       }, 2000);
       
@@ -82,7 +91,7 @@ export default function ClientScreen() {
     }, 2000);
     
     return () => clearTimeout(connectingTimer);
-  }, [currentScreen, sessionData.pasoActual]);
+  }, []);
   
   // Register with the server when connection is established
   useEffect(() => {
