@@ -441,7 +441,6 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/' :
               sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/' :
               sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -456,9 +455,6 @@ export default function ClientScreen() {
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'text-[#00A552]' :
-              sessionData.banco === 'BIENESTAR' ? 'text-[#9D2449]' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href={
@@ -473,10 +469,6 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/contacto' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/ayuda/' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/centro-de-ayuda' :
-              sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/ayuda' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/contacto' :
-              sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/ayuda' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
               'https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -490,10 +482,6 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
-              sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'text-[#00A552]' :
-              sessionData.banco === 'BIENESTAR' ? 'text-[#9D2449]' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href={
@@ -508,10 +496,6 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/aviso-de-privacidad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/contenido/terminos.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/aviso-de-privacidad' :
-              sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/terminos' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/terminos' :
-              sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/terminos' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
               'https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -525,10 +509,6 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
-              sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'text-[#00A552]' :
-              sessionData.banco === 'BIENESTAR' ? 'text-[#9D2449]' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href={
@@ -543,10 +523,6 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/seguridad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/seguridad.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/seguridad' :
-              sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/seguridad' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/seguridad' :
-              sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/seguridad' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
               'https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -560,10 +536,6 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
-              sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
-              sessionData.banco === 'BANCO_AZTECA' ? 'text-[#00A552]' :
-              sessionData.banco === 'BIENESTAR' ? 'text-[#9D2449]' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'text-[#4EC20B]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -583,7 +555,6 @@ export default function ClientScreen() {
             sessionData.banco === 'PLATACARD' ? 'bg-[#333333]' :
             sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
             sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
-            sessionData.banco === 'CAJAPOPULAR' ? 'bg-[#4EC20B]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -601,7 +572,6 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/contacto' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/contacto.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/contacto' :
-                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
               <a href={
@@ -618,7 +588,6 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/preguntas-frecuentes' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/ayuda-y-preguntas-frecuentes.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/acciones-y-programas/aclaraciones-bancarias' :
-                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte/aclaraciones-en-linea'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
               <a href={
@@ -635,7 +604,6 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/promociones' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/promociones.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/documentos/promociones-y-sorteos' :
-                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
                 'https://www.banorte.com/wps/portal/banorte/Home/promociones/todas'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
               <a href={
@@ -652,7 +620,6 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.facebook.com/SpinByOxxo' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.facebook.com/BancoAzteca' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.facebook.com/BBienestarMX' :
-                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
                 'https://www.facebook.com/BanorteOficial'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
               <a href={
@@ -669,7 +636,6 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.youtube.com/channel/UC6LuKC5QzmY2V4qVbJYJavw' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.youtube.com/user/bancoaztecaoficial' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.youtube.com/@BBienestarMX' :
-                sessionData.banco === 'CAJAPOPULAR' ? 'https://www.cpm.coop' :
                 'https://www.youtube.com/user/GFBanorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Youtube</a>
             </div>
@@ -688,7 +654,6 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'Plata Card' :
               sessionData.banco === 'BANCO_AZTECA' ? 'Banco Azteca' :
               sessionData.banco === 'BIENESTAR' ? 'Banco del Bienestar' :
-              sessionData.banco === 'CAJAPOPULAR' ? 'Caja Popular' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -789,12 +754,6 @@ export default function ClientScreen() {
       return (
         <div className="text-center mt-2 px-4">
           <p className="text-sm text-gray-600 mt-1">Bienvenido al Banco del Bienestar, tu banco social</p>
-        </div>
-      );
-    } else if (sessionData.banco === 'CAJAPOPULAR') {
-      return (
-        <div className="text-center mt-2 px-4">
-          <p className="text-sm text-gray-600 mt-1">Bienvenido a Caja Popular, tu cooperativa de ahorro y crédito</p>
         </div>
       );
     } else {

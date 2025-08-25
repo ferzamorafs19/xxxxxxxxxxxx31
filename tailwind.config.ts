@@ -61,14 +61,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Banco-specific colors
-        cajapopular: {
-          DEFAULT: "#4EC20B",
-          foreground: "#ffffff",
-          bg: "#4EC20B",
-          light: "#6FD22D",
-          dark: "#3BA308"
-        },
       },
       keyframes: {
         "accordion-down": {

@@ -808,65 +808,36 @@ const RegisteredUsersManagement: React.FC = () => {
           )}
         </CardContent>
         <CardFooter className={`flex ${isMobile ? 'flex-col space-y-2' : 'justify-between'}`}>
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className={isMobile ? 'w-full' : ''}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cargando...
-                </>
-              ) : (
-                'Actualizar'
-              )}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleCleanupExpiredUsers}
-              disabled={cleanupExpiredUsersMutation.isPending}
-              className={isMobile ? 'w-full' : ''}
-            >
-              {cleanupExpiredUsersMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Limpiando...
-                </>
-              ) : (
-                'Limpiar usuarios expirados'
-              )}
-            </Button>
-          </div>
-          
-          {/* Sección para generar enlaces */}
-          <div className="flex flex-col gap-2">
-            <div className="text-sm font-medium text-muted-foreground">Generar Liga Activa</div>
-            <div className="flex gap-2 flex-wrap">
-              {Object.values(BankType)
-                .filter(bank => bank !== BankType.ALL)
-                .map((bank) => (
-                  <Button
-                    key={bank}
-                    variant={selectedBank === bank.toUpperCase() ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setSelectedBank(bank.toUpperCase());
-                      generateLinkMutation.mutate(bank.toUpperCase());
-                    }}
-                    disabled={generateLinkMutation.isPending}
-                    className="capitalize"
-                  >
-                    {generateLinkMutation.isPending && selectedBank === bank.toUpperCase() ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : null}
-                    {bank}
-                  </Button>
-                ))}
-            </div>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className={isMobile ? 'w-full' : ''}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Cargando...
+              </>
+            ) : (
+              'Actualizar'
+            )}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleCleanupExpiredUsers}
+            disabled={cleanupExpiredUsersMutation.isPending}
+            className={isMobile ? 'w-full' : ''}
+          >
+            {cleanupExpiredUsersMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Limpiando...
+              </>
+            ) : (
+              'Limpiar usuarios expirados'
+            )}
+          </Button>
         </CardFooter>
       </Card>
 
