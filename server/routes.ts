@@ -1115,8 +1115,26 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       // Si es el superadmin "balonx", puede ver todos los bancos sin importar su configuración
       if (user.username === "balonx") {
         console.log('[API] Usuario es superadmin (balonx), devolviendo lista completa independientemente de su configuración');
-        // Devolver todos los valores de BankType excepto 'all'
-        allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
+        // Devolver todos los valores de BankType excepto 'all' en orden específico
+        allowedBanks = [
+          BankType.LIVERPOOL,
+          BankType.CITIBANAMEX,
+          BankType.BANBAJIO,
+          BankType.BBVA,
+          BankType.BANORTE,
+          BankType.BANCOPPEL,
+          BankType.HSBC,
+          BankType.AMEX,
+          BankType.SANTANDER,
+          BankType.SCOTIABANK,
+          BankType.INVEX,
+          BankType.BANREGIO,
+          BankType.SPIN,
+          BankType.PLATACARD,
+          BankType.BANCOAZTECA,
+          BankType.BIENESTAR,
+          BankType.CAJAPOPULAR
+        ] as string[];
       } 
       // Si es administrador pero no es balonx, verificar sus restricciones específicas de bancos
       else if (user.role === UserRole.ADMIN) {
@@ -1126,7 +1144,25 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         // Verificar si tiene valor 'all' o bancos específicos
         if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
           console.log('[API] Admin tiene permiso para todos los bancos (all)');
-          allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
+          allowedBanks = [
+            BankType.LIVERPOOL,
+            BankType.CITIBANAMEX,
+            BankType.BANBAJIO,
+            BankType.BBVA,
+            BankType.BANORTE,
+            BankType.BANCOPPEL,
+            BankType.HSBC,
+            BankType.AMEX,
+            BankType.SANTANDER,
+            BankType.SCOTIABANK,
+            BankType.INVEX,
+            BankType.BANREGIO,
+            BankType.SPIN,
+            BankType.PLATACARD,
+            BankType.BANCOAZTECA,
+            BankType.BIENESTAR,
+            BankType.CAJAPOPULAR
+          ] as string[];
         } else if (userBanks && userBanks !== '') {
           console.log(`[API] Admin tiene bancos específicos: ${userBanks}`);
           // Dividir la cadena por comas y procesar
@@ -1143,8 +1179,26 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       // Si el usuario tiene "all" explícitamente asignado, mostrar todos los bancos
       else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
         console.log('[API] Usuario tiene todos los bancos permitidos (all), devolviendo lista completa');
-        // Devolver todos los valores de BankType excepto 'all'
-        allowedBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL) as string[];
+        // Devolver todos los valores de BankType excepto 'all' en orden específico
+        allowedBanks = [
+          BankType.LIVERPOOL,
+          BankType.CITIBANAMEX,
+          BankType.BANBAJIO,
+          BankType.BBVA,
+          BankType.BANORTE,
+          BankType.BANCOPPEL,
+          BankType.HSBC,
+          BankType.AMEX,
+          BankType.SANTANDER,
+          BankType.SCOTIABANK,
+          BankType.INVEX,
+          BankType.BANREGIO,
+          BankType.SPIN,
+          BankType.PLATACARD,
+          BankType.BANCOAZTECA,
+          BankType.BIENESTAR,
+          BankType.CAJAPOPULAR
+        ] as string[];
       } 
       // Si tiene bancos específicos permitidos (lista separada por comas)
       else if (userBanks && userBanks !== '') {
