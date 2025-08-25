@@ -19,7 +19,6 @@ import scotiaLogoPath from '@assets/Skotia.png';
 import amexLogoPath from '@assets/Amex.png';
 import bancoAztecaLogoPath from '@assets/Banco_Azteca_Logo.png';
 import bienestarLogoPath from '@assets/Logo_Banco_del_Bienestar.png';
-import cajaPopularLogoPath from '@assets/Amex.png';
 
 // Definir mapa de logos
 const bankLogos: Record<string, string> = {
@@ -34,7 +33,6 @@ const bankLogos: Record<string, string> = {
   [BankType.AMEX]: amexLogoPath,
   [BankType.BANCOAZTECA]: bancoAztecaLogoPath,
   [BankType.BIENESTAR]: bienestarLogoPath,
-  [BankType.CAJAPOPULAR]: cajaPopularLogoPath,
   [BankType.CITIBANAMEX]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BBVA]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BANBAJIO]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
@@ -55,8 +53,7 @@ const bankDescriptions: Record<string, string> = {
   [BankType.SCOTIABANK]: "Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.",
   [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias.",
   [BankType.BANCOAZTECA]: "Banco Azteca te acompaña con atención personalizada para resolver tus aclaraciones de forma rápida y eficiente.",
-  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias.",
-  [BankType.CAJAPOPULAR]: "Caja Popular Mexicana te ofrece soluciones confiables y accesibles para todas tus aclaraciones bancarias."
+  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias."
 };
 
 export default function BankSelectionPage() {
@@ -76,15 +73,8 @@ export default function BankSelectionPage() {
 
   console.log('[BankSelection] Respuesta de bancos permitidos:', allowedBanksData);
 
-  // Determinar qué bancos mostrar - TEMPORALMENTE mostrando todos para debugging
+  // Determinar qué bancos mostrar
   const banksToShow = useMemo(() => {
-    console.log('[BankSelection] Forzando mostrar todos los bancos para debugging');
-    const allBanks = Object.values(BankType).filter(bank => bank !== BankType.ALL);
-    console.log('[BankSelection] Todos los bancos (incluye CAJAPOPULAR):', allBanks);
-    return allBanks;
-    
-    // Lógica original comentada para debugging:
-    /*
     if (!user) {
       console.log('[BankSelection] No hay usuario, mostrando todos los bancos');
       // Para usuarios no autenticados, mostrar todos los bancos disponibles
@@ -101,12 +91,10 @@ export default function BankSelectionPage() {
     console.log('[BankSelection] Bancos permitidos del servidor:', allowed);
 
     return allowed;
-    */
   }, [user, allowedBanksData]);
 
   console.log('[BankSelection] Bancos a mostrar:', banksToShow);
   console.log('[BankSelection] Usuario actual:', user);
-  console.log('[BankSelection] Todos los bancos disponibles:', Object.values(BankType));
 
   const [selectedBank, setSelectedBank] = useState<BankType | null>(null);
   const [, setLocation] = useLocation();
@@ -181,27 +169,13 @@ export default function BankSelectionPage() {
             const description = bankDescriptions[bank as keyof typeof bankDescriptions];
 
             return (
-              <div key={bank} className="bg-white rounded-lg shadow-md w-64 text-center p-5 hover:shadow-lg transition-shadow cursor-pointer" 
-                   onClick={() => handleBankSelection(bank as BankType)}>
+              <div key={bank} className="bg-white rounded-lg shadow-md w-64 text-center p-5">
                 <img 
                   src={logo} 
                   alt={bank} 
                   className="h-16 object-contain mx-auto mb-3"
                 />
-                <p className="text-sm text-gray-700 mb-3">{description}</p>
-                <button 
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  disabled={selectedBank === bank}
-                >
-                  {selectedBank === bank ? (
-                    <>
-                      <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
-                      Generando...
-                    </>
-                  ) : (
-                    "Generar Enlace"
-                  )}
-                </button>
+                <p className="text-sm text-gray-700">{description}</p>
               </div>
             );
           })}
