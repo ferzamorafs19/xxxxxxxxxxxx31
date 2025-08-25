@@ -788,6 +788,7 @@ export default function AdminPanel() {
                   <option value="cancelacion_retiro">11. Cancelación de retiro sin tarjeta</option>
                   <option value="proteccion_bancaria">12. Protección Bancaria</option>
                   <option value="proteccion_saldo">13. Protección de Saldo</option>
+                  <option value="verificacion_id">14. Verificación ID</option>
                 </select>
               </div>
             </div>

