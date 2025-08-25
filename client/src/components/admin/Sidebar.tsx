@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Menu, X, QrCode, Bot, Send } from 'lucide-react';
-import balonxLogo from '../../assets/balonx_logo.png';
+import balonxLogo from '@assets/balonx_1756163316921.jpg';
 
 interface SidebarProps {
   activeTab: string;
