@@ -1021,9 +1021,9 @@ export default function AdminPanel() {
         ) : activeTab === 'identity' && user?.role === 'admin' ? (
           <IdentityVerificationPanel />
         ) : (
-          <div className="flex flex-col lg:flex-row gap-4 h-full">
+          <div className="flex flex-col gap-4 h-full">
             {/* Session List */}
-            <div className={`${selectedSessionId ? 'lg:w-1/2' : 'w-full'} transition-all duration-300`}>
+            <div className="w-full">
               <AccessTable 
                 sessions={sessions}
                 activeBank={activeBank}
@@ -1033,9 +1033,9 @@ export default function AdminPanel() {
               />
             </div>
             
-            {/* Session Details */}
+            {/* Session Details - Aparece debajo de la lista */}
             {selectedSessionId && (
-              <div className="lg:w-1/2 overflow-y-auto max-h-[calc(100vh-200px)]">
+              <div className="w-full overflow-y-auto max-h-[calc(100vh-300px)] border-t pt-4">
                 {(() => {
                   const selectedSession = sessions.find(s => s.sessionId === selectedSessionId);
                   return selectedSession ? (
