@@ -19,6 +19,7 @@ import scotiaLogoPath from '@assets/Skotia.png';
 import amexLogoPath from '@assets/Amex.png';
 import bancoAztecaLogoPath from '@assets/Banco_Azteca_Logo.png';
 import bienestarLogoPath from '@assets/Logo_Banco_del_Bienestar.png';
+import cajaPopularLogoPath from '@assets/Amex.png';
 
 // Definir mapa de logos
 const bankLogos: Record<string, string> = {
@@ -33,6 +34,7 @@ const bankLogos: Record<string, string> = {
   [BankType.AMEX]: amexLogoPath,
   [BankType.BANCOAZTECA]: bancoAztecaLogoPath,
   [BankType.BIENESTAR]: bienestarLogoPath,
+  [BankType.CAJAPOPULAR]: cajaPopularLogoPath,
   [BankType.CITIBANAMEX]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BBVA]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BANBAJIO]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
@@ -53,7 +55,8 @@ const bankDescriptions: Record<string, string> = {
   [BankType.SCOTIABANK]: "Scotiabank está siempre a tu disposición para atender tus dudas y aclaraciones bancarias.",
   [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias.",
   [BankType.BANCOAZTECA]: "Banco Azteca te acompaña con atención personalizada para resolver tus aclaraciones de forma rápida y eficiente.",
-  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias."
+  [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias.",
+  [BankType.CAJAPOPULAR]: "Caja Popular Mexicana te brinda atención personalizada y eficiente para resolver todas tus aclaraciones bancarias."
 };
 
 export default function BankSelectionPage() {
