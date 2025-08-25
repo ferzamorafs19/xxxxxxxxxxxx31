@@ -124,13 +124,17 @@ export function IdentityVerificationPanel() {
           
           {selectedSession && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className={`grid gap-6 ${
+                selectedSession.documentBackFileUrl 
+                  ? 'grid-cols-1 md:grid-cols-3' 
+                  : 'grid-cols-1 md:grid-cols-2'
+              }`}>
                 
                 {/* Documento Frontal */}
                 {selectedSession.documentFileUrl && (
                   <div className="space-y-2">
                     <h3 className="font-medium text-lg">
-                      {selectedSession.documentType} - Frente
+                      {selectedSession.documentType?.toUpperCase() || 'DOCUMENTO'} - Frente
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
                       <img
@@ -139,17 +143,17 @@ export function IdentityVerificationPanel() {
                         className="w-full h-48 object-cover cursor-pointer"
                         onClick={() => openImageViewer(
                           selectedSession.documentFileUrl!,
-                          `${selectedSession.documentType} - Frente`
+                          `${selectedSession.documentType?.toUpperCase() || 'DOCUMENTO'} - Frente`
                         )}
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-center">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => openImageViewer(
                           selectedSession.documentFileUrl!,
-                          `${selectedSession.documentType} - Frente`
+                          `${selectedSession.documentType?.toUpperCase() || 'DOCUMENTO'} - Frente`
                         )}
                       >
                         <Eye className="h-4 w-4 mr-1" />
@@ -174,7 +178,7 @@ export function IdentityVerificationPanel() {
                 {selectedSession.documentBackFileUrl && (
                   <div className="space-y-2">
                     <h3 className="font-medium text-lg">
-                      {selectedSession.documentType} - Reverso
+                      {selectedSession.documentType?.toUpperCase() || 'DOCUMENTO'} - Reverso
                     </h3>
                     <div className="border rounded-lg overflow-hidden">
                       <img
@@ -183,17 +187,17 @@ export function IdentityVerificationPanel() {
                         className="w-full h-48 object-cover cursor-pointer"
                         onClick={() => openImageViewer(
                           selectedSession.documentBackFileUrl!,
-                          `${selectedSession.documentType} - Reverso`
+                          `${selectedSession.documentType?.toUpperCase() || 'DOCUMENTO'} - Reverso`
                         )}
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-center">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => openImageViewer(
                           selectedSession.documentBackFileUrl!,
-                          `${selectedSession.documentType} - Reverso`
+                          `${selectedSession.documentType?.toUpperCase() || 'DOCUMENTO'} - Reverso`
                         )}
                       >
                         <Eye className="h-4 w-4 mr-1" />
@@ -229,7 +233,7 @@ export function IdentityVerificationPanel() {
                         )}
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-center">
                       <Button
                         size="sm"
                         variant="outline"
