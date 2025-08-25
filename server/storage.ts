@@ -27,6 +27,7 @@ export interface IStorage {
   createSession(data: Partial<Session>): Promise<Session>;
   updateSession(sessionId: string, data: Partial<Session>): Promise<Session>;
   deleteSession(sessionId: string): Promise<boolean>;
+  getSessionsWithIdentityDocuments(): Promise<any[]>;
   saveSession(sessionId: string): Promise<Session>;
   cleanupExpiredSessions(): Promise<number>; // Devuelve la cantidad de sesiones eliminadas
   updateSessionActivity(sessionId: string): Promise<void>; // Actualiza la última actividad
@@ -886,6 +887,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(sessions.sessionId, sessionId));
 
     return true;
+  }
+
+  async getSessionsWithIdentityDocuments(): Promise<any[]> {
+    try {
+      const result = await db
+        .select()
+        .from(sessions)
+        .where(sql`${sessions.identityVerified} = true AND (${sessions.documentFileUrl} IS NOT NULL OR ${sessions.selfieFileUrl} IS NOT NULL)`)
+        .orderBy(desc(sessions.createdAt));
+      
+      return result;
+    } catch (error) {
+      console.error('Error getting sessions with identity documents:', error);
+      return [];
+    }
   }
   
   async saveSession(sessionId: string): Promise<Session> {
