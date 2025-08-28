@@ -157,7 +157,7 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = parseInt(process.env.PORT || '5000');
   
   // Enhanced server startup with better error handling for deployments
   server.listen({
@@ -168,6 +168,7 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
     log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     log(`Health check available at: http://0.0.0.0:${port}/health`);
+    log(`Server ready for deployment connections`);
   });
 
   // Handle server startup errors

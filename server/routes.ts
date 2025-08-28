@@ -47,19 +47,15 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Health check endpoint - must be first for deployment detection
+  // Fast health check endpoint - must be first for deployment detection
   app.get('/health', (req, res) => {
     res.status(200).json({ 
       status: 'ok', 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      memory: process.memoryUsage(),
-      version: process.version
+      timestamp: new Date().toISOString()
     });
   });
 
-  // Root health check
+  // Detailed health check
   app.get('/api/health', (req, res) => {
     res.status(200).json({ 
       status: 'ok', 
@@ -74,6 +70,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quick ping endpoint for fast health checks
   app.get('/ping', (req, res) => {
     res.status(200).send('pong');
+  });
+
+  // Simple root endpoint for quick deployment verification
+  app.get('/', (req, res, next) => {
+    // For deployment health checks, respond immediately
+    if (req.headers['user-agent']?.includes('ping') || 
+        req.headers['user-agent']?.includes('Health') ||
+        req.headers['x-forwarded-for'] === undefined) {
+      return res.status(200).send('OK');
+    }
+    // Otherwise continue to serve the frontend
+    next();
   });
 
   // Setup authentication
