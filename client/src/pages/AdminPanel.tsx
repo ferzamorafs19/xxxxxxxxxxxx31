@@ -971,12 +971,13 @@ export default function AdminPanel() {
             
           </div>
           
-          <select 
-            id="filtroBanco" 
-            className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
-            value={activeBank}
-            onChange={(e) => setActiveBank(e.target.value)}
-          >
+          <div className="flex flex-col md:flex-row gap-4 md:items-center">
+            <select 
+              id="filtroBanco" 
+              className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
+              value={activeBank}
+              onChange={(e) => setActiveBank(e.target.value)}
+            >
             {user?.allowedBanks === 'all' || user?.role === 'admin' ? (
               <>
                 <option value="todos">Todos los bancos</option>
@@ -1007,6 +1008,18 @@ export default function AdminPanel() {
               </>
             )}
           </select>
+          {clientCode && (
+            <div className="mt-2 md:mt-0">
+              <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
+                activeBank === 'BANBAJIO' 
+                  ? 'text-white bg-[#4D2C91]' 
+                  : 'text-green-400 bg-[#1a3e1a]'
+              }`}>
+                Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
+              </span>
+            </div>
+          )}
+          </div>
         </div>
 
         {/* User Info & Logout */}
