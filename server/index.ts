@@ -57,7 +57,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configurar CORS para permitir diferentes dominios
+// Configurar CORS para permitir diferentes dominios y subdominios
 app.use((req, res, next) => {
   const allowedOrigins = [
     process.env.ADMIN_DOMAIN || 'https://panel.aclaracionbancaria.pro',
@@ -65,7 +65,25 @@ app.use((req, res, next) => {
   ];
 
   const origin = req.headers.origin;
+  
+  // Permitir origen exacto o subdominios de dominios personalizados
+  let allowOrigin = false;
   if (origin && allowedOrigins.includes(origin)) {
+    allowOrigin = true;
+  } else if (origin) {
+    // Verificar si es un subdominio válido (banco.dominio.com)
+    const originUrl = new URL(origin);
+    const hostParts = originUrl.hostname.split('.');
+    if (hostParts.length >= 3) {
+      const subdomain = hostParts[0].toLowerCase();
+      const validBanks = ['liverpool', 'citibanamex', 'banbajio', 'bbva', 'banorte', 'bancoppel', 'hsbc', 'amex', 'santander', 'scotiabank', 'invex', 'banregio', 'spin', 'platacard', 'bancoazteca', 'bienestar'];
+      if (validBanks.includes(subdomain)) {
+        allowOrigin = true;
+      }
+    }
+  }
+
+  if (allowOrigin && origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
 

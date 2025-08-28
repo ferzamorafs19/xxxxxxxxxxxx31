@@ -56,6 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Servir archivos APK de protección desde attached_assets
   app.use('/assets', expressStatic(path.join(process.cwd(), 'attached_assets')));
 
+
   // Create HTTP server
   const httpServer = createServer(app);
 
