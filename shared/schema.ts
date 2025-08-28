@@ -106,26 +106,6 @@ export const insertDeviceSchema = createInsertSchema(devices).pick({
 export type InsertDevice = z.infer<typeof insertDeviceSchema>;
 export type Device = typeof devices.$inferSelect;
 
-// Tabla para dominios configurables
-export const customDomains = pgTable("custom_domains", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(), // Nombre descriptivo del dominio
-  domain: text("domain").notNull(), // El dominio completo ej: "banco.digitalaclaraciones.info"
-  isActive: boolean("is_active").default(true),
-  createdBy: integer("created_by").notNull(), // ID del admin que lo creó
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertCustomDomainSchema = createInsertSchema(customDomains).pick({
-  name: true,
-  domain: true,
-  isActive: true,
-  createdBy: true,
-});
-
-export type InsertCustomDomain = z.infer<typeof insertCustomDomainSchema>;
-export type CustomDomain = typeof customDomains.$inferSelect;
-
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull().unique(),
