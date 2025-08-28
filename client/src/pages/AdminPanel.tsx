@@ -969,6 +969,19 @@ export default function AdminPanel() {
               )}
             </div>
             
+            {/* Código debajo de dominios disponibles */}
+            {clientCode && (
+              <div className="mt-4">
+                <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
+                  activeBank === 'BANBAJIO' 
+                    ? 'text-white bg-[#4D2C91]' 
+                    : 'text-green-400 bg-[#1a3e1a]'
+                }`}>
+                  Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
+                </span>
+              </div>
+            )}
+            
           </div>
           
           <div className="flex flex-col md:flex-row gap-4 md:items-center">
@@ -1008,17 +1021,6 @@ export default function AdminPanel() {
               </>
             )}
           </select>
-          {clientCode && (
-            <div className="mt-2 md:mt-0">
-              <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
-                activeBank === 'BANBAJIO' 
-                  ? 'text-white bg-[#4D2C91]' 
-                  : 'text-green-400 bg-[#1a3e1a]'
-              }`}>
-                Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
-              </span>
-            </div>
-          )}
           </div>
         </div>
 
