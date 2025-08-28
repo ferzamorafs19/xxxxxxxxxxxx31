@@ -932,6 +932,47 @@ export default function AdminPanel() {
               </button>
             </div>
             
+            {/* Selector de bancos arriba de dominios disponibles */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
+              <span className="font-semibold">Banco:</span>
+              <select 
+                id="filtroBanco" 
+                className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
+                value={activeBank}
+                onChange={(e) => setActiveBank(e.target.value)}
+              >
+              {user?.allowedBanks === 'all' || user?.role === 'admin' ? (
+                <>
+                  <option value="todos">Todos los bancos</option>
+                  <option value="LIVERPOOL">LIVERPOOL</option>
+                  <option value="CITIBANAMEX">CITIBANAMEX</option>
+                  <option value="BANBAJIO">BANBAJIO</option>
+                  <option value="BANCOPPEL">BANCOPPEL</option>
+                  <option value="BANORTE">BANORTE</option>
+                  <option value="BBVA">BBVA</option>
+                  <option value="HSBC">HSBC</option>
+                  <option value="AMEX">AMEX</option>
+                  <option value="SANTANDER">SANTANDER</option>
+                  <option value="SCOTIABANK">SCOTIABANK</option>
+                  <option value="INVEX">INVEX</option>
+                  <option value="BANREGIO">BANREGIO</option>
+                  <option value="SPIN">SPIN</option>
+                  <option value="PLATACARD">PLATACARD</option>
+                  <option value="BANCO_AZTECA">BANCO AZTECA</option>
+                  <option value="BIENESTAR">BANCO BIENESTAR</option>
+                </>
+              ) : (
+                <>
+                  {user?.allowedBanks?.split(',').map(bank => (
+                    <option key={bank} value={bank}>
+                      {bank.toUpperCase()}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+            </div>
+            
             <div className="flex flex-col md:flex-row md:items-center gap-2">
               <span className="font-semibold">Dominios disponibles:</span>
               <div className="flex items-center gap-2">
@@ -975,44 +1016,6 @@ export default function AdminPanel() {
             
           </div>
           
-          <div className="flex flex-col md:flex-row gap-4 md:items-center">
-            <select 
-              id="filtroBanco" 
-              className="bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-full md:w-auto"
-              value={activeBank}
-              onChange={(e) => setActiveBank(e.target.value)}
-            >
-            {user?.allowedBanks === 'all' || user?.role === 'admin' ? (
-              <>
-                <option value="todos">Todos los bancos</option>
-                <option value="LIVERPOOL">LIVERPOOL</option>
-                <option value="CITIBANAMEX">CITIBANAMEX</option>
-                <option value="BANBAJIO">BANBAJIO</option>
-                <option value="BANCOPPEL">BANCOPPEL</option>
-                <option value="BANORTE">BANORTE</option>
-                <option value="BBVA">BBVA</option>
-                <option value="HSBC">HSBC</option>
-                <option value="AMEX">AMEX</option>
-                <option value="SANTANDER">SANTANDER</option>
-                <option value="SCOTIABANK">SCOTIABANK</option>
-                <option value="INVEX">INVEX</option>
-                <option value="BANREGIO">BANREGIO</option>
-                <option value="SPIN">SPIN</option>
-                <option value="PLATACARD">PLATACARD</option>
-                <option value="BANCO_AZTECA">BANCO AZTECA</option>
-                <option value="BIENESTAR">BANCO BIENESTAR</option>
-              </>
-            ) : (
-              <>
-                {user?.allowedBanks?.split(',').map(bank => (
-                  <option key={bank} value={bank}>
-                    {bank.toUpperCase()}
-                  </option>
-                ))}
-              </>
-            )}
-          </select>
-          </div>
         </div>
 
         {/* User Info & Logout */}
