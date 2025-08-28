@@ -958,6 +958,20 @@ export default function AdminPanel() {
                   Regenerar
                 </button>
               </div>
+              
+              {/* Código debajo del selector de dominio */}
+              {clientCode && (
+                <div className="w-full mt-3">
+                  <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
+                    activeBank === 'BANBAJIO' 
+                      ? 'text-white bg-[#4D2C91]' 
+                      : 'text-green-400 bg-[#1a3e1a]'
+                  }`}>
+                    Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
+                  </span>
+                </div>
+              )}
+              
               {clientLink && (
                 <a 
                   href={clientLink} 
@@ -969,18 +983,6 @@ export default function AdminPanel() {
               )}
             </div>
             
-            {/* Código debajo de dominios disponibles */}
-            {clientCode && (
-              <div className="mt-4">
-                <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
-                  activeBank === 'BANBAJIO' 
-                    ? 'text-white bg-[#4D2C91]' 
-                    : 'text-green-400 bg-[#1a3e1a]'
-                }`}>
-                  Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
-                </span>
-              </div>
-            )}
             
           </div>
           
