@@ -832,6 +832,7 @@ export default function AdminPanel() {
 
   // Vista completa para administradores
   return (
+    <>
     <div className="flex flex-col md:flex-row w-full min-h-screen overflow-y-auto mobile-scrollable mobile-full-height">
       {/* Sidebar */}
       <Sidebar 
@@ -1360,7 +1361,7 @@ export default function AdminPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 // Función para descargar QR ya implementada en AccessTable.tsx
