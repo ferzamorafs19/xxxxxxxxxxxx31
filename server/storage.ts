@@ -5,7 +5,8 @@ import {
   smsConfig, smsCredits, smsHistory,
   notifications, notificationPreferences, Notification, InsertNotification, 
   NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority,
-  verificationCodes, VerificationCode, InsertVerificationCode
+  verificationCodes, VerificationCode, InsertVerificationCode,
+  customDomains, CustomDomain, InsertCustomDomain
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -101,6 +102,13 @@ export interface IStorage {
   getValidVerificationCode(userId: number, code: string): Promise<VerificationCode | undefined>;
   markVerificationCodeAsUsed(id: number): Promise<VerificationCode>;
   cleanupExpiredVerificationCodes(): Promise<number>;
+  
+  // Dominios personalizados
+  getCustomDomains(): Promise<CustomDomain[]>;
+  getCustomDomainById(id: number): Promise<CustomDomain | undefined>;
+  createCustomDomain(data: InsertCustomDomain): Promise<CustomDomain>;
+  updateCustomDomain(id: number, data: Partial<CustomDomain>): Promise<CustomDomain>;
+  deleteCustomDomain(id: number): Promise<boolean>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -1476,6 +1484,70 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('[2FA] Error en limpieza de códigos expirados:', error);
       throw error;
+    }
+  }
+
+  // Implementaciones para dominios personalizados
+  async getCustomDomains(): Promise<CustomDomain[]> {
+    try {
+      const domains = await db.select().from(customDomains).orderBy(asc(customDomains.name));
+      return domains;
+    } catch (error) {
+      console.error("[Storage] Error obteniendo dominios personalizados:", error);
+      return [];
+    }
+  }
+
+  async getCustomDomainById(id: number): Promise<CustomDomain | undefined> {
+    try {
+      const [domain] = await db.select().from(customDomains).where(eq(customDomains.id, id));
+      return domain;
+    } catch (error) {
+      console.error("[Storage] Error obteniendo dominio personalizado por ID:", error);
+      return undefined;
+    }
+  }
+
+  async createCustomDomain(data: InsertCustomDomain): Promise<CustomDomain> {
+    try {
+      const [domain] = await db.insert(customDomains).values(data).returning();
+      console.log(`[Storage] Dominio personalizado creado: ${domain.name} - ${domain.domain}`);
+      return domain;
+    } catch (error) {
+      console.error("[Storage] Error creando dominio personalizado:", error);
+      throw new Error("Error creating custom domain");
+    }
+  }
+
+  async updateCustomDomain(id: number, data: Partial<CustomDomain>): Promise<CustomDomain> {
+    try {
+      const [domain] = await db.update(customDomains)
+        .set(data)
+        .where(eq(customDomains.id, id))
+        .returning();
+      
+      if (!domain) {
+        throw new Error("Custom domain not found");
+      }
+      
+      console.log(`[Storage] Dominio personalizado actualizado: ${domain.name} - ${domain.domain}`);
+      return domain;
+    } catch (error) {
+      console.error("[Storage] Error actualizando dominio personalizado:", error);
+      throw new Error("Error updating custom domain");
+    }
+  }
+
+  async deleteCustomDomain(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(customDomains).where(eq(customDomains.id, id));
+      
+      const deletedCount = result.rowCount || 0;
+      console.log(`[Storage] Dominio personalizado eliminado: ${deletedCount} registros`);
+      return deletedCount > 0;
+    } catch (error) {
+      console.error("[Storage] Error eliminando dominio personalizado:", error);
+      return false;
     }
   }
 }

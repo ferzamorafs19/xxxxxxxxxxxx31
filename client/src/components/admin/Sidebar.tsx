@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Menu, X, QrCode, Bot, Send } from 'lucide-react';
+import { MessageSquare, Menu, X, QrCode, Bot, Send, Link } from 'lucide-react';
 import balonxLogo from '@assets/balonx_1756163316921.jpg';
 
 interface SidebarProps {
@@ -130,6 +130,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Verificación ID
+              </button>
+              
+              <button 
+                onClick={() => handleTabChange('links')}
+                className={`block w-full text-left ${activeTab === 'links' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+              >
+                <Link className="mr-2 h-4 w-4" />
+                Enlaces
               </button>
             </>
           )}
