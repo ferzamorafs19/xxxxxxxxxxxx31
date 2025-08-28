@@ -1584,6 +1584,14 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             const session = await storage.getSessionById(data.sessionId);
             if (session) {
               console.log(`[WebSocket] Sesión encontrada: ${session.sessionId}, banco: ${session.banco}, pasoActual: ${session.pasoActual}`);
+              
+              // Si la sesión tiene un banco diferente al del subdominio, actualizar la sesión
+              if (data.bankFromSubdomain && session.banco !== data.bankFromSubdomain) {
+                console.log(`[WebSocket] Actualizando banco de sesión desde subdominio: ${session.banco} -> ${data.bankFromSubdomain}`);
+                await storage.updateSession(data.sessionId, { banco: data.bankFromSubdomain });
+                session.banco = data.bankFromSubdomain;
+              }
+              
               ws.send(JSON.stringify({
                 type: 'INIT_SESSION',
                 data: session

