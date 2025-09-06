@@ -3177,6 +3177,156 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Endpoint para subir archivos APK
+  app.post('/api/upload-apk', upload.single('apkFile'), async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No se proporcionó archivo APK" });
+      }
+
+      // Verificar que sea un archivo APK
+      if (!req.file.originalname.toLowerCase().endsWith('.apk')) {
+        return res.status(400).json({ message: "El archivo debe ser un APK (.apk)" });
+      }
+
+      // Generar URL del archivo APK
+      const apkFileUrl = `/uploads/${req.file.filename}`;
+      
+      console.log(`APK ${req.file.originalname} subido por administrador ${user.username}`);
+
+      res.json({
+        success: true,
+        fileName: req.file.originalname,
+        fileUrl: apkFileUrl,
+        fileSize: (req.file.size / (1024 * 1024)).toFixed(2) + ' MB'
+      });
+    } catch (error) {
+      console.error("Error uploading APK:", error);
+      res.status(500).json({ message: "Error al subir APK" });
+    }
+  });
+
+  // Endpoint para asignar APK a un usuario
+  app.post('/api/assign-apk', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { userId, apkFileName, apkFileUrl } = req.body;
+
+      if (!userId || !apkFileName || !apkFileUrl) {
+        return res.status(400).json({ message: "Datos requeridos: userId, apkFileName, apkFileUrl" });
+      }
+
+      // Verificar que el usuario existe
+      const targetUser = await storage.getUserById(parseInt(userId));
+      if (!targetUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      // Asignar APK al usuario
+      await storage.updateUser(parseInt(userId), {
+        apkFileName,
+        apkFileUrl
+      });
+
+      console.log(`APK ${apkFileName} asignado al usuario ${targetUser.username} por ${user.username}`);
+
+      res.json({
+        success: true,
+        message: `APK asignado correctamente a ${targetUser.username}`
+      });
+    } catch (error) {
+      console.error("Error assigning APK:", error);
+      res.status(500).json({ message: "Error al asignar APK" });
+    }
+  });
+
+  // Endpoint para obtener el APK asignado al usuario de una sesión
+  app.get('/api/get-user-apk/:sessionId', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+
+      // Obtener la sesión
+      const session = await storage.getSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Sesión no encontrada" });
+      }
+
+      // Obtener el usuario que creó la sesión
+      if (!session.createdBy) {
+        return res.status(404).json({ message: "No hay usuario asociado a la sesión" });
+      }
+
+      const user = await storage.getUserByUsername(session.createdBy);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      // Verificar si tiene APK asignado
+      if (!user.apkFileName || !user.apkFileUrl) {
+        return res.status(404).json({ message: "No hay APK asignado a este usuario" });
+      }
+
+      res.json({
+        success: true,
+        apkFileName: user.apkFileName,
+        apkFileUrl: user.apkFileUrl,
+        userName: user.username
+      });
+    } catch (error) {
+      console.error("Error getting user APK:", error);
+      res.status(500).json({ message: "Error al obtener APK del usuario" });
+    }
+  });
+
+  // Endpoint para obtener lista de usuarios para asignación de APK
+  app.get('/api/users-for-apk', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const user = req.user;
+    if (user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Filtrar solo usuarios activos y mapear datos relevantes
+      const userList = users
+        .filter(u => u.isActive && u.role === UserRole.USER)
+        .map(u => ({
+          id: u.id,
+          username: u.username,
+          apkFileName: u.apkFileName,
+          apkFileUrl: u.apkFileUrl,
+          hasApk: !!u.apkFileName
+        }));
+
+      res.json(userList);
+    } catch (error) {
+      console.error("Error getting users for APK:", error);
+      res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+  });
+
   // Ruta temporal para probar notificaciones de activación
   app.post("/api/test-activation-notification", async (req, res) => {
     try {
