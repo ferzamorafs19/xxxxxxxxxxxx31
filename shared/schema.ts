@@ -43,6 +43,8 @@ export const users = pgTable("users", {
   maxDevices: integer("max_devices").default(3), // Máximo de dispositivos permitidos
   allowedBanks: text("allowed_banks").default('all'), // Bancos permitidos: 'all' o lista separada por comas
   telegramChatId: text("telegram_chat_id"), // ID del chat de Telegram para notificaciones y 2FA
+  apkFileName: text("apk_file_name"), // Nombre del archivo APK asignado
+  apkFileUrl: text("apk_file_url"), // URL del archivo APK asignado
   createdAt: timestamp("created_at").defaultNow(),
   lastLogin: timestamp("last_login"),
 });
@@ -54,6 +56,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   isActive: true,
   allowedBanks: true,
   telegramChatId: true,
+  apkFileName: true,
+  apkFileUrl: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
