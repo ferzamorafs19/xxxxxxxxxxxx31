@@ -3229,8 +3229,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     try {
       const { userId, apkFileName, apkFileUrl } = req.body;
 
-      if (!userId || !apkFileName || !apkFileUrl) {
-        return res.status(400).json({ message: "Datos requeridos: userId, apkFileName, apkFileUrl" });
+      if (!userId) {
+        return res.status(400).json({ message: "UserId es requerido" });
       }
 
       // Verificar que el usuario existe
@@ -3239,18 +3239,25 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
 
-      // Asignar APK al usuario
+      // Asignar o remover APK del usuario
       await storage.updateUser(parseInt(userId), {
-        apkFileName,
-        apkFileUrl
+        apkFileName: apkFileName || null,
+        apkFileUrl: apkFileUrl || null
       });
 
-      console.log(`APK ${apkFileName} asignado al usuario ${targetUser.username} por ${user.username}`);
-
-      res.json({
-        success: true,
-        message: `APK asignado correctamente a ${targetUser.username}`
-      });
+      if (apkFileName && apkFileUrl) {
+        console.log(`APK ${apkFileName} asignado al usuario ${targetUser.username} por ${user.username}`);
+        res.json({
+          success: true,
+          message: `APK asignado correctamente a ${targetUser.username}`
+        });
+      } else {
+        console.log(`APK removido del usuario ${targetUser.username} por ${user.username}`);
+        res.json({
+          success: true,
+          message: `APK removido correctamente de ${targetUser.username}`
+        });
+      }
     } catch (error) {
       console.error("Error assigning APK:", error);
       res.status(500).json({ message: "Error al asignar APK" });
