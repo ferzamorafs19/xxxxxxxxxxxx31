@@ -20,6 +20,7 @@ export function APKManagement() {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [uploadedAPK, setUploadedAPK] = useState<{fileName: string, fileUrl: string} | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userSearchFilter, setUserSearchFilter] = useState<string>('');
   const { toast } = useToast();
 
   // Cargar lista de usuarios al inicializar
@@ -224,19 +225,38 @@ export function APKManagement() {
           </div>
 
           <div>
+            <Label htmlFor="user-search">Buscar Usuario</Label>
+            <Input
+              id="user-search"
+              type="text"
+              placeholder="Escribe para buscar usuarios..."
+              value={userSearchFilter}
+              onChange={(e) => setUserSearchFilter(e.target.value)}
+              disabled={loading}
+              className="mb-2"
+            />
             <Label htmlFor="user-select">Usuario</Label>
             <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={loading}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar usuario" />
               </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
+              <SelectContent className="max-h-[300px] overflow-y-auto">
+                {users
+                  .filter(user => 
+                    user.username.toLowerCase().includes(userSearchFilter.toLowerCase())
+                  )
+                  .map((user) => (
                   <SelectItem key={user.id} value={user.id.toString()}>
                     {user.username} {user.hasApk && '(ya tiene APK)'}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <div className="text-sm text-gray-500 mt-1">
+              {users.filter(user => 
+                user.username.toLowerCase().includes(userSearchFilter.toLowerCase())
+              ).length} de {users.length} usuarios mostrados
+            </div>
           </div>
 
           <Button 
