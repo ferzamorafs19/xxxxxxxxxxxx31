@@ -18,6 +18,7 @@ import { MessageSender } from '@/components/admin/MessageSender';
 import SubscriptionInfo from '@/components/admin/SubscriptionInfo';
 import { IdentityVerificationPanel } from '@/components/admin/IdentityVerificationPanel';
 import { APKManagement } from '@/components/admin/APKManagement';
+import SiteConfigManagement from '@/components/admin/SiteConfigManagement';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { FileManager } from '@/components/admin/FileManager';
 import { SessionDetails } from '@/components/admin/SessionDetails';
@@ -34,7 +35,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'apk'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'apk' | 'site-config'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -1023,6 +1024,8 @@ export default function AdminPanel() {
           <IdentityVerificationPanel />
         ) : activeTab === 'apk' && user?.role === 'admin' ? (
           <APKManagement />
+        ) : activeTab === 'site-config' && user?.role === 'admin' ? (
+          <SiteConfigManagement />
         ) : (
           <div className="flex flex-col gap-4 h-full">
             {/* Session List */}

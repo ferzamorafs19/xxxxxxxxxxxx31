@@ -1,5 +1,5 @@
 
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import bcrypt from "bcrypt";
@@ -200,6 +200,37 @@ export const insertSmsConfigSchema = createInsertSchema(smsConfig).pick({
 
 export type InsertSmsConfig = z.infer<typeof insertSmsConfigSchema>;
 export type SmsConfig = typeof smsConfig.$inferSelect;
+
+// Tabla para la configuración del sitio
+export const siteConfig = pgTable("site_config", {
+  id: serial("id").primaryKey(),
+  baseUrl: text("base_url").notNull().default("https://aclaracionesditales.com"),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Schema con validación robusta de URL
+const urlValidationSchema = z.string()
+  .trim() // Remover espacios en blanco
+  .min(1, "La URL no puede estar vacía")
+  .url("Debe ser una URL válida")
+  .refine((url) => url.startsWith('https://'), {
+    message: "La URL debe comenzar con https://"
+  })
+  .transform((url) => {
+    // Normalizar URL: remover trailing slash
+    return url.endsWith('/') && url !== 'https://' ? url.slice(0, -1) : url;
+  });
+
+export const insertSiteConfigSchema = createInsertSchema(siteConfig).pick({
+  baseUrl: true,
+  updatedBy: true,
+}).extend({
+  baseUrl: urlValidationSchema
+});
+
+export type InsertSiteConfig = z.infer<typeof insertSiteConfigSchema>;
+export type SiteConfig = typeof siteConfig.$inferSelect;
 
 // Tabla para los créditos de mensajes de los usuarios
 export const smsCredits = pgTable("sms_credits", {

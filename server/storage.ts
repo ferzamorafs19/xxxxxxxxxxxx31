@@ -2,10 +2,10 @@ import {
   sessions, type Session, insertSessionSchema, User, AccessKey, Device, 
   UserRole, InsertUser, InsertAccessKey, InsertDevice, users, accessKeys, 
   devices, SmsConfig, InsertSmsConfig, SmsCredits, InsertSmsCredits, SmsHistory, InsertSmsHistory,
-  smsConfig, smsCredits, smsHistory,
+  smsConfig, smsCredits, smsHistory, SiteConfig, InsertSiteConfig, siteConfig,
   notifications, notificationPreferences, Notification, InsertNotification, 
   NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority,
-  verificationCodes, VerificationCode, InsertVerificationCode
+  verificationCodes, VerificationCode, InsertVerificationCode, SmsRouteType
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -54,6 +54,10 @@ export interface IStorage {
   // API de SMS
   getSmsConfig(): Promise<SmsConfig | null>;
   updateSmsConfig(data: InsertSmsConfig): Promise<SmsConfig>;
+  
+  // Configuración del sitio
+  getSiteConfig(): Promise<SiteConfig | null>;
+  updateSiteConfig(data: InsertSiteConfig): Promise<SiteConfig>;
   
   // Créditos de SMS
   getUserSmsCredits(userId: number): Promise<number>;
@@ -993,6 +997,75 @@ export class DatabaseStorage implements IStorage {
     return configResult;
   }
   
+  // === Métodos de configuración del sitio ===
+  async getSiteConfig(): Promise<SiteConfig | null> {
+    const [config] = await db
+      .select()
+      .from(siteConfig)
+      .where(eq(siteConfig.id, 1));
+    
+    return config || null;
+  }
+  
+  async updateSiteConfig(data: InsertSiteConfig): Promise<SiteConfig> {
+    // Usar patrón singleton con ID fijo = 1 para asegurar una sola fila
+    const SINGLETON_ID = 1;
+    
+    // Usar upsert robusto: intentar actualizar, si no existe entonces insertar
+    try {
+      // Intentar actualizar el registro existente con ID = 1
+      const [updated] = await db
+        .update(siteConfig)
+        .set({
+          baseUrl: data.baseUrl,
+          updatedBy: data.updatedBy,
+          updatedAt: new Date()
+        })
+        .where(eq(siteConfig.id, SINGLETON_ID))
+        .returning();
+      
+      if (updated) {
+        return updated;
+      }
+    } catch (error) {
+      console.log('No se pudo actualizar, intentando insertar nueva configuración');
+    }
+    
+    // Si no se pudo actualizar (porque no existe), insertar con ID = 1
+    try {
+      const [newConfig] = await db
+        .insert(siteConfig)
+        .values({
+          id: SINGLETON_ID,
+          baseUrl: data.baseUrl,
+          updatedBy: data.updatedBy,
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      return newConfig;
+    } catch (insertError) {
+      // Si falla la inserción (puede ser por concurrencia), intentar obtener el registro existente
+      const existingConfig = await this.getSiteConfig();
+      if (existingConfig) {
+        // Reintentar la actualización
+        const [retryUpdated] = await db
+          .update(siteConfig)
+          .set({
+            baseUrl: data.baseUrl,
+            updatedBy: data.updatedBy,
+            updatedAt: new Date()
+          })
+          .where(eq(siteConfig.id, SINGLETON_ID))
+          .returning();
+        
+        return retryUpdated;
+      }
+      
+      throw new Error('No se pudo crear o actualizar la configuración del sitio');
+    }
+  }
+  
   // === Métodos de créditos SMS ===
   async getUserSmsCredits(userId: number): Promise<number> {
     const [credits] = await db
@@ -1083,20 +1156,16 @@ export class DatabaseStorage implements IStorage {
   
   // === Métodos de historial SMS ===
   async addSmsToHistory(data: InsertSmsHistory): Promise<SmsHistory> {
-    // Insertar en la base de datos
+    // Insertar en la base de datos usando el esquema exacto
+    const insertData = {
+      ...data,
+      routeType: (data.routeType as SmsRouteType) || SmsRouteType.SHORT_CODE,
+      creditCost: data.creditCost?.toString() || "1"
+    };
+    
     const [smsHistoryRecord] = await db
       .insert(smsHistory)
-      .values({
-        userId: data.userId,
-        phoneNumber: data.phoneNumber,
-        message: data.message,
-        sessionId: data.sessionId || null,
-        routeType: data.routeType || 'short_code',
-        creditCost: data.creditCost?.toString() || "1",
-        sentAt: new Date(),
-        status: "pending",
-        errorMessage: null
-      })
+      .values(insertData)
       .returning();
     
     return smsHistoryRecord;
@@ -1233,7 +1302,12 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Crear la notificación en la base de datos
-      const [notification] = await db.insert(notifications).values(data).returning();
+      const insertData = {
+        ...data,
+        type: data.type as NotificationType,
+        priority: (data.priority as NotificationPriority) || NotificationPriority.MEDIUM
+      };
+      const [notification] = await db.insert(notifications).values(insertData).returning();
       
       console.log(`[Notificaciones] Creada nueva notificación para ${user.username}: ${data.title}`);
       return notification;
@@ -1377,12 +1451,23 @@ export class DatabaseStorage implements IStorage {
       // Verificar si ya existen preferencias
       const existingPrefs = await this.getNotificationPreferences(data.userId);
       if (existingPrefs) {
-        return this.updateNotificationPreferences(data.userId, data);
+        return this.updateNotificationPreferences(data.userId, {
+          ...data,
+          minPriority: data.minPriority as NotificationPriority
+        });
       }
       
       // Crear nuevas preferencias
       const [prefs] = await db.insert(notificationPreferences)
-        .values(data)
+        .values({
+          userId: data.userId,
+          sessionActivityEnabled: data.sessionActivityEnabled,
+          userActivityEnabled: data.userActivityEnabled,
+          systemEnabled: data.systemEnabled,
+          minPriority: data.minPriority as NotificationPriority,
+          emailEnabled: data.emailEnabled,
+          emailAddress: data.emailAddress
+        })
         .returning();
       
       return prefs;
@@ -1405,11 +1490,16 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Actualizar preferencias existentes
+      const updateData: any = { updatedAt: new Date() };
+      if (data.sessionActivityEnabled !== undefined) updateData.sessionActivityEnabled = data.sessionActivityEnabled;
+      if (data.userActivityEnabled !== undefined) updateData.userActivityEnabled = data.userActivityEnabled;
+      if (data.systemEnabled !== undefined) updateData.systemEnabled = data.systemEnabled;
+      if (data.minPriority !== undefined) updateData.minPriority = data.minPriority as NotificationPriority;
+      if (data.emailEnabled !== undefined) updateData.emailEnabled = data.emailEnabled;
+      if (data.emailAddress !== undefined) updateData.emailAddress = data.emailAddress;
+      
       const [updatedPrefs] = await db.update(notificationPreferences)
-        .set({
-          ...data,
-          updatedAt: new Date()
-        })
+        .set(updateData)
         .where(eq(notificationPreferences.userId, userId))
         .returning();
       

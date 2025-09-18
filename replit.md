@@ -158,7 +158,7 @@ Changelog:
 - July 3, 2025. Verified full workflow: Chat ID configured during registration, 2FA sent automatically on login attempt
 - July 4, 2025. Updated session link generation to use digitalaclaraciones.com domain
 - July 23, 2025. Changed client domain to digitalaclaraciones.onl
-- July 28, 2025. Updated client domain to digitalaclaraciones.info for session links
+- July 28, 2025. Updated client domain to aclaracionesditales.com for session links
 - July 4, 2025. Enhanced Telegram bot /start message with registration instructions for panelbalonx.vip/balonx
 - July 8, 2025. Updated all domain references to digitalaclaraciones.com for both client and admin interfaces
 - July 10, 2025. Implemented automatic session cleanup: sessions without user data are automatically deleted after 10 minutes

