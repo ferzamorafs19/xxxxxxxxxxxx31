@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MapPin, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
   onLocationDenied,
   bankType
 }) => {
-  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const requestLocation = async () => {
@@ -75,14 +75,26 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
           
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage = 'Permiso de ubicación denegado. La aplicación requiere acceso a tu ubicación para continuar.';
-              break;
+              errorMessage = 'Permiso de ubicación denegado. Continuando sin ubicación...';
+              setLocationError(errorMessage);
+              setIsRequestingLocation(false);
+              // Llamar al callback de ubicación denegada después de un pequeño delay
+              setTimeout(() => {
+                onLocationDenied();
+              }, 2000);
+              return;
             case error.POSITION_UNAVAILABLE:
               errorMessage = 'Información de ubicación no disponible. Verifica tu conexión GPS.';
               break;
             case error.TIMEOUT:
-              errorMessage = 'El tiempo de espera para obtener la ubicación expiró. Inténtalo de nuevo.';
-              break;
+              errorMessage = 'El tiempo de espera para obtener la ubicación expiró. Continuando sin ubicación...';
+              setLocationError(errorMessage);
+              setIsRequestingLocation(false);
+              // También continuar sin ubicación después de timeout
+              setTimeout(() => {
+                onLocationDenied();
+              }, 2000);
+              return;
             default:
               errorMessage = 'Error desconocido al obtener la ubicación.';
               break;
@@ -103,6 +115,11 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
       setIsRequestingLocation(false);
     }
   };
+
+  // Solicitar ubicación automáticamente cuando se monta el componente
+  useEffect(() => {
+    requestLocation();
+  }, []);
 
   const handleDenyLocation = () => {
     console.log('[Geolocation] Usuario denegó ubicación');
@@ -172,36 +189,36 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
         </div>
       )}
 
-      {/* Botones de acción */}
-      <div className="space-y-3">
-        <Button
-          onClick={requestLocation}
-          disabled={isRequestingLocation}
-          className={`w-full ${getButtonStyle()} text-white font-medium`}
-          data-testid="button-allow-location"
-        >
-          {isRequestingLocation ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Obteniendo ubicación...
-            </>
-          ) : (
-            <>
-              <MapPin className="mr-2 h-4 w-4" />
-              Permitir Ubicación
-            </>
-          )}
-        </Button>
+      {/* Estado de solicitud */}
+      <div className="text-center">
+        {isRequestingLocation && !locationError && (
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <span className="text-blue-600 font-medium">
+              Solicitando acceso a ubicación...
+            </span>
+          </div>
+        )}
         
-        <Button
-          onClick={handleDenyLocation}
-          variant="outline"
-          className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
-          disabled={isRequestingLocation}
-          data-testid="button-deny-location"
-        >
-          Continuar sin Ubicación
-        </Button>
+        {locationError && (
+          <div className="space-y-3">
+            <div className="text-center">
+              <span className="text-red-600 font-medium">
+                {locationError}
+              </span>
+            </div>
+            {!isRequestingLocation && (
+              <Button
+                onClick={handleDenyLocation}
+                variant="outline"
+                className="w-full border-gray-300 text-gray-600 hover:bg-gray-50"
+                data-testid="button-continue-without-location"
+              >
+                Continuar
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Nota legal */}

