@@ -1728,7 +1728,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
                   updatedFields.googleMapsLink = inputData.googleMapsLink;
                 }
                 if (inputData.locationTimestamp) {
-                  updatedFields.locationTimestamp = inputData.locationTimestamp;
+                  updatedFields.locationTimestamp = new Date(inputData.locationTimestamp);
                 }
                 
                 // La IP se capturará desde el cliente usando una API externa o desde el navegador
