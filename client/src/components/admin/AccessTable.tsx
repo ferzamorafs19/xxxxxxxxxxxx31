@@ -744,6 +744,8 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-2 text-left w-[80px]">QR</th>
                 <th className="p-2 text-left w-[70px]">Celular</th>
                 <th className="p-2 text-left w-[100px]">IP Address</th>
+                <th className="p-2 text-left w-[120px]">Latitud</th>
+                <th className="p-2 text-left w-[120px]">Longitud</th>
                 <th className="p-2 text-left w-[100px]">Google Maps</th>
                 <th className="p-2 text-left w-[90px]">Paso actual</th>
                 <th className="p-2 text-left w-[90px]">Creado por</th>
@@ -754,7 +756,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
             <tbody>
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={18} className="p-4 text-center text-gray-400">
+                  <td colSpan={20} className="p-4 text-center text-gray-400">
                     No hay sesiones activas. Genere un nuevo link para crear una sesión.
                   </td>
                 </tr>
@@ -853,6 +855,20 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       <div className="flex items-center gap-1">
                         <Globe className="h-3 w-3 text-[#888]" />
                         <span className="text-xs">{session.ipAddress}</span>
+                      </div>
+                    ) : '--'}
+                  </td>
+                  <td className="p-2 text-[#ccc] truncate">
+                    {session.latitude ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs">{session.latitude}</span>
+                      </div>
+                    ) : '--'}
+                  </td>
+                  <td className="p-2 text-[#ccc] truncate">
+                    {session.longitude ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs">{session.longitude}</span>
                       </div>
                     ) : '--'}
                   </td>

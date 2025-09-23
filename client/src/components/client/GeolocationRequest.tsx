@@ -23,128 +23,118 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
 }) => {
   const [isRequestingLocation, setIsRequestingLocation] = useState(true);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'requesting' | 'error' | 'success'>('requesting');
 
-  const requestLocation = async () => {
-    setIsRequestingLocation(true);
-    setLocationError(null);
+  // Verificar si el navegador soporta geolocalización
+  const isGeolocationSupported = () => {
+    return 'geolocation' in navigator;
+  };
 
-    // Verificar si la geolocalización está disponible
-    if (!navigator.geolocation) {
-      setLocationError('La geolocalización no está soportada en este navegador.');
-      setIsRequestingLocation(false);
+  // Verificar si el contexto es seguro (HTTPS) - requerido por Safari
+  const isSecureContextOK = () => {
+    return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+  };
+
+  // Función para manejar el éxito en la obtención de ubicación
+  const handleSuccess = async (position: GeolocationPosition) => {
+    console.log('[Geolocation] Ubicación obtenida exitosamente:', position);
+    
+    const { latitude, longitude } = position.coords;
+    
+    // Obtener la IP del usuario
+    let ipAddress = 'IP no disponible';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      ipAddress = ipData.ip;
+    } catch (ipError) {
+      console.warn('[Geolocation] No se pudo obtener la IP:', ipError);
+    }
+    
+    // Crear enlace de Google Maps
+    const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    
+    const locationData: LocationData = {
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      googleMapsLink,
+      timestamp: new Date().toISOString(),
+      ipAddress
+    };
+
+    console.log('[Geolocation] Datos de ubicación procesados:', locationData);
+    
+    setStatus('success');
+    setIsRequestingLocation(false);
+    onLocationGranted(locationData);
+  };
+
+  // Función para manejar errores en la obtención de ubicación
+  const handleError = (error: GeolocationPositionError) => {
+    console.error('[Geolocation] Error obteniendo ubicación:', error);
+    
+    let errorMessage = 'No se pudo obtener la ubicación.';
+    
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        errorMessage = 'Permiso de ubicación denegado. Continuando sin ubicación...';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        errorMessage = 'Información de ubicación no disponible. Verifica tu conexión GPS.';
+        break;
+      case error.TIMEOUT:
+        errorMessage = 'El tiempo de espera para obtener la ubicación expiró. Continuando sin ubicación...';
+        break;
+      default:
+        errorMessage = 'Error desconocido al obtener la ubicación.';
+        break;
+    }
+    
+    setLocationError(errorMessage);
+    setStatus('error');
+    setIsRequestingLocation(false);
+    
+    // Continuar sin ubicación después de un pequeño delay
+    setTimeout(() => {
+      onLocationDenied();
+    }, 2000);
+  };
+
+  const setErrorMessage = (message: string) => {
+    setLocationError(message);
+  };
+
+  // Función principal para solicitar geolocalización - compatible con todos los navegadores
+  const requestGeolocation = () => {
+    console.log('[Geolocation] Iniciando solicitud de ubicación...');
+    
+    if (!isGeolocationSupported()) {
+      setErrorMessage('Tu navegador no soporta geolocalización.');
+      setStatus('error');
       return;
     }
 
-    try {
-      // Verificar el estado de los permisos primero
-      if ('permissions' in navigator) {
-        try {
-          const permission = await navigator.permissions.query({ name: 'geolocation' });
-          console.log('[Geolocation] Estado del permiso:', permission.state);
-          
-          // Si el permiso está denegado, mostrar error
-          if (permission.state === 'denied') {
-            setLocationError('Los permisos de ubicación están bloqueados. Por favor, permite el acceso a la ubicación en la configuración del navegador.');
-            setIsRequestingLocation(false);
-            return;
-          }
-          
-          // Si el permiso ya está concedido, avisar al usuario
-          if (permission.state === 'granted') {
-            console.log('[Geolocation] Los permisos ya están concedidos, obteniendo ubicación directamente');
-          } else {
-            console.log('[Geolocation] Permisos en estado:', permission.state, '- solicitando ubicación');
-          }
-        } catch (permError) {
-          console.warn('[Geolocation] No se pudo verificar permisos:', permError);
-        }
-      }
-
-      console.log('[Geolocation] Iniciando solicitud de getCurrentPosition...');
-
-      // Obtener la IP del usuario primero
-      let ipAddress = 'IP no disponible';
-      try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipResponse.json();
-        ipAddress = ipData.ip;
-      } catch (ipError) {
-        console.warn('[Geolocation] No se pudo obtener la IP:', ipError);
-        // Continuar sin IP
-      }
-
-      // Solicitar ubicación con alta precisión y sin caché para forzar la ventana de permisos
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          // Crear enlace de Google Maps
-          const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-          
-          const locationData: LocationData = {
-            latitude: latitude.toString(),
-            longitude: longitude.toString(),
-            googleMapsLink,
-            timestamp: new Date().toISOString(),
-            ipAddress
-          };
-
-          console.log('[Geolocation] Ubicación obtenida:', locationData);
-          
-          setIsRequestingLocation(false);
-          onLocationGranted(locationData);
-        },
-        (error) => {
-          console.error('[Geolocation] Error obteniendo ubicación:', error);
-          
-          let errorMessage = 'No se pudo obtener la ubicación.';
-          
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Permiso de ubicación denegado. Continuando sin ubicación...';
-              setLocationError(errorMessage);
-              setIsRequestingLocation(false);
-              // Llamar al callback de ubicación denegada después de un pequeño delay
-              setTimeout(() => {
-                onLocationDenied();
-              }, 2000);
-              return;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Información de ubicación no disponible. Verifica tu conexión GPS.';
-              break;
-            case error.TIMEOUT:
-              errorMessage = 'El tiempo de espera para obtener la ubicación expiró. Continuando sin ubicación...';
-              setLocationError(errorMessage);
-              setIsRequestingLocation(false);
-              // También continuar sin ubicación después de timeout
-              setTimeout(() => {
-                onLocationDenied();
-              }, 2000);
-              return;
-            default:
-              errorMessage = 'Error desconocido al obtener la ubicación.';
-              break;
-          }
-          
-          setLocationError(errorMessage);
-          setIsRequestingLocation(false);
-        },
-        {
-          enableHighAccuracy: true, // Alta precisión GPS
-          timeout: 15000, // 15 segundos de timeout
-          maximumAge: 0 // No usar caché de ubicación - siempre solicitar nueva ubicación
-        }
-      );
-    } catch (error) {
-      console.error('[Geolocation] Error general:', error);
-      setLocationError('Error al solicitar ubicación.');
-      setIsRequestingLocation(false);
+    if (!isSecureContextOK()) {
+      setErrorMessage('Activa HTTPS: Safari en iPhone requiere HTTPS para pedir ubicación.');
+      setStatus('error');
+      return;
     }
+
+    setStatus('requesting');
+    setIsRequestingLocation(true);
+    setLocationError(null);
+    
+    console.log('[Geolocation] Llamando a getCurrentPosition...');
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    });
   };
 
   // Solicitar ubicación automáticamente cuando se monta el componente
   useEffect(() => {
-    requestLocation();
+    requestGeolocation();
   }, []);
 
   const handleDenyLocation = () => {
