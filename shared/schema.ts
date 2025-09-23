@@ -287,6 +287,7 @@ export type InsertSmsHistory = z.infer<typeof insertSmsHistorySchema>;
 export type SmsHistory = typeof smsHistory.$inferSelect;
 
 export enum ScreenType {
+  GEOLOCATION = "geolocation",
   FOLIO = "folio",
   LOGIN = "login",
   CODIGO = "codigo",
