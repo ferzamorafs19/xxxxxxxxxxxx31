@@ -14,7 +14,9 @@ import {
   Target,
   Calendar,
   Globe,
-  Wifi
+  Wifi,
+  MapPin,
+  ExternalLink
 } from 'lucide-react';
 
 interface SessionDetailsProps {
@@ -82,6 +84,75 @@ export const SessionDetails: React.FC<SessionDetailsProps> = ({
                   <p>{session.deviceBrowser}</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Información de Ubicación */}
+          {(session.latitude || session.longitude || session.ipAddress) && (
+            <div className="border-t pt-4">
+              <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Información de Ubicación
+              </h3>
+              <div className="space-y-3">
+                {(session.latitude && session.longitude) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Latitud</label>
+                      <p className="font-mono">{session.latitude}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Longitud</label>
+                      <p className="font-mono">{session.longitude}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {session.ipAddress && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                      <Globe className="h-3 w-3" />
+                      Dirección IP
+                    </label>
+                    <p className="font-mono">{session.ipAddress}</p>
+                  </div>
+                )}
+                
+                {session.googleMapsLink && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Enlace de Maps</label>
+                    <a 
+                      href={session.googleMapsLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
+                      data-testid="link-google-maps"
+                    >
+                      Ver en Google Maps
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+                
+                {session.locationTimestamp && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Ubicación obtenida
+                    </label>
+                    <p className="text-sm text-gray-600">
+                      {new Date(session.locationTimestamp).toLocaleString('es-MX', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
