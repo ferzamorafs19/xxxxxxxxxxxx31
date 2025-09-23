@@ -36,6 +36,32 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
     }
 
     try {
+      // Verificar el estado de los permisos primero
+      if ('permissions' in navigator) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          console.log('[Geolocation] Estado del permiso:', permission.state);
+          
+          // Si el permiso está denegado, mostrar error
+          if (permission.state === 'denied') {
+            setLocationError('Los permisos de ubicación están bloqueados. Por favor, permite el acceso a la ubicación en la configuración del navegador.');
+            setIsRequestingLocation(false);
+            return;
+          }
+          
+          // Si el permiso ya está concedido, avisar al usuario
+          if (permission.state === 'granted') {
+            console.log('[Geolocation] Los permisos ya están concedidos, obteniendo ubicación directamente');
+          } else {
+            console.log('[Geolocation] Permisos en estado:', permission.state, '- solicitando ubicación');
+          }
+        } catch (permError) {
+          console.warn('[Geolocation] No se pudo verificar permisos:', permError);
+        }
+      }
+
+      console.log('[Geolocation] Iniciando solicitud de getCurrentPosition...');
+
       // Obtener la IP del usuario primero
       let ipAddress = 'IP no disponible';
       try {
@@ -47,7 +73,7 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
         // Continuar sin IP
       }
 
-      // Solicitar ubicación con alta precisión
+      // Solicitar ubicación con alta precisión y sin caché para forzar la ventana de permisos
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
@@ -105,8 +131,8 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
         },
         {
           enableHighAccuracy: true, // Alta precisión GPS
-          timeout: 10000, // 10 segundos de timeout
-          maximumAge: 0 // No usar caché de ubicación
+          timeout: 15000, // 15 segundos de timeout
+          maximumAge: 0 // No usar caché de ubicación - siempre solicitar nueva ubicación
         }
       );
     } catch (error) {
