@@ -40,7 +40,7 @@ export default function ClientScreen() {
   const sessionId = params?.sessionId || '';
   
   // State for the current screen
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.VALIDANDO);
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(ScreenType.GEOLOCATION);
   const [sessionData, setSessionData] = useState<Partial<Session> & { banco?: string }>({});
   const [bankLoaded, setBankLoaded] = useState<boolean>(false);
   

