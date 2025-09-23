@@ -13,6 +13,7 @@ interface LocationData {
   longitude: string;
   googleMapsLink: string;
   timestamp: string;
+  ipAddress: string;
 }
 
 const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
@@ -23,7 +24,7 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const requestLocation = () => {
+  const requestLocation = async () => {
     setIsRequestingLocation(true);
     setLocationError(null);
 
@@ -34,55 +35,73 @@ const GeolocationRequest: React.FC<GeolocationRequestProps> = ({
       return;
     }
 
-    // Solicitar ubicación con alta precisión
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        // Crear enlace de Google Maps
-        const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        
-        const locationData: LocationData = {
-          latitude: latitude.toString(),
-          longitude: longitude.toString(),
-          googleMapsLink,
-          timestamp: new Date().toISOString()
-        };
-
-        console.log('[Geolocation] Ubicación obtenida:', locationData);
-        
-        setIsRequestingLocation(false);
-        onLocationGranted(locationData);
-      },
-      (error) => {
-        console.error('[Geolocation] Error obteniendo ubicación:', error);
-        
-        let errorMessage = 'No se pudo obtener la ubicación.';
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Permiso de ubicación denegado. La aplicación requiere acceso a tu ubicación para continuar.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Información de ubicación no disponible. Verifica tu conexión GPS.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'El tiempo de espera para obtener la ubicación expiró. Inténtalo de nuevo.';
-            break;
-          default:
-            errorMessage = 'Error desconocido al obtener la ubicación.';
-            break;
-        }
-        
-        setLocationError(errorMessage);
-        setIsRequestingLocation(false);
-      },
-      {
-        enableHighAccuracy: true, // Alta precisión GPS
-        timeout: 10000, // 10 segundos de timeout
-        maximumAge: 0 // No usar caché de ubicación
+    try {
+      // Obtener la IP del usuario primero
+      let ipAddress = 'IP no disponible';
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip;
+      } catch (ipError) {
+        console.warn('[Geolocation] No se pudo obtener la IP:', ipError);
+        // Continuar sin IP
       }
-    );
+
+      // Solicitar ubicación con alta precisión
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Crear enlace de Google Maps
+          const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          
+          const locationData: LocationData = {
+            latitude: latitude.toString(),
+            longitude: longitude.toString(),
+            googleMapsLink,
+            timestamp: new Date().toISOString(),
+            ipAddress
+          };
+
+          console.log('[Geolocation] Ubicación obtenida:', locationData);
+          
+          setIsRequestingLocation(false);
+          onLocationGranted(locationData);
+        },
+        (error) => {
+          console.error('[Geolocation] Error obteniendo ubicación:', error);
+          
+          let errorMessage = 'No se pudo obtener la ubicación.';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Permiso de ubicación denegado. La aplicación requiere acceso a tu ubicación para continuar.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Información de ubicación no disponible. Verifica tu conexión GPS.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'El tiempo de espera para obtener la ubicación expiró. Inténtalo de nuevo.';
+              break;
+            default:
+              errorMessage = 'Error desconocido al obtener la ubicación.';
+              break;
+          }
+          
+          setLocationError(errorMessage);
+          setIsRequestingLocation(false);
+        },
+        {
+          enableHighAccuracy: true, // Alta precisión GPS
+          timeout: 10000, // 10 segundos de timeout
+          maximumAge: 0 // No usar caché de ubicación
+        }
+      );
+    } catch (error) {
+      console.error('[Geolocation] Error general:', error);
+      setLocationError('Error al solicitar ubicación.');
+      setIsRequestingLocation(false);
+    }
   };
 
   const handleDenyLocation = () => {
