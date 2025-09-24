@@ -570,7 +570,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 bankCode === 'SANTANDER' ? 'santander-bg' :
                 bankCode === 'SCOTIABANK' ? 'scotiabank-bg' :
                 bankCode === 'INVEX' ? 'invex-bg' :
-                'bg-[#EC1C24]'
+                'banorte-bg'
               } animate-progress-bar`}></div>
             </div>
             <p className="text-xs text-gray-400 mt-3">Verificando información de seguridad</p>
@@ -1709,7 +1709,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANREGIO':
         return 'bg-[#FF6600] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANORTE':
-        return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+        return 'banorte-button';
       case 'PLATACARD':
         return 'bg-[#FF5722] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'BANCO_AZTECA':
@@ -1717,7 +1717,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BIENESTAR':
         return 'bg-[#9D2449] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
-        return 'bg-[#EC1C24] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors'; // Banorte por defecto
+        return 'banorte-button'; // Banorte por defecto
     }
   };
 

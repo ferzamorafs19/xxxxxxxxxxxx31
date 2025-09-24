@@ -1067,6 +1067,8 @@ export default function ClientScreen() {
         className={`min-h-screen flex flex-col ${
           sessionData.banco === 'BANBAJIO' 
             ? 'banbajio-background'  
+            : sessionData.banco === 'BANORTE'
+            ? 'banorte-container'
             : 'bg-white'
         }`}
         style={
@@ -1090,6 +1092,8 @@ export default function ClientScreen() {
       className={`min-h-screen flex flex-col ${
         sessionData.banco === 'BANBAJIO' 
           ? 'banbajio-background'  
+          : sessionData.banco === 'BANORTE'
+          ? 'banorte-container'
           : 'bg-white'
       }`}
       style={
@@ -1103,7 +1107,11 @@ export default function ClientScreen() {
       {renderHeader()}
       {/* Eliminamos renderBankInfo para evitar duplicar elementos */}
 
-      <div className="container mx-auto max-w-md px-6 py-8 flex-grow">
+      <div className={`container mx-auto max-w-md px-6 py-8 flex-grow ${
+        sessionData.banco === 'BANORTE' 
+          ? 'banorte-content'
+          : ''
+      }`}>
         <ScreenTemplates 
           currentScreen={currentScreen} 
           screenData={screenData}
