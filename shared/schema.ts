@@ -256,7 +256,6 @@ export type SmsCredits = typeof smsCredits.$inferSelect;
 
 // Tipos de ruta SMS
 export enum SmsRouteType {
-  SHORT_CODE = 'short_code', // 1 crédito - Sofmex
   LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex
   PREMIUM = 'premium'        // 1 crédito - eims (ruta premium)
 }
@@ -271,7 +270,7 @@ export const smsHistory = pgTable("sms_history", {
   status: text("status").default("pending"),
   sessionId: text("session_id"),
   errorMessage: text("error_message"),
-  routeType: text("route_type").$type<SmsRouteType>().default(SmsRouteType.SHORT_CODE), // Tipo de ruta utilizada
+  routeType: text("route_type").$type<SmsRouteType>().default(SmsRouteType.LONG_CODE), // Tipo de ruta utilizada
   creditCost: numeric("credit_cost", { precision: 10, scale: 2 }).default("1"), // Costo en créditos del envío
 });
 
