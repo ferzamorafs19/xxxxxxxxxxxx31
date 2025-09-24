@@ -222,86 +222,132 @@
   background: linear-gradient(to right, #9D2449, #B8345E);
 }
 
-/* Estilos de Banorte */
+/* === ESTILOS DE BANORTE - ACTUALIZADOS === */
+/* Paleta de colores oficial de Banorte */
+:root {
+  --banorte-red: #E31B23;
+  --banorte-red-dark: #C1161C;
+  --banorte-gray: #F5F5F5;
+  --banorte-dark-gray: #333333;
+  --banorte-light-gray: #FAFAFA;
+  --banorte-border: #E0E0E0;
+}
+
 .banorte-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f7f7f7;
-  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: var(--banorte-dark-gray);
 }
 
 .banorte-header {
-  background: #EC1C24;
+  background: linear-gradient(180deg, var(--banorte-red) 0%, #D11218 100%);
   color: white;
-  padding: 15px 20px;
+  padding: 16px 24px;
   text-align: center;
   width: 100%;
-  margin-bottom: 0px;
+  box-shadow: 0 2px 8px rgba(227, 27, 35, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.fecha-banorte {
-  color: #666;
-  font-size: 14px;
-  text-align: center;
-}
-
-.white-logo img {
-  filter: brightness(0) invert(1);
+.banorte-header .fecha-banorte {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 6px;
+  letter-spacing: 0.3px;
 }
 
 .banorte-logo {
-  height: 40px;
-  margin: 0 auto;
+  height: 42px;
+  margin: 0 auto 4px;
   display: block;
   filter: brightness(0) invert(1);
+  transition: all 0.3s ease;
 }
 
 .banorte-content {
   background: white;
-  padding: 25px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  width: 90%;
-  max-width: 400px;
-  text-align: center;
-  margin: 20px auto;
+  padding: 32px 28px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 92%;
+  max-width: 420px;
+  margin: 24px auto;
+  border: 1px solid var(--banorte-border);
+  position: relative;
 }
 
-.banorte-footer {
-  background: #d6001c;
-  color: white;
-  padding: 10px;
-  text-align: center;
-  margin-top: auto;
-  width: 100%;
+.banorte-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--banorte-red) 0%, #F23A41 100%);
+  border-radius: 12px 12px 0 0;
 }
 
 .banorte-nav {
-  display: flex;
-  justify-content: center;
-  padding: 5px 0;
-  width: 100%;
-  color: white;
+  background: var(--banorte-gray);
+  padding: 12px 0;
+  text-align: center;
+  border-top: 1px solid var(--banorte-border);
+  font-size: 13px;
 }
 
 .banorte-nav a {
-  color: white;
-  margin: 0 10px;
+  color: var(--banorte-dark-gray);
+  margin: 0 16px;
   text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.banorte-nav a:hover {
+  color: var(--banorte-red);
+}
+
+.banorte-footer {
+  background: linear-gradient(180deg, var(--banorte-red-dark) 0%, var(--banorte-red) 100%);
+  color: white;
+  padding: 16px 24px;
+  text-align: center;
+  margin-top: auto;
+  width: 100%;
   font-size: 14px;
+  font-weight: 500;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .banorte-button {
-  background-color: #d6001c;
+  background: linear-gradient(180deg, var(--banorte-red) 0%, var(--banorte-red-dark) 100%);
   color: white;
   border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
+  padding: 14px 24px;
+  border-radius: 8px;
   cursor: pointer;
   width: 100%;
-  margin-top: 10px;
-  font-weight: bold;
+  margin-top: 16px;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.3px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(227, 27, 35, 0.2);
+}
+
+.banorte-button:hover {
+  background: linear-gradient(180deg, var(--banorte-red-dark) 0%, #A5131A 100%);
+  box-shadow: 0 4px 12px rgba(227, 27, 35, 0.3);
+  transform: translateY(-1px);
+}
+
+.banorte-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(227, 27, 35, 0.2);
 }
 
 /* Estilos de BanCoppel */
@@ -559,54 +605,71 @@
   font-size: 16px;
 }
 
-/* Estilos para Banorte */
+/* Clases auxiliares de Banorte */
 .banorte-bg {
-  background-color: #EC1820;
+  background-color: var(--banorte-red);
 }
 
 .banorte-text {
-  color: #EC1820;
+  color: var(--banorte-red);
 }
 
 .banorte-accent {
-  color: #000000;
+  color: var(--banorte-dark-gray);
 }
 
-.banorte-button {
-  background-color: #EC1820;
-  color: white;
-  border-radius: 4px;
-  padding: 10px 20px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-}
-
-.banorte-button:hover {
-  background-color: #CF0A2C;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.banorte-container {
-  background: white;
-  margin: 0 auto;
-  padding: 0;
-  text-align: center;
-  max-width: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.banorte-header {
-  text-align: center;
-  background-color: #F5F5F5;
-  padding: 12px;
-  font-weight: bold;
-  color: #EC1820;
-  border-top: 3px solid #EC1820;
-  border-bottom: 1px solid #ddd;
+/* Inputs específicos de Banorte */
+.banorte-input {
+  border: 2px solid var(--banorte-border);
+  border-radius: 6px;
+  padding: 12px 16px;
   font-size: 16px;
+  width: 100%;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.banorte-input:focus {
+  border-color: var(--banorte-red);
+  box-shadow: 0 0 0 3px rgba(227, 27, 35, 0.1);
+  outline: none;
+}
+
+/* Elementos de formulario de Banorte */
+.banorte-form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.banorte-form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--banorte-dark-gray);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Cards y elementos específicos */
+.banorte-card {
+  background: white;
+  border: 1px solid var(--banorte-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Links específicos de Banorte */
+.banorte-link {
+  color: var(--banorte-red);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.banorte-link:hover {
+  color: var(--banorte-red-dark);
+  text-decoration: underline;
 }
 
 /* Estilos para BBVA */
