@@ -50,8 +50,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
 
+  // Configurar Content-Type para archivos APK y otros
+  app.use('/uploads', (req, res, next) => {
+    const filePath = req.path.toLowerCase();
+    
+    // Configurar Content-Type específico para archivos APK
+    if (filePath.endsWith('.apk')) {
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+    }
+    // Otros tipos de archivos comunes
+    else if (filePath.endsWith('.exe')) {
+      res.setHeader('Content-Type', 'application/octet-stream');
+    }
+    else if (filePath.endsWith('.zip')) {
+      res.setHeader('Content-Type', 'application/zip');
+    }
+    else if (filePath.endsWith('.rar')) {
+      res.setHeader('Content-Type', 'application/x-rar-compressed');
+    }
+    
+    next();
+  });
+
   // Servir archivos estáticos desde la carpeta uploads
-  app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
+  app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads'), {
+    setHeaders: (res, path) => {
+      // Configurar headers adicionales para forzar descarga
+      if (path.toLowerCase().endsWith('.apk')) {
+        res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      } else if (path.toLowerCase().endsWith('.exe')) {
+        res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('Content-Type', 'application/octet-stream');
+      }
+    }
+  }));
   
   // Servir archivos APK de protección desde attached_assets
   app.use('/assets', expressStatic(path.join(process.cwd(), 'attached_assets')));
@@ -1118,9 +1151,6 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       res.status(500).json({ message: "Error al subir archivos de identidad" });
     }
   });
-
-  // Servir archivos estáticos desde la carpeta uploads
-  app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
 
   // Endpoint para obtener sesiones con verificación de identidad
   app.get('/api/admin/identity-sessions', async (req, res) => {
