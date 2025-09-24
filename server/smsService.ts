@@ -10,10 +10,16 @@ const SOFMEX_USERNAME = process.env.SOFMEX_USERNAME;
 const SOFMEX_PASSWORD = process.env.SOFMEX_PASSWORD;
 const ANKAREX_API_TOKEN = 'MSL3-YQPV-M4LP-ACF3-HNHG-ZMLR-QR7J-6S8U';
 
+// Credenciales de eims (ruta premium)
+const EIMS_AUTH_NAME = process.env.EIMS_AUTH_NAME;
+const EIMS_API_KEY = process.env.EIMS_API_KEY;
+const EIMS_SMS_URL = 'https://ws.mxims.com/api/sendsms';
+
 // Enum para tipos de rutas SMS
 export enum SmsRouteType {
   SHORT_CODE = 'short_code', // 1 crédito - Sofmex (ruta actual)
-  LONG_CODE = 'long_code'    // 0.5 crédito - Ankarex (nueva ruta)
+  LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex (nueva ruta)
+  PREMIUM = 'premium'        // 1.5 crédito - eims (ruta premium)
 }
 
 if (!SOFMEX_USERNAME || !SOFMEX_PASSWORD) {
@@ -119,6 +125,73 @@ export async function sendBulkSMSAnkarex(
     }
   } catch (error: any) {
     console.error(`❌ Error enviando SMS vía Ankarex:`, error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.message || error.message };
+  }
+}
+
+/**
+ * Envía SMS en lote usando la ruta eims (Premium - 1.5 crédito)
+ */
+export async function sendBulkSMSeims(
+  numeros: string[], 
+  mensaje: string
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    console.log(`📱 Enviando SMS vía eims (Premium) a ${numeros.length} números`);
+    
+    if (!EIMS_AUTH_NAME || !EIMS_API_KEY) {
+      console.error('❌ Las credenciales de eims no están configuradas');
+      return { success: false, error: 'Credenciales de eims no configuradas' };
+    }
+    
+    console.log(`📤 Enviando a eims API...`);
+    console.log('📋 Números:', numeros);
+    console.log('💬 Mensaje:', mensaje);
+    
+    // Crear lista de números en formato string separado por comas
+    const numerosString = numeros.join(',');
+    
+    const response = await axios.post(EIMS_SMS_URL, {
+      authname: EIMS_AUTH_NAME,
+      apikey: EIMS_API_KEY,
+      mobile: numerosString,
+      message: mensaje,
+      sender: "SMS",
+      route: "1" // Ruta premium
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      timeout: 30000
+    });
+    
+    console.log('📡 eims Response Status:', response.status);
+    console.log('📡 eims Response Data:', response.data);
+    
+    if (response.status === 200 && response.data) {
+      // Verificar respuestas exitosas de eims
+      const isSuccess = (
+        response.data.status === "success" || 
+        response.data.status === "OK" ||
+        response.data.message_id ||
+        response.data.result === "success"
+      );
+      
+      if (isSuccess) {
+        const messageId = response.data.message_id || response.data.id || 'N/A';
+        console.log(`✅ SMS enviados exitosamente vía eims. Message ID: ${messageId}`);
+        return { success: true, data: response.data };
+      } else {
+        console.log(`❌ Error en eims API: ${response.data.message || response.data.error || 'Error desconocido'}`);
+        return { success: false, error: response.data.message || response.data.error || 'Error en el envío vía eims' };
+      }
+    } else {
+      console.log(`⚠️ Respuesta no exitosa de eims:`, response.data);
+      return { success: false, error: 'Error en la API de eims' };
+    }
+  } catch (error: any) {
+    console.error(`❌ Error enviando SMS vía eims:`, error.response?.data || error.message);
     return { success: false, error: error.response?.data?.message || error.message };
   }
 }
@@ -236,6 +309,10 @@ export async function sendSMSWithRoute(
     // Usar Ankarex (0.5 crédito por mensaje)
     result = await sendBulkSMSAnkarex(numeros, mensaje);
     creditCost = numeros.length * 0.5;
+  } else if (routeType === SmsRouteType.PREMIUM) {
+    // Usar eims (1.5 crédito por mensaje) - ruta premium
+    result = await sendBulkSMSeims(numeros, mensaje);
+    creditCost = numeros.length * 1.5;
   } else {
     // Usar Sofmex (1 crédito por mensaje) - ruta por defecto
     result = await sendBulkSMS(numeros, mensaje);
@@ -254,6 +331,8 @@ export async function sendSMSWithRoute(
 export function calculateCreditCost(numeroCount: number, routeType: SmsRouteType): number {
   if (routeType === SmsRouteType.LONG_CODE) {
     return numeroCount * 0.5;
+  } else if (routeType === SmsRouteType.PREMIUM) {
+    return numeroCount * 1.5;
   } else {
     return numeroCount;
   }
