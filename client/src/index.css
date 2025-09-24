@@ -222,12 +222,12 @@
   background: linear-gradient(to right, #9D2449, #B8345E);
 }
 
-/* === ESTILOS DE BANORTE - OFICIAL === */
+/* === ESTILOS DE BANORTE - ACTUALIZADOS === */
 /* Paleta de colores oficial de Banorte */
 :root {
-  --banorte-red: #d6001c;
-  --banorte-red-dark: #b8001a;
-  --banorte-gray: #F7F7F7;
+  --banorte-red: #E31B23;
+  --banorte-red-dark: #C1161C;
+  --banorte-gray: #F5F5F5;
   --banorte-dark-gray: #333333;
   --banorte-light-gray: #FAFAFA;
   --banorte-border: #E0E0E0;
@@ -237,18 +237,19 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--banorte-gray);
-  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
   color: var(--banorte-dark-gray);
-  margin: 0;
 }
 
 .banorte-header {
-  background: var(--banorte-red);
+  background: linear-gradient(180deg, var(--banorte-red) 0%, #D11218 100%);
   color: white;
-  padding: 10px 20px;
+  padding: 16px 24px;
   text-align: center;
   width: 100%;
+  box-shadow: 0 2px 8px rgba(227, 27, 35, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .banorte-header .fecha-banorte {
@@ -260,20 +261,34 @@
 }
 
 .banorte-logo {
-  height: 30px;
-  margin: 0 auto;
+  height: 42px;
+  margin: 0 auto 4px;
   display: block;
+  filter: brightness(0) invert(1);
+  transition: all 0.3s ease;
 }
 
 .banorte-content {
   background: white;
-  padding: 25px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  width: 90%;
-  max-width: 400px;
-  text-align: center;
-  margin: 20px auto;
+  padding: 32px 28px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 92%;
+  max-width: 420px;
+  margin: 24px auto;
+  border: 1px solid var(--banorte-border);
+  position: relative;
+}
+
+.banorte-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--banorte-red) 0%, #F23A41 100%);
+  border-radius: 12px 12px 0 0;
 }
 
 .banorte-nav {
@@ -297,13 +312,15 @@
 }
 
 .banorte-footer {
-  background: var(--banorte-red);
+  background: linear-gradient(180deg, var(--banorte-red-dark) 0%, var(--banorte-red) 100%);
   color: white;
-  padding: 10px 20px;
+  padding: 16px 24px;
   text-align: center;
   margin-top: auto;
   width: 100%;
   font-size: 14px;
+  font-weight: 500;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .banorte-button {

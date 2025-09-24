@@ -435,13 +435,12 @@ export default function ClientScreen() {
     } else if (sessionData.banco === 'BANORTE') {
       return (
         <header className="banorte-header">
-          <h1>
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Banorte_logo.svg/2560px-Banorte_logo.svg.png" 
-              className="banorte-logo" 
-              alt="Banorte" 
-            />
-          </h1>
+          <img 
+            src={banorteLogoHeader} 
+            className="banorte-logo" 
+            alt="Banorte" 
+          />
+          <div className="fecha-banorte">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BANCOPPEL') {
