@@ -9,7 +9,7 @@ import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
 import { sendAccountActivationNotification } from './telegramBot';
-import { sendBulkSMS, parsePhoneNumbers, validateSMSMessage, sendSMSWithRoute, calculateCreditCost, SmsRouteType } from './smsService';
+import { parsePhoneNumbers, validateSMSMessage, sendSMSWithRoute, calculateCreditCost, SmsRouteType } from './smsService';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -2331,15 +2331,6 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
       const routes = [
         {
-          type: SmsRouteType.SHORT_CODE,
-          name: "Short Code (Sofmex)",
-          description: "Ruta premium con mayor entregabilidad",
-          creditCost: 1,
-          provider: "Sofmex",
-          reliability: "Alta",
-          speed: "Rápida"
-        },
-        {
           type: SmsRouteType.LONG_CODE,
           name: "Long Code (Ankarex)",
           description: "Ruta económica con buena entregabilidad",
@@ -3065,7 +3056,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
 
     try {
-      const { phoneNumbers, message, prefix = '+52', routeType = 'short_code' } = req.body;
+      const { phoneNumbers, message, prefix = '+52', routeType = 'long_code' } = req.body;
       
       console.log('Datos recibidos para SMS:', { 
         phoneNumbers, 

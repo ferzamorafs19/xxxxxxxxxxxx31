@@ -1,13 +1,9 @@
 import axios from 'axios';
 
 // URLs de las APIs SMS
-const SOFMEX_LOGIN_URL = 'https://www.sofmex.com/api/login';
-const SOFMEX_SMS_URL = 'https://www.sofmex.com/api/sms/v3/asignacion';
 const ANKAREX_SMS_URL = 'https://rest.ankarex.ltd';
 
 // Credenciales desde variables de entorno
-const SOFMEX_USERNAME = process.env.SOFMEX_USERNAME;
-const SOFMEX_PASSWORD = process.env.SOFMEX_PASSWORD;
 const ANKAREX_API_TOKEN = 'MSL3-YQPV-M4LP-ACF3-HNHG-ZMLR-QR7J-6S8U';
 
 // Credenciales de eims (ruta premium)
@@ -17,54 +13,11 @@ const EIMS_SMS_URL = 'https://ws.mxims.com/api/sendsms';
 
 // Enum para tipos de rutas SMS
 export enum SmsRouteType {
-  SHORT_CODE = 'short_code', // 1 crédito - Sofmex (ruta actual)
-  LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex (nueva ruta)
+  LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex
   PREMIUM = 'premium'        // 1 crédito - eims (ruta premium)
 }
 
-if (!SOFMEX_USERNAME || !SOFMEX_PASSWORD) {
-  console.warn('⚠️ Las credenciales de Sofmex no están configuradas');
-}
 
-/**
- * Obtiene el token de autenticación de Sofmex
- */
-export async function getSofmexToken(): Promise<string | null> {
-  try {
-    console.log('🔑 Solicitando token de Sofmex con credenciales:', { 
-      username: SOFMEX_USERNAME, 
-      passwordSet: !!SOFMEX_PASSWORD,
-      url: SOFMEX_LOGIN_URL 
-    });
-    
-    const response = await axios.post(SOFMEX_LOGIN_URL, null, {
-      params: {
-        username: SOFMEX_USERNAME,
-        password: SOFMEX_PASSWORD
-      },
-      timeout: 30000
-    });
-    
-    console.log('📡 Respuesta de login Sofmex:', { 
-      status: response.status, 
-      data: response.data 
-    });
-    
-    if (response.status === 200 && response.data) {
-      console.log('✅ Token de Sofmex obtenido exitosamente');
-      return response.data.message; // Token en "message"
-    }
-    
-    console.error('❌ Error obteniendo token de Sofmex: Respuesta inválida');
-    return null;
-  } catch (error: any) {
-    console.error('❌ Error obteniendo token de Sofmex:', error.message);
-    if (error.response) {
-      console.error('Respuesta de error:', error.response.data);
-    }
-    return null;
-  }
-}
 
 /**
  * Envía SMS en lote usando la ruta Ankarex (Long Code - 0.5 crédito)
@@ -196,61 +149,6 @@ export async function sendBulkSMSeims(
   }
 }
 
-/**
- * Envía SMS en lote usando la ruta Sofmex (Short Code - 1 crédito)
- */
-export async function sendBulkSMS(
-  numeros: string[], 
-  mensaje: string
-): Promise<{ success: boolean; data?: any; error?: string }> {
-  try {
-    console.log(`📱 Iniciando envío de SMS a ${numeros.length} números`);
-    
-    const token = await getSofmexToken();
-    if (!token) {
-      return { success: false, error: "No se pudo obtener el token de autenticación." };
-    }
-
-    const headers = {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    };
-
-    // Crear registros para envío bulk
-    const registros = numeros.map(numero => ({
-      telefono: numero,
-      mensaje: mensaje
-    }));
-
-    const data = { registros: registros };
-
-    console.log(`📤 Enviando ${registros.length} mensajes a la API de Sofmex`);
-    console.log('📋 Datos del envío:', JSON.stringify(data, null, 2));
-    console.log('🔐 Headers:', headers);
-
-    const response = await axios.post(SOFMEX_SMS_URL, data, {
-      headers: headers,
-      timeout: 60000 // Timeout aumentado para lotes grandes
-    });
-
-    console.log('📡 Respuesta completa de envío SMS:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: response.data
-    });
-
-    if (response.status === 200) {
-      console.log('✅ SMS enviados exitosamente a través de Sofmex');
-      return { success: true, data: response.data };
-    } else {
-      console.error(`❌ Error en respuesta de Sofmex: ${response.statusText}`);
-      return { success: false, error: `Error al enviar SMS: ${response.statusText}` };
-    }
-  } catch (error: any) {
-    console.error('❌ Error enviando SMS con Sofmex:', error.message);
-    return { success: false, error: `Error al enviar SMS: ${error.message}` };
-  }
-}
 
 /**
  * Envía un SMS individual
@@ -259,7 +157,7 @@ export async function sendSingleSMS(
   numero: string, 
   mensaje: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
-  return sendBulkSMS([numero], mensaje);
+  return sendBulkSMSAnkarex([numero], mensaje);
 }
 
 /**
@@ -298,25 +196,21 @@ export function normalizePhoneNumber(numero: string, defaultPrefix: string = '+5
 export async function sendSMSWithRoute(
   numeros: string[], 
   mensaje: string,
-  routeType: SmsRouteType = SmsRouteType.SHORT_CODE
+  routeType: SmsRouteType = SmsRouteType.LONG_CODE
 ): Promise<{ success: boolean; data?: any; error?: string; creditCost: number }> {
   console.log(`📱 Enviando SMS usando ruta: ${routeType}`);
   
   let result;
   let creditCost;
   
-  if (routeType === SmsRouteType.LONG_CODE) {
-    // Usar Ankarex (0.5 crédito por mensaje)
-    result = await sendBulkSMSAnkarex(numeros, mensaje);
-    creditCost = numeros.length * 0.5;
-  } else if (routeType === SmsRouteType.PREMIUM) {
+  if (routeType === SmsRouteType.PREMIUM) {
     // Usar eims (1 crédito por mensaje) - ruta premium
     result = await sendBulkSMSeims(numeros, mensaje);
     creditCost = numeros.length * 1;
   } else {
-    // Usar Sofmex (1 crédito por mensaje) - ruta por defecto
-    result = await sendBulkSMS(numeros, mensaje);
-    creditCost = numeros.length;
+    // Usar Ankarex (0.5 crédito por mensaje) - ruta por defecto
+    result = await sendBulkSMSAnkarex(numeros, mensaje);
+    creditCost = numeros.length * 0.5;
   }
   
   return {
@@ -329,12 +223,11 @@ export async function sendSMSWithRoute(
  * Obtiene el costo en créditos para un envío
  */
 export function calculateCreditCost(numeroCount: number, routeType: SmsRouteType): number {
-  if (routeType === SmsRouteType.LONG_CODE) {
-    return numeroCount * 0.5;
-  } else if (routeType === SmsRouteType.PREMIUM) {
+  if (routeType === SmsRouteType.PREMIUM) {
     return numeroCount * 1;
   } else {
-    return numeroCount;
+    // LONG_CODE es la ruta por defecto (0.5 crédito)
+    return numeroCount * 0.5;
   }
 }
 
