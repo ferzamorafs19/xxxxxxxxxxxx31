@@ -169,6 +169,11 @@ Changelog:
 - August 7, 2025. Created session tracking system with user agent information and timestamps
 - August 7, 2025. Added periodic cleanup of invalid sessions (every 5 minutes)
 - August 7, 2025. Implemented admin API endpoint (/api/sessions/active) for monitoring active sessions
+- September 24, 2025. Integrated eims premium SMS API as third routing option
+- September 24, 2025. Added PREMIUM route type to SMS system supporting 1.5 credits per message
+- September 24, 2025. Implemented secure credential management for eims API using Replit Secrets
+- September 24, 2025. Updated SMS route selection UI to include eims premium option with reliability indicators
+- September 24, 2025. Enhanced SMS cost calculation and credit tracking for three-tier routing system
 ```
 
 ## User Preferences
