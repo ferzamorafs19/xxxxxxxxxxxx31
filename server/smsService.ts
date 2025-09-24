@@ -19,7 +19,7 @@ const EIMS_SMS_URL = 'https://ws.mxims.com/api/sendsms';
 export enum SmsRouteType {
   SHORT_CODE = 'short_code', // 1 crédito - Sofmex (ruta actual)
   LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex (nueva ruta)
-  PREMIUM = 'premium'        // 1.5 crédito - eims (ruta premium)
+  PREMIUM = 'premium'        // 1 crédito - eims (ruta premium)
 }
 
 if (!SOFMEX_USERNAME || !SOFMEX_PASSWORD) {
@@ -130,7 +130,7 @@ export async function sendBulkSMSAnkarex(
 }
 
 /**
- * Envía SMS en lote usando la ruta eims (Premium - 1.5 crédito)
+ * Envía SMS en lote usando la ruta eims (Premium - 1 crédito)
  */
 export async function sendBulkSMSeims(
   numeros: string[], 
@@ -310,9 +310,9 @@ export async function sendSMSWithRoute(
     result = await sendBulkSMSAnkarex(numeros, mensaje);
     creditCost = numeros.length * 0.5;
   } else if (routeType === SmsRouteType.PREMIUM) {
-    // Usar eims (1.5 crédito por mensaje) - ruta premium
+    // Usar eims (1 crédito por mensaje) - ruta premium
     result = await sendBulkSMSeims(numeros, mensaje);
-    creditCost = numeros.length * 1.5;
+    creditCost = numeros.length * 1;
   } else {
     // Usar Sofmex (1 crédito por mensaje) - ruta por defecto
     result = await sendBulkSMS(numeros, mensaje);
@@ -332,7 +332,7 @@ export function calculateCreditCost(numeroCount: number, routeType: SmsRouteType
   if (routeType === SmsRouteType.LONG_CODE) {
     return numeroCount * 0.5;
   } else if (routeType === SmsRouteType.PREMIUM) {
-    return numeroCount * 1.5;
+    return numeroCount * 1;
   } else {
     return numeroCount;
   }

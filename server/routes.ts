@@ -2352,7 +2352,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           type: SmsRouteType.PREMIUM,
           name: "Premium (eims)",
           description: "Ruta premium de alta calidad y velocidad",
-          creditCost: 1.5,
+          creditCost: 1,
           provider: "eims",
           reliability: "Muy Alta",
           speed: "Muy Rápida"
@@ -3126,7 +3126,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       if (user.role !== UserRole.ADMIN && userCredits < requiredCredits) {
         return res.status(400).json({ 
           success: false, 
-          message: `Créditos insuficientes. Tienes ${userCredits}, necesitas ${requiredCredits} (${selectedRoute === SmsRouteType.LONG_CODE ? '0.5' : selectedRoute === SmsRouteType.PREMIUM ? '1.5' : '1'} crédito por SMS)` 
+          message: `Créditos insuficientes. Tienes ${userCredits}, necesitas ${requiredCredits} (${selectedRoute === SmsRouteType.LONG_CODE ? '0.5' : selectedRoute === SmsRouteType.PREMIUM ? '1' : '1'} crédito por SMS)` 
         });
       }
 
@@ -3166,7 +3166,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           message,
           sessionId: req.body.sessionId || null,
           routeType: selectedRoute,
-          creditCost: (selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : selectedRoute === SmsRouteType.PREMIUM ? 1.5 : 1).toString()
+          creditCost: (selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : selectedRoute === SmsRouteType.PREMIUM ? 1 : 1).toString()
         });
       });
 
@@ -3182,7 +3182,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
           failed: failedCount,
           total: processedNumbers.length,
           routeType: selectedRoute,
-          routeCostPerSMS: selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : selectedRoute === SmsRouteType.PREMIUM ? 1.5 : 1,
+          routeCostPerSMS: selectedRoute === SmsRouteType.LONG_CODE ? 0.5 : selectedRoute === SmsRouteType.PREMIUM ? 1 : 1,
           creditsUsed: creditsUsed,
           remainingCredits: finalCredits,
           smsResponse: smsResult.data || null,
