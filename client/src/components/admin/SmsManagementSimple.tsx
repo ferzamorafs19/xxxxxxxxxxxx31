@@ -42,7 +42,7 @@ const SmsManagementSimple = () => {
   const [phoneNumbers, setPhoneNumbers] = useState("");
   const [smsMessage, setSmsMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
-  const [routeType, setRouteType] = useState("short_code");
+  const [routeType, setRouteType] = useState("long_code");
 
   // Obtener lista de usuarios regulares
   const { data: users = [] } = useQuery({

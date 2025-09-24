@@ -19,7 +19,7 @@ const UserSmsPanel = () => {
   const [phoneNumbers, setPhoneNumbers] = useState("");
   const [message, setMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
-  const [routeType, setRouteType] = useState<string>("short_code");
+  const [routeType, setRouteType] = useState<string>("long_code");
 
   // Obtener créditos del usuario
   const { data: userCredits = 0 } = useQuery({
@@ -99,7 +99,7 @@ const UserSmsPanel = () => {
 
     // Calcular cuántos números se van a enviar y el costo total
     const numbers = phoneNumbers.split(',').map(n => n.trim()).filter(n => n.length > 0);
-    const costPerSms = routeType === 'short_code' ? 1.0 : 0.5;
+    const costPerSms = routeType === 'premium' ? 1.0 : 0.5;
     const totalCost = numbers.length * costPerSms;
     
     if (userCredits < totalCost) {
@@ -185,7 +185,7 @@ const UserSmsPanel = () => {
                 <SelectValue placeholder="Selecciona el tipo de ruta" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="short_code">
+                <SelectItem value="premium">
                   <span>Ruta Premium (1.0 crédito)</span>
                 </SelectItem>
                 <SelectItem value="long_code">
@@ -246,7 +246,7 @@ const UserSmsPanel = () => {
               <span>{message.length}/160 caracteres</span>
               {phoneNumbers.trim() && routeType && (
                 <span className="font-medium">
-                  Total: {((routeType === 'short_code' ? 1.0 : 0.5) * 
+                  Total: {((routeType === 'premium' ? 1.0 : 0.5) * 
                     phoneNumbers.split(',').filter(n => n.trim()).length).toFixed(1)} créditos
                 </span>
               )}

@@ -61,23 +61,23 @@ const SmsManagement = () => {
   const [phoneNumbers, setPhoneNumbers] = useState("");
   const [smsMessage, setSmsMessage] = useState("");
   const [prefix, setPrefix] = useState("+52");
-  const [routeType, setRouteType] = useState("short_code");
+  const [routeType, setRouteType] = useState("long_code");
 
   // Rutas SMS por defecto para mostrar mientras se cargan desde el servidor
   const defaultSmsRoutes = [
-    {
-      type: "short_code",
-      name: "Short Code (Sofmex)",
-      description: "Ruta premium con mayor entregabilidad",
-      creditCost: 1,
-      provider: "Sofmex"
-    },
     {
       type: "long_code", 
       name: "Long Code (Ankarex)",
       description: "Ruta económica con buena entregabilidad",
       creditCost: 0.5,
       provider: "Ankarex"
+    },
+    {
+      type: "premium",
+      name: "Premium (eims)",
+      description: "Ruta premium de alta calidad y velocidad",
+      creditCost: 1,
+      provider: "eims"
     }
   ];
 
@@ -367,10 +367,10 @@ const SmsManagement = () => {
                       <SelectValue placeholder="🚀 Elige tu ruta SMS" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="short_code" className="py-4">
+                      <SelectItem value="long_code" className="py-4">
                         <div className="flex items-center justify-between w-full">
                           <div>
-                            <span className="font-semibold text-base">🚀 Short Code</span>
+                            <span className="font-semibold text-base">💰 Long Code</span>
                             <p className="text-sm text-muted-foreground">Sofmex - Alta entregabilidad</p>
                           </div>
                           <span className="text-lg font-bold text-orange-600 ml-4">1.0 crédito</span>
@@ -390,8 +390,8 @@ const SmsManagement = () => {
                   {routeType && (
                     <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
                       <div className="text-sm font-medium text-green-700">
-                        ✅ Ruta seleccionada: {routeType === 'short_code' ? 'Short Code (Sofmex)' : 'Long Code (Ankarex)'} - 
-                        {routeType === 'short_code' ? ' 1.0 crédito por SMS' : ' 0.5 créditos por SMS'}
+                        ✅ Ruta seleccionada: {routeType === 'premium' ? 'Premium (eims)' : 'Long Code (Ankarex)'} - 
+                        {routeType === 'premium' ? ' 1.0 crédito por SMS' : ' 0.5 créditos por SMS'}
                       </div>
                     </div>
                   )}
@@ -476,7 +476,7 @@ const SmsManagement = () => {
                       <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                         <div>
                           <span className="text-gray-600">Ruta:</span>
-                          <p className="font-semibold">{routeType === 'short_code' ? '🚀 Short Code (Sofmex)' : '💰 Long Code (Ankarex)'}</p>
+                          <p className="font-semibold">{routeType === 'premium' ? '🚀 Premium (eims)' : '💰 Long Code (Ankarex)'}</p>
                         </div>
                         <div>
                           <span className="text-gray-600">País:</span>
@@ -488,14 +488,14 @@ const SmsManagement = () => {
                         </div>
                         <div>
                           <span className="text-gray-600">Costo por SMS:</span>
-                          <p className="font-semibold text-green-600">{routeType === 'short_code' ? '1.0' : '0.5'} créditos</p>
+                          <p className="font-semibold text-green-600">{routeType === 'premium' ? '1.0' : '0.5'} créditos</p>
                         </div>
                       </div>
                       <div className="border-t pt-3">
                         <div className="flex justify-between items-center text-lg">
                           <span className="font-bold text-gray-800">Total a consumir:</span>
                           <span className="font-bold text-red-600 text-xl">
-                            {((routeType === 'short_code' ? 1.0 : 0.5) * 
+                            {((routeType === 'premium' ? 1.0 : 0.5) * 
                               phoneNumbers.split(',').filter(n => n.trim()).length).toFixed(1)} créditos
                           </span>
                         </div>
