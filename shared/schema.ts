@@ -257,7 +257,8 @@ export type SmsCredits = typeof smsCredits.$inferSelect;
 // Tipos de ruta SMS
 export enum SmsRouteType {
   LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex
-  PREMIUM = 'premium'        // 1 crédito - eims (ruta premium)
+  SHORT_CODE = 'short_code', // 1 crédito - eims (ruta premium)
+  PREMIUM = 'premium'        // 1 crédito - eims (ruta premium alternativa)
 }
 
 // Tabla para el historial de mensajes enviados

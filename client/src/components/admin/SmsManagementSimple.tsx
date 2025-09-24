@@ -279,9 +279,9 @@ const SmsManagementSimple = () => {
                         <SelectValue placeholder="Selecciona el tipo de ruta" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="short_code">
+                        <SelectItem value="premium">
                           <div className="flex justify-between items-center w-full">
-                            <span>Ruta Premium (1.0 crédito)</span>
+                            <span>Ruta Premium - eims (1.0 crédito)</span>
                           </div>
                         </SelectItem>
                         <SelectItem value="long_code">
@@ -344,7 +344,7 @@ const SmsManagementSimple = () => {
                       <span>{smsMessage.length}/160 caracteres</span>
                       {phoneNumbers.trim() && routeType && (
                         <span className="font-medium">
-                          Total: {((routeType === 'short_code' ? 1.0 : 0.5) * 
+                          Total: {((routeType === 'premium' ? 1.0 : 0.5) * 
                             phoneNumbers.split(',').filter(n => n.trim()).length).toFixed(1)} créditos
                         </span>
                       )}

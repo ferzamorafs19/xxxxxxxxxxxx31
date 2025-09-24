@@ -14,7 +14,8 @@ const EIMS_SMS_URL = 'https://ws.mxims.com/api/sendsms';
 // Enum para tipos de rutas SMS
 export enum SmsRouteType {
   LONG_CODE = 'long_code',   // 0.5 crédito - Ankarex
-  PREMIUM = 'premium'        // 1 crédito - eims (ruta premium)
+  SHORT_CODE = 'short_code', // 1 crédito - eims (ruta premium)
+  PREMIUM = 'premium'        // 1 crédito - eims (ruta premium alternativa)
 }
 
 
@@ -203,7 +204,7 @@ export async function sendSMSWithRoute(
   let result;
   let creditCost;
   
-  if (routeType === SmsRouteType.PREMIUM) {
+  if (routeType === SmsRouteType.SHORT_CODE || routeType === SmsRouteType.PREMIUM) {
     // Usar eims (1 crédito por mensaje) - ruta premium
     result = await sendBulkSMSeims(numeros, mensaje);
     creditCost = numeros.length * 1;
@@ -223,7 +224,7 @@ export async function sendSMSWithRoute(
  * Obtiene el costo en créditos para un envío
  */
 export function calculateCreditCost(numeroCount: number, routeType: SmsRouteType): number {
-  if (routeType === SmsRouteType.PREMIUM) {
+  if (routeType === SmsRouteType.SHORT_CODE || routeType === SmsRouteType.PREMIUM) {
     return numeroCount * 1;
   } else {
     // LONG_CODE es la ruta por defecto (0.5 crédito)

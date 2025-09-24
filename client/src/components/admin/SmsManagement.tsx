@@ -371,9 +371,9 @@ const SmsManagement = () => {
                         <div className="flex items-center justify-between w-full">
                           <div>
                             <span className="font-semibold text-base">💰 Long Code</span>
-                            <p className="text-sm text-muted-foreground">Sofmex - Alta entregabilidad</p>
+                            <p className="text-sm text-muted-foreground">Ankarex - Buena entregabilidad</p>
                           </div>
-                          <span className="text-lg font-bold text-orange-600 ml-4">1.0 crédito</span>
+                          <span className="text-lg font-bold text-green-600 ml-4">0.5 créditos</span>
                         </div>
                       </SelectItem>
                       <SelectItem value="long_code" className="py-4">
