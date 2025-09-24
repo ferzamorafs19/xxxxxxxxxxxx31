@@ -434,13 +434,13 @@ export default function ClientScreen() {
       );
     } else if (sessionData.banco === 'BANORTE') {
       return (
-        <header className="bg-[#EC1C24] text-white p-4 text-center">
+        <header className="banorte-header">
           <img 
             src={banorteLogoHeader} 
-            className="banorte-logo inline-block mb-2" 
+            className="banorte-logo" 
             alt="Banorte" 
           />
-          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+          <div className="fecha-banorte">{formatDate(new Date())}</div>
         </header>
       );
     } else if (sessionData.banco === 'BANCOPPEL') {
@@ -596,7 +596,7 @@ export default function ClientScreen() {
     }
   };
 
-  // Función para renderizar el footer específico de BanBajío
+  // Función para renderizar el footer específico de BanBajío y Banorte
   const renderFooter = () => {
     if (sessionData.banco === 'BANBAJIO') {
       return (
@@ -612,6 +612,32 @@ export default function ClientScreen() {
             <a href="#" className="text-white mx-2">YouTube</a>
             <br />
             © Banbajio México 2024. Todos los Derechos Reservados
+          </div>
+        </footer>
+      );
+    } else if (sessionData.banco === 'BANORTE') {
+      return (
+        <footer className="mt-auto">
+          <div className="banorte-nav">
+            <a href="https://www.banorte.com/" target="_blank" rel="noopener noreferrer" className="banorte-link">Aprende más</a>
+            <a href="https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/" target="_blank" rel="noopener noreferrer" className="banorte-link">Ayuda</a>
+            <a href="https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones" target="_blank" rel="noopener noreferrer" className="banorte-link">Términos</a>
+            <a href="https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte" target="_blank" rel="noopener noreferrer" className="banorte-link">Seguridad</a>
+          </div>
+          <div className="banorte-footer">
+            <div className="mb-2">
+              <a href="https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
+              <a href="https://www.banorte.com/wps/portal/banorte/Home/servicios/aclaraciones" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
+              <a href="https://www.banorte.com/wps/portal/banorte/Home/promociones" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a>
+            </div>
+            <div className="mb-2">
+              <a href="https://www.facebook.com/BanorteGFNorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
+              <a href="https://www.youtube.com/user/BanorteGFNorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">YouTube</a> |
+              <a href="https://twitter.com/Banorte" target="_blank" rel="noopener noreferrer" className="text-white mx-2">Twitter</a>
+            </div>
+            <div className="text-sm opacity-90">
+              © Banorte México 2024. Todos los Derechos Reservados
+            </div>
           </div>
         </footer>
       );
