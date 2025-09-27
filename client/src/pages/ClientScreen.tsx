@@ -28,7 +28,7 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 import bancoAztecaLogo from '../assets/banco_azteca_logo.png';
 import bienestarLogo from '../assets/banco_bienestar_logo.png';
-import inbursaLogo from '@assets/stock_images/inbursa_bank_logo_me_8f46c1cf.jpg';
+import inbursaLogo from '@assets/inbursa-seeklogo_1758958331280.png';
 
 export default function ClientScreen() {
   // Verificar primero la ruta /client/:sessionId
@@ -588,7 +588,7 @@ export default function ClientScreen() {
           <div className="flex justify-center mb-2">
             <img 
               src={inbursaLogo} 
-              className="inbursa-logo inline-block" 
+              className="inbursa-logo inline-block filter brightness-0 invert" 
               alt="Grupo Financiero Inbursa" 
               style={{height: '2.5rem', width: 'auto'}}
             />
