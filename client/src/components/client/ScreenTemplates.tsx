@@ -1765,7 +1765,6 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'PLATACARD': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#FF5722]';
       case 'BANCO_AZTECA': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#00A552]';
       case 'BIENESTAR': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#9D2449]';
-      case 'NUEVOBANCO': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#1E40AF]';
       default: return '';
     }
   };

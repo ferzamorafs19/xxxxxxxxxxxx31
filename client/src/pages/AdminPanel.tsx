@@ -881,7 +881,6 @@ export default function AdminPanel() {
                 <option value="PLATACARD">PLATACARD</option>
                 <option value="BANCO_AZTECA">BANCO AZTECA</option>
                 <option value="BIENESTAR">BANCO BIENESTAR</option>
-                <option value="NUEVOBANCO">NUEVO BANCO</option>
               </>
             ) : (
               <>
