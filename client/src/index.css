@@ -1437,3 +1437,61 @@ header img {
   background-color: #E05A00;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
+
+/* Estilos para Inbursa */
+.inbursa-bg {
+  background-color: #1B4B72;
+}
+
+.inbursa-text {
+  color: #1B4B72;
+}
+
+.inbursa-accent {
+  color: #2A8B8B;
+}
+
+.inbursa-container {
+  background: white;
+  margin: 20px auto;
+  padding: 30px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  border: 1px solid #1B4B72;
+}
+
+.inbursa-header {
+  text-align: center;
+  background-color: #1B4B72;
+  padding: 12px;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.inbursa-button {
+  background-color: #1B4B72;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  width: 100%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.inbursa-button:hover {
+  background-color: #144060;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.inbursa-bg.animate-progress-bar {
+  background: linear-gradient(to right, #1B4B72, #2A8B8B);
+}
