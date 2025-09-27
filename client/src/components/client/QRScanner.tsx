@@ -78,6 +78,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         return "bg-red-600 hover:bg-red-700";
       case BankType.AMEX:
         return "bg-blue-600 hover:bg-blue-700";
+      case BankType.INBURSA:
+        return "bg-[#1B4B72] hover:bg-[#0F3A5F]";
       default:
         return "bg-orange-500 hover:bg-orange-600";
     }
@@ -104,6 +106,8 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onCancel, bankType
         return "bg-red-600 text-white";
       case BankType.AMEX:
         return "bg-blue-600 text-white";
+      case BankType.INBURSA:
+        return "bg-[#1B4B72] text-white";
       default:
         return "bg-gray-800 text-white";
     }
