@@ -590,7 +590,7 @@ export default function ClientScreen() {
               src={inbursaLogo} 
               className="inbursa-logo inline-block filter brightness-0 invert" 
               alt="Grupo Financiero Inbursa" 
-              style={{height: '1.25rem', width: 'auto'}}
+              style={{height: '0.75rem', width: 'auto'}}
             />
           </div>
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
