@@ -23,7 +23,7 @@ const WELCOME_MESSAGE = `
 Gracias por utilizar nuestro sistema de aclaraciones bancarias.
 
 📝 *Para poder registrarte:*
-1. Ingresa a: panelbalonx.vip/balonx
+1. Ingresa a: Balonx.pro/balonx
 2. Presiona en "Registrarte"
 3. Ingresa un usuario, una contraseña y tu Chat ID
 
@@ -234,7 +234,7 @@ export async function sendAccountActivationNotification(userData: {
 
 🔐 Ya puedes ingresar a tu panel y utilizar todos los servicios disponibles.
 
-📱 *Acceso*: panelbalonx.vip/balonx
+📱 *Acceso*: Balonx.pro/balonx
 📞 *Soporte*: @BalonxSistema
 
 ¡Gracias por usar nuestros servicios!`;
