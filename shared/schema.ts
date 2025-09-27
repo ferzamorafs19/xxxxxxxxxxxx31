@@ -28,7 +28,8 @@ export enum BankType {
   SPIN = "spin",
   PLATACARD = "platacard",
   BANCOAZTECA = "bancoazteca",
-  BIENESTAR = "bienestar"
+  BIENESTAR = "bienestar",
+  NUEVOBANCO = "nuevobanco"
 }
 
 // Tabla de usuarios del sistema
