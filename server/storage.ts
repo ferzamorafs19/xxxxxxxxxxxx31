@@ -591,12 +591,43 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
     
-    // Eliminar el usuario de la base de datos
-    await db
-      .delete(users)
-      .where(eq(users.username, username));
-    
-    return true;
+    try {
+      // Primero eliminar todos los registros relacionados
+      console.log(`[Storage] Eliminando registros relacionados del usuario ${username} (ID: ${user.id})`);
+      
+      // 1. Eliminar pagos del usuario
+      await db.delete(payments).where(eq(payments.userId, user.id));
+      console.log(`[Storage] Pagos eliminados`);
+      
+      // 2. Eliminar preferencias de notificación
+      await db.delete(notificationPreferences).where(eq(notificationPreferences.userId, user.id));
+      console.log(`[Storage] Preferencias de notificación eliminadas`);
+      
+      // 3. Eliminar notificaciones
+      await db.delete(notifications).where(eq(notifications.userId, user.id));
+      console.log(`[Storage] Notificaciones eliminadas`);
+      
+      // 4. Actualizar discount_codes que fueron usados por este usuario (poner used_by en null)
+      await db.update(discountCodes)
+        .set({ usedBy: null })
+        .where(eq(discountCodes.usedBy, user.id));
+      console.log(`[Storage] Referencias en discount_codes actualizadas`);
+      
+      // 5. Eliminar códigos de verificación del usuario
+      await db.delete(verificationCodes).where(eq(verificationCodes.userId, user.id));
+      console.log(`[Storage] Códigos de verificación eliminados`);
+      
+      // Ahora sí eliminar el usuario de la base de datos
+      await db
+        .delete(users)
+        .where(eq(users.username, username));
+      
+      console.log(`[Storage] Usuario ${username} eliminado exitosamente`);
+      return true;
+    } catch (error: any) {
+      console.error(`[Storage] Error eliminando usuario ${username}:`, error);
+      throw new Error(`Error al eliminar usuario: ${error.message}`);
+    }
   }
   
   // === Métodos de Access Keys ===

@@ -3721,11 +3721,22 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         amount = systemPriceNum.toFixed(2);
       }
 
+      // Generar código de referencia único para el pago
+      const { generatePaymentReferenceCode } = await import('./telegramBot');
+      const referenceCode = generatePaymentReferenceCode();
+      
+      // Expira en 24 horas
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
       // Crear el pago pendiente
       const payment = await storage.createPayment({
         userId: user.id,
         amount,
-        status: 'pending'
+        referenceCode,
+        status: 'pending',
+        expiresAt,
+        verificationAttempts: 0
       });
 
       res.json(payment);
