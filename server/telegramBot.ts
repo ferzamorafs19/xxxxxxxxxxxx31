@@ -2,6 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import axios from 'axios';
 import { storage } from './storage';
 import { User, VerificationCode } from '@shared/schema';
+import { getMXNBalance } from './bitsoService';
 
 // Token del bot y chat ID del administrador desde variables de entorno
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -1356,6 +1357,10 @@ Para cancelar, envía /cancelar`, {
         // Generar código de referencia único para este pago
         const referenceCode = generatePaymentReferenceCode();
 
+        // Obtener balance actual de Bitso antes de crear el pago
+        const currentBalance = await getMXNBalance();
+        console.log(`[Payment] Balance actual de Bitso: $${currentBalance || 'N/A'} MXN`);
+
         // Crear pending payment para verificación automática
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 1); // Expira en 1 hora
@@ -1367,7 +1372,9 @@ Para cancelar, envía /cancelar`, {
           status: 'pending' as any,
           telegramFileId: paymentSession.screenshotFileId!,
           verificationAttempts: 0,
-          expiresAt
+          expiresAt,
+          previousBalance: currentBalance || undefined,
+          reportedAmount: amount
         });
 
         console.log(`[Payment] Pending payment creado para usuario ${user.username} - Código: ${referenceCode} - Monto: $${amount} MXN`);
