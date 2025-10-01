@@ -3578,6 +3578,40 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Ruta para actualizar precio personalizado de usuario
+  app.patch("/api/users/:userId/custom-price", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const userId = parseInt(req.params.userId);
+      const { customPrice } = req.body;
+      
+      // Validar que el precio sea un número válido o null (para eliminar el precio personalizado)
+      if (customPrice !== null && customPrice !== undefined && customPrice !== '' && isNaN(parseFloat(customPrice))) {
+        return res.status(400).json({ message: "Precio personalizado inválido" });
+      }
+
+      // Convertir a string o null
+      const priceValue = (customPrice === null || customPrice === undefined || customPrice === '') ? null : customPrice.toString();
+
+      await storage.updateUser(userId, {
+        customPrice: priceValue
+      });
+
+      const updatedUser = await storage.getUserById(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user custom price:", error);
+      res.status(500).json({ message: "Error al actualizar precio personalizado" });
+    }
+  });
+
   // Rutas de pagos
   app.get("/api/payments/pending", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
