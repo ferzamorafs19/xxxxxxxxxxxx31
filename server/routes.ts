@@ -3500,10 +3500,10 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
   app.post("/api/test-activation-notification", async (req, res) => {
     try {
       
-      // Usuario de prueba con Chat ID real de balonx
+      // Usuario de prueba con Chat ID del admin configurado
       const testUserData = {
         username: "usuario_prueba",
-        telegramChatId: "6615027684",
+        telegramChatId: process.env.ADMIN_CHAT_ID || "",
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 día
         allowedBanks: "banamex,bbva,banorte"
       };

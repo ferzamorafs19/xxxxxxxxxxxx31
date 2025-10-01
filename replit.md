@@ -96,6 +96,13 @@ Multiple screen types for different banking workflows:
 - **node-telegram-bot-api**: Telegram bot for notifications
 - Automated alerts for session creation, screen changes, and file downloads
 - Device information reporting
+- **Security**: Bot token and admin chat ID protected in Replit Secrets
+
+### Bitso Payment Integration
+- **Automated payment verification**: Checks Bitso API every 5 minutes
+- **Secure credentials**: API keys and receiving account stored in Replit Secrets
+- **Auto-activation**: Users activated for 7 days upon payment confirmation
+- **Smart notifications**: Payment confirmations and renewal reminders via Telegram
 
 ## Deployment Strategy
 
@@ -128,7 +135,7 @@ Changelog:
 - July 3, 2025. Implemented Telegram bot for 2FA and admin messaging
 - July 3, 2025. Added Chat ID field to user registration
 - July 3, 2025. Created verification codes system with 10-minute expiration
-- July 3, 2025. Configured 2FA notifications for both user and admin balonx (Chat ID: 6615027684)
+- July 3, 2025. Configured 2FA notifications for both user and admin balonx
 - July 3, 2025. Added admin Chat ID configuration in Telegram Bot Management panel
 - July 3, 2025. Implemented mandatory 2FA authentication for ALL users including administrators
 - July 3, 2025. Created TwoFactorVerification page and integrated 2FA flow in login process
@@ -182,7 +189,7 @@ Changelog:
 - October 1, 2025. Implemented AI-powered payment responses in Telegram bot (no account info shared)
 - October 1, 2025. Added payment confirmation notifications via Telegram when deposits verified
 - October 1, 2025. Enhanced bot with contextual payment information and renewal guidance
-- October 1, 2025. Configured Bitso account 710969000010685312 (Cuenta Nvio) for deposits
+- October 1, 2025. Configured Bitso payment receiving account securely in Replit Secrets
 - September 24, 2025. Updated SMS route selection UI to include eims premium option with reliability indicators
 - September 24, 2025. Enhanced SMS cost calculation and credit tracking for three-tier routing system
 ```

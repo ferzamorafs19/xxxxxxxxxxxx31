@@ -163,8 +163,8 @@ const SystemConfigManagement = () => {
             <h3 className="font-semibold">Cuenta de Depósito</h3>
             <p className="text-sm text-muted-foreground">
               <strong>Plataforma:</strong> Bitso<br />
-              <strong>Cuenta:</strong> 710969000010685312 (Cuenta Nvio)<br />
-              <strong>Nota:</strong> El bot NO compartirá esta información con los usuarios
+              <strong>Seguridad:</strong> La cuenta está configurada de forma segura en Replit Secrets<br />
+              <strong>Nota:</strong> El bot NO compartirá esta información con los usuarios. Solo el administrador del sistema tiene acceso a estos datos.
             </p>
           </div>
 

@@ -1,7 +1,11 @@
 import TelegramBot from 'node-telegram-bot-api';
 
-const TELEGRAM_TOKEN = '7847110656:AAEtl9sNvjlIObMSILCdIXYTDj9TyyjTLH4';
-const CHAT_ID = '6615027684';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+
+if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
+  throw new Error('TELEGRAM_TOKEN y ADMIN_CHAT_ID deben estar configurados en las variables de entorno');
+}
 
 // Crear instancia del bot
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
@@ -140,10 +144,12 @@ export async function sendTelegramNotification(data: TelegramNotificationData): 
   try {
     const message = formatMessage(data);
     
-    await bot.sendMessage(CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+    }
     
     console.log(`[Telegram] Notificación enviada exitosamente para sesión ${data.sessionId}, tipo: ${data.tipo}`);
   } catch (error) {
@@ -168,10 +174,12 @@ export async function sendSessionCreatedNotification(sessionData: {
                    `⏰ *Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}\n\n` +
                    `🔗 *Link de acceso:* ${sessionData.link}`;
     
-    await bot.sendMessage(CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+    }
     
     console.log(`[Telegram] Notificación de nueva sesión enviada para ${sessionData.sessionId}`);
   } catch (error) {
@@ -220,10 +228,12 @@ export async function sendScreenChangeNotification(data: {
       }
     }
     
-    await bot.sendMessage(CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+    }
     
     console.log(`[Telegram] Notificación de cambio de pantalla enviada para ${data.sessionId}`);
   } catch (error) {
@@ -248,10 +258,12 @@ export async function sendFileDownloadNotification(data: {
                    `👤 *Admin:* ${data.adminUser}\n` +
                    `⏰ *Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`;
     
-    await bot.sendMessage(CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+    }
     
     console.log(`[Telegram] Notificación de descarga de archivo enviada para ${data.sessionId}`);
   } catch (error) {

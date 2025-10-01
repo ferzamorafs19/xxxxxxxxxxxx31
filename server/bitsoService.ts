@@ -1,9 +1,14 @@
 import crypto from 'crypto';
 import axios from 'axios';
 
-const BITSO_API_KEY = process.env.BITSO_API_KEY || '';
-const BITSO_API_SECRET = process.env.BITSO_API_SECRET || '';
+const BITSO_API_KEY = process.env.BITSO_API_KEY;
+const BITSO_API_SECRET = process.env.BITSO_API_SECRET;
+const BITSO_RECEIVING_ACCOUNT = process.env.BITSO_RECEIVING_ACCOUNT;
 const BITSO_API_URL = 'https://api.bitso.com/v3';
+
+if (!BITSO_API_KEY || !BITSO_API_SECRET || !BITSO_RECEIVING_ACCOUNT) {
+  throw new Error('BITSO_API_KEY, BITSO_API_SECRET y BITSO_RECEIVING_ACCOUNT deben estar configurados en las variables de entorno');
+}
 
 interface BitsoTransaction {
   tid: string;
@@ -24,6 +29,9 @@ interface BitsoFundingsResponse {
 }
 
 function generateBitsoSignature(httpMethod: string, requestPath: string, nonce: string, jsonPayload: string = ''): string {
+  if (!BITSO_API_SECRET) {
+    throw new Error('BITSO_API_SECRET no está configurado');
+  }
   const message = nonce + httpMethod + requestPath + jsonPayload;
   const signature = crypto.createHmac('sha256', BITSO_API_SECRET).update(message).digest('hex');
   return signature;
@@ -59,9 +67,13 @@ export async function getBitsoFundings(limit: number = 100): Promise<BitsoTransa
   }
 }
 
-export async function verifyPayment(expectedAmount: string, receivingAccount: string = '710969000010685312'): Promise<BitsoTransaction | null> {
+export async function verifyPayment(expectedAmount: string, receivingAccount?: string): Promise<BitsoTransaction | null> {
+  const accountToVerify = receivingAccount || BITSO_RECEIVING_ACCOUNT;
+  if (!accountToVerify) {
+    throw new Error('BITSO_RECEIVING_ACCOUNT no está configurado');
+  }
   try {
-    console.log(`[Bitso] Buscando pago de ${expectedAmount} a cuenta ${receivingAccount}`);
+    console.log(`[Bitso] Buscando pago de ${expectedAmount}`);
     
     const fundings = await getBitsoFundings(50);
     
@@ -69,7 +81,7 @@ export async function verifyPayment(expectedAmount: string, receivingAccount: st
       const amountMatch = parseFloat(funding.amount) >= parseFloat(expectedAmount) * 0.99 && 
                          parseFloat(funding.amount) <= parseFloat(expectedAmount) * 1.01;
       
-      const accountMatch = funding.details?.receiving_account === receivingAccount;
+      const accountMatch = funding.details?.receiving_account === accountToVerify;
       
       const isRecent = new Date(funding.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000;
       
