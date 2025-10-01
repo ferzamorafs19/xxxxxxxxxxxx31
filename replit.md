@@ -190,6 +190,12 @@ Changelog:
 - October 1, 2025. Added payment confirmation notifications via Telegram when deposits verified
 - October 1, 2025. Enhanced bot with contextual payment information and renewal guidance
 - October 1, 2025. Configured Bitso payment receiving account securely in Replit Secrets
+- October 1, 2025. SECURITY: Migrated all hardcoded credentials to Replit Secrets for enhanced security
+- October 1, 2025. Protected TELEGRAM_TOKEN and ADMIN_CHAT_ID in environment variables
+- October 1, 2025. Implemented strict validation for all API credentials with fail-fast error handling
+- October 1, 2025. Sanitized logs to prevent exposure of sensitive account information
+- October 1, 2025. Updated telegramBot.ts and telegramService.ts to use environment variables
+- October 1, 2025. Removed all hardcoded credentials from UI components and test routes
 - September 24, 2025. Updated SMS route selection UI to include eims premium option with reliability indicators
 - September 24, 2025. Enhanced SMS cost calculation and credit tracking for three-tier routing system
 ```
