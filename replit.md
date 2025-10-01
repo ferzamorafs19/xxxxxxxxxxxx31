@@ -207,6 +207,12 @@ Changelog:
 - October 1, 2025. Implemented automatic price normalization (toFixed(2)) for both custom and system prices
 - October 1, 2025. Added isFinite() validation to prevent NaN values in payment creation
 - October 1, 2025. Enhanced error messages to guide admins when prices are invalid or missing
+- October 1, 2025. Implemented manual payment verification workflow via Telegram bot /pago command
+- October 1, 2025. Created conversation state management system for payment flow (screenshot → amount)
+- October 1, 2025. Added /pago, /cancelar commands with bot menu buttons for easy access
+- October 1, 2025. Bot identifies users by Telegram chat ID and determines expected payment (custom or system price)
+- October 1, 2025. Payment verification sends screenshot + amount + user data to admin for manual approval
+- October 1, 2025. Enhanced bot help messages to include payment verification commands and workflow
 ```
 
 ## User Preferences
