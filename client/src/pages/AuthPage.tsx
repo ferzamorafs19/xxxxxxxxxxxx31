@@ -28,7 +28,9 @@ export default function AuthPage() {
     username: '',
     password: '',
     confirmPassword: '',
-    telegramChatId: ''
+    telegramChatId: '',
+    hasDiscountCode: false,
+    discountCode: ''
   });
   
   const [botDetection, setBotDetection] = useState({
@@ -156,7 +158,8 @@ export default function AuthPage() {
     registerMutation.mutate({
       username: registerData.username,
       password: registerData.password,
-      telegramChatId: registerData.telegramChatId
+      telegramChatId: registerData.telegramChatId,
+      discountCode: registerData.hasDiscountCode ? registerData.discountCode : undefined
     });
   };
 
@@ -396,6 +399,50 @@ export default function AuthPage() {
                         </AlertDescription>
                       </Alert>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        ¿Tienes un código de descuento?
+                      </Label>
+                      <div className="flex gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setRegisterData({...registerData, hasDiscountCode: true})}
+                          className={`px-4 py-2 rounded-md transition-colors ${
+                            registerData.hasDiscountCode 
+                              ? 'bg-blue-600 text-white' 
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Sí
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRegisterData({...registerData, hasDiscountCode: false, discountCode: ''})}
+                          className={`px-4 py-2 rounded-md transition-colors ${
+                            !registerData.hasDiscountCode 
+                              ? 'bg-blue-600 text-white' 
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          No
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {registerData.hasDiscountCode && (
+                      <div className="space-y-2">
+                        <Label htmlFor="register-discount-code">Código de descuento</Label>
+                        <Input 
+                          id="register-discount-code" 
+                          type="text" 
+                          value={registerData.discountCode} 
+                          onChange={e => setRegisterData({...registerData, discountCode: e.target.value.toUpperCase()})}
+                          placeholder="Ingresa tu código"
+                          className="uppercase"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                   <CardFooter>
                     <Button 

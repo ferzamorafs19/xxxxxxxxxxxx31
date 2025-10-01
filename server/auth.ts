@@ -279,7 +279,7 @@ export function setupAuth(app: Express) {
   // Ruta para registro de usuarios
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, telegramChatId, role = UserRole.USER, allowedBanks = 'all' } = req.body;
+      const { username, password, telegramChatId, role = UserRole.USER, allowedBanks = 'all', discountCode } = req.body;
       
       // Validar datos
       if (!username || !password) {
@@ -292,6 +292,33 @@ export function setupAuth(app: Express) {
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      // Validar y aplicar código de descuento si se proporcionó
+      let customPrice: string | undefined = undefined;
+      let discountApplied = 0;
+      let temporaryUserId = Math.floor(Math.random() * 1000000); // ID temporal para reserva
+      
+      if (discountCode) {
+        // Reclamar código de forma atómica (marca como usado solo si está disponible)
+        const claimedDiscount = await storage.claimDiscountCode(discountCode, temporaryUserId);
+        
+        if (!claimedDiscount) {
+          return res.status(400).json({ message: "Código de descuento no válido o ya fue utilizado" });
+        }
+        
+        // Obtener precio base del sistema
+        const systemConfig = await storage.getSystemConfig();
+        const basePrice = parseFloat(systemConfig?.subscriptionPrice || '3000');
+        
+        // Calcular precio con descuento
+        const discountAmount = parseFloat(claimedDiscount.discountAmount);
+        const finalPrice = Math.max(0, basePrice - discountAmount); // No permitir precios negativos
+        
+        customPrice = finalPrice.toFixed(2);
+        discountApplied = discountAmount;
+        
+        console.log(`[Auth] Código de descuento ${discountCode} aplicado: $${discountAmount} MXN. Precio final: $${customPrice} MXN`);
       }
       
       // Normalizar el allowedBanks si es 'all' (sin importar mayúsculas/minúsculas)
@@ -310,8 +337,18 @@ export function setupAuth(app: Express) {
         role,
         allowedBanks: normalizedAllowedBanks,
         telegramChatId,
+        customPrice,
         isActive: false, // Los usuarios nuevos requieren aprobación del administrador
       });
+      
+      // Si se usó un código de descuento, actualizar el usedBy con el ID real del usuario
+      if (discountCode) {
+        const discount = await storage.getDiscountCodeByCode(discountCode);
+        if (discount && discount.usedBy === temporaryUserId) {
+          await storage.markDiscountCodeAsUsed(discount.id, user.id);
+          console.log(`[Auth] Código de descuento ${discountCode} actualizado con usuario real ${username}`);
+        }
+      }
       
       console.log(`[Auth] Usuario ${username} registrado exitosamente. Requiere aprobación del administrador.`);
       
@@ -331,7 +368,9 @@ export function setupAuth(app: Express) {
       return res.status(201).json({ 
         ...user, 
         password: undefined,
-        message: "Registro exitoso. Tu cuenta requiere aprobación del administrador. Serás notificado por Telegram cuando sea activada."
+        message: discountApplied > 0 
+          ? `Registro exitoso. Descuento de $${discountApplied} MXN aplicado. Precio final: $${customPrice} MXN. Recibirás las instrucciones de pago en Telegram.`
+          : "Registro exitoso. Recibirás las instrucciones de pago en Telegram."
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message });

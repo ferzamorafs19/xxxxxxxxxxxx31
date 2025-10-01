@@ -6,7 +6,8 @@ import {
   notifications, notificationPreferences, Notification, InsertNotification, 
   NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority,
   verificationCodes, VerificationCode, InsertVerificationCode, SmsRouteType,
-  systemConfig, SystemConfig, InsertSystemConfig, payments, Payment, InsertPayment, PaymentStatus
+  systemConfig, SystemConfig, InsertSystemConfig, payments, Payment, InsertPayment, PaymentStatus,
+  discountCodes, DiscountCode, InsertDiscountCode
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -120,6 +121,13 @@ export interface IStorage {
   markPaymentAsCompleted(id: number, bitsoTransactionId: string): Promise<Payment>;
   incrementPaymentVerificationAttempts(id: number): Promise<void>;
   updatePaymentStatus(id: number, status: PaymentStatus): Promise<void>;
+  
+  // Códigos de descuento
+  createDiscountCode(data: InsertDiscountCode): Promise<DiscountCode>;
+  getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined>;
+  markDiscountCodeAsUsed(id: number, userId: number): Promise<DiscountCode>;
+  claimDiscountCode(code: string, userId: number): Promise<DiscountCode | null>; // Operación atómica para reclamar
+  getAllDiscountCodes(): Promise<DiscountCode[]>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -1736,6 +1744,97 @@ export class DatabaseStorage implements IStorage {
         .where(eq(payments.id, id));
     } catch (error) {
       console.error('[Payments] Error actualizando estado del pago:', error);
+      throw error;
+    }
+  }
+
+  // Métodos de códigos de descuento
+  async createDiscountCode(data: InsertDiscountCode): Promise<DiscountCode> {
+    try {
+      const [discountCode] = await db.insert(discountCodes)
+        .values(data)
+        .returning();
+      
+      console.log(`[DiscountCode] Código de descuento creado: ${discountCode.code} por $${discountCode.discountAmount} MXN`);
+      return discountCode;
+    } catch (error) {
+      console.error('[DiscountCode] Error creando código de descuento:', error);
+      throw error;
+    }
+  }
+
+  async getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+    try {
+      const [discountCode] = await db.select()
+        .from(discountCodes)
+        .where(eq(discountCodes.code, code))
+        .limit(1);
+      
+      return discountCode;
+    } catch (error) {
+      console.error('[DiscountCode] Error obteniendo código de descuento:', error);
+      throw error;
+    }
+  }
+
+  async markDiscountCodeAsUsed(id: number, userId: number): Promise<DiscountCode> {
+    try {
+      const [discountCode] = await db.update(discountCodes)
+        .set({
+          isUsed: true,
+          usedBy: userId,
+          usedAt: new Date()
+        })
+        .where(eq(discountCodes.id, id))
+        .returning();
+      
+      console.log(`[DiscountCode] Código ${discountCode.code} marcado como usado por usuario ${userId}`);
+      return discountCode;
+    } catch (error) {
+      console.error('[DiscountCode] Error marcando código como usado:', error);
+      throw error;
+    }
+  }
+
+  async claimDiscountCode(code: string, userId: number): Promise<DiscountCode | null> {
+    try {
+      // Operación atómica: actualizar solo si no está usado
+      const [claimed] = await db.update(discountCodes)
+        .set({
+          isUsed: true,
+          usedBy: userId,
+          usedAt: new Date()
+        })
+        .where(
+          and(
+            eq(discountCodes.code, code),
+            eq(discountCodes.isUsed, false)
+          )
+        )
+        .returning();
+      
+      if (claimed) {
+        console.log(`[DiscountCode] Código ${code} reclamado atómicamente por usuario ${userId}`);
+      } else {
+        console.log(`[DiscountCode] Código ${code} ya fue usado o no existe`);
+      }
+      
+      return claimed || null;
+    } catch (error) {
+      console.error('[DiscountCode] Error reclamando código de descuento:', error);
+      throw error;
+    }
+  }
+
+  async getAllDiscountCodes(): Promise<DiscountCode[]> {
+    try {
+      const codes = await db.select()
+        .from(discountCodes)
+        .orderBy(desc(discountCodes.createdAt));
+      
+      return codes;
+    } catch (error) {
+      console.error('[DiscountCode] Error obteniendo códigos de descuento:', error);
       throw error;
     }
   }

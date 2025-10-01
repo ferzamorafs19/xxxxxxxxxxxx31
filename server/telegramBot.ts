@@ -34,6 +34,14 @@ interface PaymentSession {
 
 const paymentSessions = new Map<string, PaymentSession>();
 
+// Sistema de estados para crear códigos de descuento
+interface DiscountSession {
+  chatId: string;
+  state: 'awaiting_amount';
+}
+
+const discountSessions = new Map<string, DiscountSession>();
+
 // Mensaje de bienvenida
 const WELCOME_MESSAGE = `
 🎉 *¡Bienvenido a nuestro panel!*
@@ -415,8 +423,56 @@ Para cancelar este proceso, envía /cancelar`;
       await bot.sendMessage(chatId, '❌ Proceso de pago cancelado.', { 
         parse_mode: 'Markdown' 
       });
+    } else if (discountSessions.has(chatId)) {
+      discountSessions.delete(chatId);
+      await bot.sendMessage(chatId, '❌ Creación de código de descuento cancelada.', { 
+        parse_mode: 'Markdown' 
+      });
     } else {
-      await bot.sendMessage(chatId, 'ℹ️ No hay ningún proceso de pago activo.', { 
+      await bot.sendMessage(chatId, 'ℹ️ No hay ningún proceso activo.', { 
+        parse_mode: 'Markdown' 
+      });
+    }
+  });
+
+  // Comando /descuento para crear códigos de descuento (solo admin)
+  bot.onText(/\/descuento/, async (msg) => {
+    const chatId = msg.chat.id.toString();
+    console.log(`💰 Comando /descuento recibido de chat ID: ${chatId}`);
+    
+    try {
+      // Verificar que sea el administrador
+      if (chatId !== ADMIN_CHAT_ID) {
+        await bot.sendMessage(chatId, '❌ Este comando es solo para administradores.', { 
+          parse_mode: 'Markdown' 
+        });
+        return;
+      }
+
+      // Crear sesión de descuento
+      discountSessions.set(chatId, {
+        chatId,
+        state: 'awaiting_amount'
+      });
+
+      const message = `🎫 *Crear Código de Descuento*
+
+¿Qué descuento deseas crear?
+
+Por ejemplo: *500* (para $500 MXN de descuento)
+
+El sistema generará un código único de un solo uso.
+
+Para cancelar, envía /cancelar`;
+
+      await bot.sendMessage(chatId, message, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error en comando /descuento:', error);
+      await bot.sendMessage(chatId, '❌ Ocurrió un error al procesar tu solicitud. Intenta nuevamente.', { 
         parse_mode: 'Markdown' 
       });
     }
@@ -1165,6 +1221,77 @@ bot.on('message', async (msg) => {
   // Ignorar comandos (ya se manejan en onText)
   if (messageText.startsWith('/')) {
     return;
+  }
+  
+  // Verificar si hay una sesión de descuento activa (solo admin)
+  const discountSession = discountSessions.get(chatId);
+  
+  if (discountSession && chatId === ADMIN_CHAT_ID) {
+    if (discountSession.state === 'awaiting_amount') {
+      // Esperar monto del descuento
+      const amountMatch = messageText.match(/^[\d.]+$/);
+      
+      if (!amountMatch) {
+        await bot.sendMessage(chatId, `❌ Por favor envía solo el *monto de descuento* (números), ejemplo: 500
+
+Para cancelar, envía /cancelar`, { 
+          parse_mode: 'Markdown' 
+        });
+        return;
+      }
+      
+      const discountAmount = parseFloat(messageText).toFixed(2);
+      
+      try {
+        // Generar código único alfanumérico de 8 caracteres
+        const code = generatePaymentReferenceCode(); // Reutilizamos la función que genera códigos únicos
+        
+        // Buscar al admin que crea el código
+        const admins = await storage.getAllUsers();
+        const admin = admins.find(u => u.telegramChatId === chatId);
+        
+        if (!admin) {
+          await bot.sendMessage(chatId, '❌ Error: No se pudo identificar tu cuenta de administrador.', { 
+            parse_mode: 'Markdown' 
+          });
+          discountSessions.delete(chatId);
+          return;
+        }
+        
+        // Crear código de descuento
+        const discountCode = await storage.createDiscountCode({
+          code,
+          discountAmount,
+          createdBy: admin.id
+        });
+        
+        const message = `✅ *Código de Descuento Creado*
+
+🎫 Código: \`${code}\`
+💰 Descuento: $${discountAmount} MXN
+📅 Creado: ${new Date().toLocaleString('es-MX')}
+
+Este código es de un solo uso. Compártelo con el cliente para que lo use al registrarse.
+
+El precio base es $3000 MXN. Con este descuento el precio final será: *$${(3000 - parseFloat(discountAmount)).toFixed(2)} MXN*`;
+
+        await bot.sendMessage(chatId, message, { 
+          parse_mode: 'Markdown' 
+        });
+        
+        // Limpiar sesión
+        discountSessions.delete(chatId);
+        
+      } catch (error: any) {
+        console.error('[DiscountCode] Error creando código:', error);
+        await bot.sendMessage(chatId, '❌ Ocurrió un error al crear el código de descuento. Intenta nuevamente.', { 
+          parse_mode: 'Markdown' 
+        });
+        discountSessions.delete(chatId);
+      }
+      
+      return;
+    }
   }
   
   // Verificar si hay una sesión de pago activa

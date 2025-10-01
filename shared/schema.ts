@@ -491,3 +491,26 @@ export const insertPaymentSchema = createInsertSchema(payments).omit({
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
+
+// Tabla para códigos de descuento de un solo uso
+export const discountCodes = pgTable("discount_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(), // Código único generado
+  discountAmount: numeric("discount_amount", { precision: 10, scale: 2 }).notNull(), // Cantidad de descuento en pesos
+  isUsed: boolean("is_used").default(false), // Si ya fue usado
+  usedBy: integer("used_by").references(() => users.id), // ID del usuario que lo usó
+  usedAt: timestamp("used_at"), // Cuándo fue usado
+  createdBy: integer("created_by").notNull(), // ID del admin que lo creó
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const insertDiscountCodeSchema = createInsertSchema(discountCodes).omit({
+  id: true,
+  createdAt: true,
+  isUsed: true,
+  usedBy: true,
+  usedAt: true
+});
+
+export type InsertDiscountCode = z.infer<typeof insertDiscountCodeSchema>;
+export type DiscountCode = typeof discountCodes.$inferSelect;
