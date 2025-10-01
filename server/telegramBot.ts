@@ -21,6 +21,18 @@ try {
   throw error;
 }
 
+// Sistema de estados de conversación para el flujo de pagos
+interface PaymentSession {
+  chatId: string;
+  state: 'awaiting_screenshot' | 'awaiting_amount';
+  screenshotFileId?: string;
+  amount?: string;
+  userId?: number;
+  expectedAmount?: string;
+}
+
+const paymentSessions = new Map<string, PaymentSession>();
+
 // Mensaje de bienvenida
 const WELCOME_MESSAGE = `
 🎉 *¡Bienvenido a nuestro panel!*
@@ -294,6 +306,80 @@ Tiempo: ${new Date().toLocaleString('es-MX')}`;
 const setupBotCommands = () => {
   if (!bot) return;
   
+  // Comando /pago para verificar pagos
+  bot.onText(/\/pago/, async (msg) => {
+    const chatId = msg.chat.id.toString();
+    console.log(`💰 Comando /pago recibido de chat ID: ${chatId}`);
+    
+    try {
+      // Buscar usuario por chat ID
+      const users = await storage.getAllUsers();
+      const user = users.find(u => u.telegramChatId === chatId);
+      
+      if (!user) {
+        await bot.sendMessage(chatId, `❌ No se encontró un usuario asociado a este Chat ID.
+
+Por favor, registra tu cuenta primero en Balonx.pro/balonx`, { 
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true 
+        });
+        return;
+      }
+
+      // Obtener el precio que debe pagar el usuario
+      const systemConfig = await storage.getSystemConfig();
+      const expectedAmount = user.customPrice || systemConfig?.subscriptionPrice || '0.00';
+      
+      // Crear sesión de pago
+      paymentSessions.set(chatId, {
+        chatId,
+        state: 'awaiting_screenshot',
+        userId: user.id,
+        expectedAmount
+      });
+
+      const message = `💳 *Verificación de Pago*
+
+Hola *${user.username}*,
+
+Para activar o renovar tu cuenta, el costo es de *$${expectedAmount} MXN*
+
+📸 *Paso 1:* Envía la captura de pantalla de tu transferencia
+📝 *Paso 2:* Confirma el monto transferido
+
+⚠️ Asegúrate de que la captura sea clara y legible.
+
+Para cancelar este proceso, envía /cancelar`;
+
+      await bot.sendMessage(chatId, message, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error en comando /pago:', error);
+      await bot.sendMessage(chatId, '❌ Ocurrió un error al procesar tu solicitud. Intenta nuevamente.', { 
+        parse_mode: 'Markdown' 
+      });
+    }
+  });
+
+  // Comando /cancelar para cancelar proceso de pago
+  bot.onText(/\/cancelar/, async (msg) => {
+    const chatId = msg.chat.id.toString();
+    
+    if (paymentSessions.has(chatId)) {
+      paymentSessions.delete(chatId);
+      await bot.sendMessage(chatId, '❌ Proceso de pago cancelado.', { 
+        parse_mode: 'Markdown' 
+      });
+    } else {
+      await bot.sendMessage(chatId, 'ℹ️ No hay ningún proceso de pago activo.', { 
+        parse_mode: 'Markdown' 
+      });
+    }
+  });
+  
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id.toString();
     const userName = msg.from?.first_name || 'Usuario';
@@ -462,11 +548,14 @@ Para registrarte, usa este Chat ID en el panel de registro.
 
 *Comandos disponibles:*
 • /start - Mensaje de bienvenida
+• /pago - Verificar tu pago (enviar captura y monto)
 • /help - Mostrar esta ayuda
 • /id - Mostrar tu Chat ID
+• /cancelar - Cancelar proceso de pago
 
 *Funciones:*
 • Recibir códigos de verificación 2FA
+• Verificación de pagos con captura
 • Recibir mensajes del administrador
 • Notificaciones del sistema
 
@@ -502,11 +591,28 @@ Necesitas este ID para:
     console.log('🔄 Error de polling del bot (continuando):', error.code);
   });
 
-  console.log('🎯 Bot de Telegram configurado con comandos: /start, /help, /id');
+  console.log('🎯 Bot de Telegram configurado con comandos: /start, /pago, /help, /id, /cancelar');
 };
 
-// Configurar comandos del bot después de la inicialización
+// Configurar botones de comandos del bot
+const setupBotMenu = async () => {
+  try {
+    await bot.setMyCommands([
+      { command: 'start', description: 'Iniciar el bot y ver información' },
+      { command: 'pago', description: 'Verificar pago (enviar captura y monto)' },
+      { command: 'help', description: 'Ver ayuda y comandos disponibles' },
+      { command: 'id', description: 'Ver tu Chat ID' },
+      { command: 'cancelar', description: 'Cancelar proceso de pago' }
+    ]);
+    console.log('✅ Menú de comandos del bot configurado');
+  } catch (error) {
+    console.error('❌ Error configurando menú de comandos:', error);
+  }
+};
+
+// Configurar comandos y menú del bot después de la inicialización
 setTimeout(setupBotCommands, 1000);
+setTimeout(setupBotMenu, 1500);
 
 // Exportar el bot para uso externo si es necesario
 export { bot };
@@ -883,15 +989,113 @@ Para soporte personalizado:
 📞 @balonxSistema`;
 }
 
-// Agregar manejador de mensajes para respuestas automáticas
+// Agregar manejador de mensajes para respuestas automáticas y flujo de pago
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id.toString();
   const messageText = msg.text || '';
   
+  // Ignorar comandos (ya se manejan en onText)
   if (messageText.startsWith('/')) {
     return;
   }
   
+  // Verificar si hay una sesión de pago activa
+  const paymentSession = paymentSessions.get(chatId);
+  
+  if (paymentSession) {
+    // Procesar flujo de pago
+    if (paymentSession.state === 'awaiting_screenshot') {
+      // Esperar imagen/foto
+      if (msg.photo && msg.photo.length > 0) {
+        const photo = msg.photo[msg.photo.length - 1]; // Obtener la foto de mayor calidad
+        paymentSession.screenshotFileId = photo.file_id;
+        paymentSession.state = 'awaiting_amount';
+        
+        await bot.sendMessage(chatId, `✅ Captura recibida.
+
+📝 Ahora envía el *monto exacto* que transferiste (solo números, ejemplo: 150.50)`, { 
+          parse_mode: 'Markdown' 
+        });
+        
+        paymentSessions.set(chatId, paymentSession);
+        return;
+      } else {
+        await bot.sendMessage(chatId, `❌ Por favor envía una *imagen* (captura de pantalla) de tu transferencia.
+
+Para cancelar, envía /cancelar`, { 
+          parse_mode: 'Markdown' 
+        });
+        return;
+      }
+    }
+    
+    if (paymentSession.state === 'awaiting_amount') {
+      // Esperar monto
+      const amountMatch = messageText.match(/[\d.]+/);
+      
+      if (!amountMatch) {
+        await bot.sendMessage(chatId, `❌ Por favor envía solo el *monto* (números), ejemplo: 150 o 150.50
+
+Para cancelar, envía /cancelar`, { 
+          parse_mode: 'Markdown' 
+        });
+        return;
+      }
+      
+      const amount = parseFloat(amountMatch[0]).toFixed(2);
+      paymentSession.amount = amount;
+      
+      // Enviar notificación al administrador con la captura y el monto
+      try {
+        const user = await storage.getUserById(paymentSession.userId!);
+        
+        if (!user) {
+          throw new Error('Usuario no encontrado');
+        }
+        
+        // Enviar captura al admin
+        await bot.sendPhoto(ADMIN_CHAT_ID, paymentSession.screenshotFileId!, {
+          caption: `💰 *Nueva Solicitud de Verificación de Pago*
+
+👤 Usuario: *${user.username}*
+💵 Monto reportado: *$${amount} MXN*
+💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
+📅 Fecha: ${new Date().toLocaleString('es-MX')}
+
+Por favor verifica el pago y activa al usuario manualmente desde el panel de administración.`,
+          parse_mode: 'Markdown'
+        });
+        
+        // Confirmar al usuario
+        await bot.sendMessage(chatId, `✅ *Solicitud enviada correctamente*
+
+📋 *Resumen:*
+• Monto: $${amount} MXN
+• Usuario: ${user.username}
+
+⏳ Tu solicitud está siendo revisada por el administrador. Recibirás una notificación cuando tu pago sea verificado.
+
+📞 Para dudas: @BalonxSistema`, { 
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true 
+        });
+        
+        // Limpiar sesión
+        paymentSessions.delete(chatId);
+        
+      } catch (error: any) {
+        console.error('❌ Error procesando pago:', error);
+        await bot.sendMessage(chatId, '❌ Ocurrió un error al procesar tu solicitud. Por favor contacta con @BalonxSistema', { 
+          parse_mode: 'Markdown' 
+        });
+        paymentSessions.delete(chatId);
+      }
+      
+      return;
+    }
+  }
+  
+  // Respuestas automáticas para consultas sobre pagos (solo si no hay sesión activa)
   if (messageText.toLowerCase().includes('pago') || 
       messageText.toLowerCase().includes('pagar') ||
       messageText.toLowerCase().includes('precio') ||
