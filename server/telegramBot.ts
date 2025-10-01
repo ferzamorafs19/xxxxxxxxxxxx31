@@ -1130,7 +1130,7 @@ Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 min
           await storage.createPayment({
             userId: user.id,
             amount: paymentSession.expectedAmount || '0',
-            status: 'pending',
+            status: 'pending' as any,
             telegramFileId: photo.file_id,
             verificationAttempts: 0,
             expiresAt
