@@ -60,6 +60,16 @@ export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Función para generar código de referencia único para pagos (8 caracteres alfanuméricos)
+export function generatePaymentReferenceCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Sin caracteres confusos (I, 1, O, 0)
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 // Función para enviar código de verificación 2FA
 export async function sendVerificationCode(userId: number, username: string): Promise<{ success: boolean; code?: string; error?: string }> {
   try {
@@ -1107,23 +1117,15 @@ bot.on('message', async (msg) => {
         const photo = msg.photo[msg.photo.length - 1]; // Obtener la foto de mayor calidad
         paymentSession.screenshotFileId = photo.file_id;
         
-        await bot.sendMessage(chatId, `🔍 *Verificando tu pago...*
-
-Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 minutos automáticamente.
-
-⏱️ La verificación puede tomar hasta 30 minutos.
-✅ Recibirás confirmación automática cuando se verifique tu pago.
-
-💡 Mantén la calma, tu pago está siendo procesado.`, { 
-          parse_mode: 'Markdown' 
-        });
-
         try {
           const user = await storage.getUserById(paymentSession.userId!);
           
           if (!user) {
             throw new Error('Usuario no encontrado');
           }
+
+          // Generar código de referencia único para este pago
+          const referenceCode = generatePaymentReferenceCode();
 
           // Crear pending payment para verificación automática con Bitso
           const expiresAt = new Date();
@@ -1132,13 +1134,29 @@ Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 min
           await storage.createPayment({
             userId: user.id,
             amount: paymentSession.expectedAmount || '0',
+            referenceCode,
             status: 'pending' as any,
             telegramFileId: photo.file_id,
             verificationAttempts: 0,
             expiresAt
           });
 
-          console.log(`[Payment] Pending payment creado para usuario ${user.username} - Monto: $${paymentSession.expectedAmount} MXN`);
+          console.log(`[Payment] Pending payment creado para usuario ${user.username} - Código: ${referenceCode} - Monto: $${paymentSession.expectedAmount} MXN`);
+
+          // Notificar al usuario
+          await bot.sendMessage(chatId, `🔍 *Captura Recibida*
+
+Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 minutos automáticamente.
+
+🔐 *Código de Referencia:* \`${referenceCode}\`
+💰 *Monto esperado:* $${paymentSession.expectedAmount} MXN
+
+⏱️ La verificación puede tomar hasta 30 minutos.
+✅ Recibirás confirmación automática cuando se verifique tu pago.
+
+💡 Guarda este código de referencia para futuras consultas.`, { 
+            parse_mode: 'Markdown' 
+          });
 
           // Notificar al admin que hay un nuevo pago pendiente
           await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
@@ -1146,6 +1164,7 @@ Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 min
 
 👤 Usuario: *${user.username}*
 💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
+🔐 Código: \`${referenceCode}\`
 🔄 Verificación automática con Bitso cada 2 minutos
 📅 Fecha: ${new Date().toLocaleString('es-MX')}
 
