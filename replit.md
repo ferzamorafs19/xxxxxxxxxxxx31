@@ -172,6 +172,17 @@ Changelog:
 - September 24, 2025. Integrated eims premium SMS API as third routing option
 - September 24, 2025. Added PREMIUM route type to SMS system supporting 1.5 credits per message
 - September 24, 2025. Implemented secure credential management for eims API using Replit Secrets
+- October 1, 2025. Reduced INBURSA logo size by 60% (from 1.25rem to 0.75rem) in client interface
+- October 1, 2025. Updated Telegram bot registration URL to "Balonx.pro/balonx" in all bot messages
+- October 1, 2025. Implemented automated payment verification system with Bitso API
+- October 1, 2025. Created system configuration for subscription pricing (7-day access)
+- October 1, 2025. Added manual subscription price configuration in admin panel
+- October 1, 2025. Integrated Bitso API for automatic payment verification (checks every 5 minutes)
+- October 1, 2025. Bot automatically activates users for 7 days upon payment confirmation
+- October 1, 2025. Implemented AI-powered payment responses in Telegram bot (no account info shared)
+- October 1, 2025. Added payment confirmation notifications via Telegram when deposits verified
+- October 1, 2025. Enhanced bot with contextual payment information and renewal guidance
+- October 1, 2025. Configured Bitso account 710969000010685312 (Cuenta Nvio) for deposits
 - September 24, 2025. Updated SMS route selection UI to include eims premium option with reliability indicators
 - September 24, 2025. Enhanced SMS cost calculation and credit tracking for three-tier routing system
 ```

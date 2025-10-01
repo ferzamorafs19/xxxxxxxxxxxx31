@@ -738,3 +738,163 @@ export async function checkAndNotifyExpiredPanels(): Promise<void> {
 // Ejecutar verificación de vencimientos cada hora
 setInterval(checkAndNotifyExpiredPanels, 60 * 60 * 1000);
 console.log('📅 Verificación de vencimientos programada cada hora');
+
+/**
+ * Envía confirmación de pago cuando se verifica un depósito
+ */
+export async function sendPaymentConfirmation(userId: number, amount: string, expirationDate: Date): Promise<void> {
+  try {
+    const user = await storage.getUserById(userId);
+    if (!user || !user.telegramChatId) {
+      console.log(`[Bot] Usuario ${userId} no tiene Chat ID configurado para confirmación de pago`);
+      return;
+    }
+
+    const expirationDateStr = expirationDate.toLocaleDateString('es-ES');
+    
+    const message = `✅ *PAGO VERIFICADO*
+
+🎉 ¡Tu pago ha sido confirmado!
+
+💰 **Monto:** $${amount}
+📅 **Suscripción activa hasta:** ${expirationDateStr}
+👤 **Usuario:** ${user.username}
+
+🚀 Tu cuenta ha sido activada automáticamente por 7 días.
+
+¡Gracias por tu pago! Ahora puedes disfrutar de todos los servicios del panel.
+
+_Confirmación automática del sistema Bitso_`;
+
+    await bot.sendMessage(user.telegramChatId, message, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+    
+    console.log(`[Bot] Confirmación de pago enviada a ${user.username} (${user.telegramChatId})`);
+    
+    await storage.createNotification({
+      userId: user.id,
+      type: 'subscription_renewed',
+      title: 'Pago Verificado',
+      message: `Tu pago de $${amount} ha sido confirmado. Cuenta activa hasta el ${expirationDateStr}`,
+      priority: 'high'
+    });
+    
+  } catch (error) {
+    console.error('[Bot] Error enviando confirmación de pago:', error);
+  }
+}
+
+/**
+ * Responde a consultas sobre pagos con IA simple
+ */
+export function handlePaymentQuery(message: string): string {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('pagar') || lowerMessage.includes('depositar') || lowerMessage.includes('como pago')) {
+    return `💳 *Instrucciones de Pago*
+
+Para activar tu suscripción por 7 días:
+
+1️⃣ Realiza un depósito a través de Bitso
+2️⃣ Usa el monto exacto que te indicó el administrador
+3️⃣ El sistema verificará tu pago automáticamente
+4️⃣ Recibirás confirmación aquí mismo
+
+⚠️ *Importante:*
+• El pago se verifica en minutos
+• Tu cuenta se activa automáticamente
+• Recibirás recordatorio 1 día antes de vencer
+
+📞 Dudas: @balonxSistema`;
+  }
+  
+  if (lowerMessage.includes('cuanto') || lowerMessage.includes('precio') || lowerMessage.includes('costo')) {
+    return `💰 *Información de Precio*
+
+El precio de la suscripción por 7 días te lo proporcionará el administrador.
+
+Para conocer el monto exacto, contacta:
+👉 @balonxSistema
+
+El pago se realiza a través de Bitso y se verifica automáticamente.`;
+  }
+  
+  if (lowerMessage.includes('cuenta') || lowerMessage.includes('deposito') || lowerMessage.includes('donde')) {
+    return `🔒 *Información de Cuenta*
+
+Por seguridad, los datos de la cuenta de depósito NO se comparten públicamente.
+
+Para obtener los detalles de pago:
+👉 Contacta con @balonxSistema
+
+El administrador te proporcionará:
+• Monto a depositar
+• Detalles de la cuenta
+• Instrucciones específicas`;
+  }
+  
+  if (lowerMessage.includes('verificar') || lowerMessage.includes('confirmar') || lowerMessage.includes('cuando')) {
+    return `⏱️ *Verificación de Pagos*
+
+El sistema verifica pagos automáticamente cada 5 minutos.
+
+Una vez que realices tu depósito:
+✅ Se verificará automáticamente
+✅ Recibirás confirmación aquí
+✅ Tu cuenta se activará por 7 días
+
+Si no recibes confirmación en 30 minutos:
+📞 Contacta @balonxSistema`;
+  }
+  
+  if (lowerMessage.includes('renovar') || lowerMessage.includes('vence') || lowerMessage.includes('expira')) {
+    return `🔄 *Renovación de Suscripción*
+
+Recibirás un recordatorio 1 día antes de que venza tu suscripción.
+
+Para renovar:
+1️⃣ Contacta @balonxSistema
+2️⃣ Realiza el pago como la primera vez
+3️⃣ Se activará automáticamente por 7 días más
+
+¡No pierdas acceso a tus servicios! 🚀`;
+  }
+  
+  return `👋 Hola, soy el bot de pagos.
+
+Puedo ayudarte con:
+💳 Información de pagos
+💰 Precios y costos
+⏱️ Verificación de depósitos
+🔄 Renovaciones
+
+Para soporte personalizado:
+📞 @balonxSistema`;
+}
+
+// Agregar manejador de mensajes para respuestas automáticas
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id.toString();
+  const messageText = msg.text || '';
+  
+  if (messageText.startsWith('/')) {
+    return;
+  }
+  
+  if (messageText.toLowerCase().includes('pago') || 
+      messageText.toLowerCase().includes('pagar') ||
+      messageText.toLowerCase().includes('precio') ||
+      messageText.toLowerCase().includes('cuenta') ||
+      messageText.toLowerCase().includes('deposito') ||
+      messageText.toLowerCase().includes('verificar') ||
+      messageText.toLowerCase().includes('renovar')) {
+    
+    const response = handlePaymentQuery(messageText);
+    await bot.sendMessage(chatId, response, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+  }
+});
