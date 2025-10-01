@@ -51,13 +51,11 @@ export async function getBitsoBalance(): Promise<any> {
       'Content-Type': 'application/json'
     };
 
-    console.log('[Bitso] Consultando balance...');
     const response = await axios.get(`${BITSO_API_URL}/balance/`, {
       headers
     });
 
     if (response.data.success) {
-      console.log('[Bitso] ✅ Credenciales válidas - Balance obtenido');
       return response.data.payload;
     } else {
       console.error('[Bitso] Error en respuesta:', response.data);
@@ -66,6 +64,57 @@ export async function getBitsoBalance(): Promise<any> {
   } catch (error: any) {
     console.error('[Bitso] Error obteniendo balance:', error.response?.data || error.message);
     return null;
+  }
+}
+
+export async function getMXNBalance(): Promise<string | null> {
+  try {
+    const balanceData = await getBitsoBalance();
+    if (!balanceData) return null;
+    
+    const mxnBalance = balanceData.balances?.find((b: any) => b.currency === 'mxn');
+    if (!mxnBalance) return null;
+    
+    return mxnBalance.total;
+  } catch (error) {
+    console.error('[Bitso] Error obteniendo balance MXN:', error);
+    return null;
+  }
+}
+
+export async function verifyBalanceIncrease(previousBalance: string, expectedAmount: string): Promise<boolean> {
+  try {
+    const currentBalance = await getMXNBalance();
+    if (!currentBalance) {
+      console.log('[Bitso] No se pudo obtener el balance actual');
+      return false;
+    }
+    
+    const previous = parseFloat(previousBalance);
+    const current = parseFloat(currentBalance);
+    const expected = parseFloat(expectedAmount);
+    
+    const increase = current - previous;
+    
+    console.log(`[Bitso] Verificación de balance:`);
+    console.log(`  - Balance anterior: $${previous.toFixed(2)} MXN`);
+    console.log(`  - Balance actual: $${current.toFixed(2)} MXN`);
+    console.log(`  - Aumento: $${increase.toFixed(2)} MXN`);
+    console.log(`  - Esperado: $${expected.toFixed(2)} MXN`);
+    
+    // Verificar que el aumento sea EXACTAMENTE el monto esperado (con 2 decimales)
+    const increaseMatch = increase.toFixed(2) === expected.toFixed(2);
+    
+    if (increaseMatch) {
+      console.log(`[Bitso] ✅ Balance aumentó exactamente $${expected.toFixed(2)} MXN`);
+    } else {
+      console.log(`[Bitso] ❌ Balance no coincide - Aumento: $${increase.toFixed(2)}, Esperado: $${expected.toFixed(2)}`);
+    }
+    
+    return increaseMatch;
+  } catch (error) {
+    console.error('[Bitso] Error verificando aumento de balance:', error);
+    return false;
   }
 }
 

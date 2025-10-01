@@ -482,7 +482,9 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at").defaultNow(),
   notes: text("notes"), // Notas adicionales
   telegramFileId: text("telegram_file_id"), // ID del archivo de Telegram (captura de pantalla)
-  verificationAttempts: integer("verification_attempts").default(0) // Contador de intentos de verificación con Bitso
+  verificationAttempts: integer("verification_attempts").default(0), // Contador de intentos de verificación con Bitso
+  previousBalance: text("previous_balance"), // Balance en MXN antes de este depósito (para verificar aumento exacto)
+  reportedAmount: text("reported_amount") // Monto que el usuario dice haber depositado
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).omit({
