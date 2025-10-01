@@ -38,6 +38,37 @@ function generateBitsoSignature(httpMethod: string, requestPath: string, nonce: 
   return signature;
 }
 
+export async function getBitsoBalance(): Promise<any> {
+  try {
+    const nonce = Date.now().toString();
+    const httpMethod = 'GET';
+    const requestPath = '/v3/balance/';
+    
+    const signature = generateBitsoSignature(httpMethod, requestPath, nonce);
+    
+    const headers = {
+      'Authorization': `Bitso ${BITSO_API_KEY}:${nonce}:${signature}`,
+      'Content-Type': 'application/json'
+    };
+
+    console.log('[Bitso] Consultando balance...');
+    const response = await axios.get(`${BITSO_API_URL}/balance/`, {
+      headers
+    });
+
+    if (response.data.success) {
+      console.log('[Bitso] ✅ Credenciales válidas - Balance obtenido');
+      return response.data.payload;
+    } else {
+      console.error('[Bitso] Error en respuesta:', response.data);
+      return null;
+    }
+  } catch (error: any) {
+    console.error('[Bitso] Error obteniendo balance:', error.response?.data || error.message);
+    return null;
+  }
+}
+
 export async function getBitsoFundings(limit: number = 100): Promise<BitsoTransaction[]> {
   try {
     const nonce = Date.now().toString();
