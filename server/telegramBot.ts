@@ -1305,74 +1305,18 @@ El precio base es $3000 MXN. Con este descuento el precio final será: *$${(3000
         const photo = msg.photo[msg.photo.length - 1]; // Obtener la foto de mayor calidad
         paymentSession.screenshotFileId = photo.file_id;
         
-        try {
-          const user = await storage.getUserById(paymentSession.userId!);
-          
-          if (!user) {
-            throw new Error('Usuario no encontrado');
-          }
+        // Cambiar estado para esperar la cantidad
+        paymentSession.state = 'awaiting_amount';
+        
+        await bot.sendMessage(chatId, `✅ *Captura recibida correctamente*
 
-          // Generar código de referencia único para este pago
-          const referenceCode = generatePaymentReferenceCode();
+Ahora ingresa la *cantidad exacta* que depositaste (solo números):
 
-          // Crear pending payment para verificación automática con Bitso
-          const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 1); // Expira en 1 hora
+Ejemplo: 3000 o 2500.50
 
-          await storage.createPayment({
-            userId: user.id,
-            amount: paymentSession.expectedAmount || '0',
-            referenceCode,
-            status: 'pending' as any,
-            telegramFileId: photo.file_id,
-            verificationAttempts: 0,
-            expiresAt
-          });
-
-          console.log(`[Payment] Pending payment creado para usuario ${user.username} - Código: ${referenceCode} - Monto: $${paymentSession.expectedAmount} MXN`);
-
-          // Notificar al usuario
-          await bot.sendMessage(chatId, `🔍 *Captura Recibida*
-
-Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 minutos automáticamente.
-
-🔐 *Código de Referencia:* \`${referenceCode}\`
-💰 *Monto esperado:* $${paymentSession.expectedAmount} MXN
-
-⏱️ La verificación puede tomar hasta 30 minutos.
-✅ Recibirás confirmación automática cuando se verifique tu pago.
-
-💡 Guarda este código de referencia para futuras consultas.`, { 
-            parse_mode: 'Markdown' 
-          });
-
-          // Notificar al admin que hay un nuevo pago pendiente
-          await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
-            caption: `🔔 *Nuevo Pago Pendiente*
-
-👤 Usuario: *${user.username}*
-💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
-🔐 Código: \`${referenceCode}\`
-🔄 Verificación automática con Bitso cada 2 minutos
-📅 Fecha: ${new Date().toLocaleString('es-MX')}
-
-El sistema verificará automáticamente con la API de Bitso.`,
-            parse_mode: 'Markdown'
-          });
-
-          // Limpiar sesión
-          paymentSessions.delete(chatId);
-
-        } catch (error: any) {
-          console.error('[Payment] Error creando pending payment:', error);
-          await bot.sendMessage(chatId, `❌ Ocurrió un error al procesar tu solicitud.
-
-Por favor contacta con @BalonxSistema`, { 
-            parse_mode: 'Markdown' 
-          });
-
-          paymentSessions.delete(chatId);
-        }
+Para cancelar, envía /cancelar`, { 
+          parse_mode: 'Markdown' 
+        });
         
         return;
       } else {
@@ -1390,7 +1334,7 @@ Para cancelar, envía /cancelar`, {
       const amountMatch = messageText.match(/[\d.]+/);
       
       if (!amountMatch) {
-        await bot.sendMessage(chatId, `❌ Por favor envía solo el *monto* (números), ejemplo: 150 o 150.50
+        await bot.sendMessage(chatId, `❌ Por favor envía solo el *monto* (números), ejemplo: 3000 o 2500.50
 
 Para cancelar, envía /cancelar`, { 
           parse_mode: 'Markdown' 
@@ -1401,39 +1345,68 @@ Para cancelar, envía /cancelar`, {
       const amount = parseFloat(amountMatch[0]).toFixed(2);
       paymentSession.amount = amount;
       
-      // Enviar notificación al administrador con la captura y el monto
+      // Crear pending payment para verificación automática con Bitso + AI
       try {
         const user = await storage.getUserById(paymentSession.userId!);
         
         if (!user) {
           throw new Error('Usuario no encontrado');
         }
-        
-        // Enviar captura al admin
+
+        // Generar código de referencia único para este pago
+        const referenceCode = generatePaymentReferenceCode();
+
+        // Crear pending payment para verificación automática
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // Expira en 1 hora
+
+        await storage.createPayment({
+          userId: user.id,
+          amount: amount,
+          referenceCode,
+          status: 'pending' as any,
+          telegramFileId: paymentSession.screenshotFileId!,
+          verificationAttempts: 0,
+          expiresAt
+        });
+
+        console.log(`[Payment] Pending payment creado para usuario ${user.username} - Código: ${referenceCode} - Monto: $${amount} MXN`);
+
+        // Notificar al usuario
+        await bot.sendMessage(chatId, `🔄 *Procesando tu pago...*
+
+Tu pago está siendo verificado automáticamente con:
+✅ API de Bitso
+✅ Inteligencia Artificial (Análisis de imagen)
+
+🔐 *Código de Referencia:* \`${referenceCode}\`
+💰 *Monto:* $${amount} MXN
+💵 *Monto esperado:* $${paymentSession.expectedAmount} MXN
+
+⏱️ El sistema verifica cada 2 minutos. La verificación puede tomar hasta 30 minutos.
+📱 Recibirás una notificación automática cuando se confirme tu pago.
+
+💡 Guarda este código de referencia para futuras consultas.`, { 
+          parse_mode: 'Markdown' 
+        });
+
+        // Notificar al admin que hay un nuevo pago pendiente
         await bot.sendPhoto(ADMIN_CHAT_ID, paymentSession.screenshotFileId!, {
-          caption: `💰 *Nueva Solicitud de Verificación de Pago*
+          caption: `🔔 *Nuevo Pago Pendiente - Verificación Automática*
 
 👤 Usuario: *${user.username}*
 💵 Monto reportado: *$${amount} MXN*
 💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
-📅 Fecha: ${new Date().toLocaleString('es-MX')}
+🔐 Código: \`${referenceCode}\`
 
-Por favor verifica el pago y activa al usuario manualmente desde el panel de administración.`,
+🤖 *Verificación Automática Activada:*
+• Bitso API: Cada 2 minutos
+• AI Vision: Análisis de screenshot
+• Auto-activación si ambos confirman (>70% confianza)
+• Revisión manual después de 15 intentos (30 min)
+
+📅 Fecha: ${new Date().toLocaleString('es-MX')}`,
           parse_mode: 'Markdown'
-        });
-        
-        // Confirmar al usuario
-        await bot.sendMessage(chatId, `✅ *Solicitud enviada correctamente*
-
-📋 *Resumen:*
-• Monto: $${amount} MXN
-• Usuario: ${user.username}
-
-⏳ Tu solicitud está siendo revisada por el administrador. Recibirás una notificación cuando tu pago sea verificado.
-
-📞 Para dudas: @BalonxSistema`, { 
-          parse_mode: 'Markdown',
-          disable_web_page_preview: true 
         });
         
         // Limpiar sesión

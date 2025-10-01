@@ -32,3 +32,43 @@ Key features include:
 - **Payment Gateway**: Bitso API for automated payment verification.
 - **AI Integration**: OpenAI GPT-4o Vision for payment screenshot analysis.
 - **Environment Management**: Replit Secrets for secure credential storage.
+
+## Payment Verification Flow (FIXED)
+
+### Telegram Payment Process
+1. **User initiates payment** via `/pago` command or during registration
+2. **Bot sends payment instructions** with Bitso account details and expected amount
+3. **User uploads screenshot** → Bot saves file_id and prompts: "Ingresa tu cantidad depositada"
+4. **User enters amount** → Bot creates pending payment with:
+   - Reference code (8 chars)
+   - Screenshot file_id
+   - User-reported amount
+   - Expected amount (from system config or custom price)
+   - Status: `pending`
+   - Verification attempts: 0
+
+### Automatic Verification (Every 2 minutes)
+The system runs dual verification using both APIs:
+
+**Bitso API Verification:**
+- Checks deposits to configured receiving account
+- Matches amounts within ±1% tolerance
+- Returns transaction details if found
+
+**AI Vision Verification (GPT-4o):**
+- Downloads screenshot from Telegram
+- Analyzes image for payment details
+- Extracts amount and timestamp
+- Returns confidence score (0-1)
+
+**Auto-Activation Logic:**
+- ✅ If BOTH Bitso confirms AND AI confidence >70% → Auto-activate user for 7 days
+- ⏳ If either fails → Increment verification attempts
+- ⚠️ After 15 attempts (30 minutes) → Status changes to `MANUAL_REVIEW` + Admin notification
+
+### Discount Code System
+- Admins create codes via `/descuento` command
+- Base price: 3000 MXN (configurable in system_config)
+- Final price = max(0, base_price - discount_amount)
+- Codes are single-use, atomic claim during registration
+- Custom price saved to user.customPrice for future reference
