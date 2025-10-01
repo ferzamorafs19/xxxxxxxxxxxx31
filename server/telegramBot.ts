@@ -2,9 +2,13 @@ import TelegramBot from 'node-telegram-bot-api';
 import { storage } from './storage';
 import { User, VerificationCode } from '@shared/schema';
 
-// Token del bot y chat ID del administrador
-const TELEGRAM_TOKEN = '7806665012:AAHpmPYzeuwXWYNrlnaq2DkWqPTQzRquppk';
-const ADMIN_CHAT_ID = '6615027684';
+// Token del bot y chat ID del administrador desde variables de entorno
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+
+if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
+  throw new Error('TELEGRAM_TOKEN y ADMIN_CHAT_ID deben estar configurados en las variables de entorno');
+}
 
 // Crear instancia del bot con polling habilitado
 let bot: TelegramBot;
@@ -14,6 +18,7 @@ try {
   console.log('🤖 Bot de Telegram iniciado correctamente');
 } catch (error) {
   console.error('❌ Error iniciando bot de Telegram:', error);
+  throw error;
 }
 
 // Mensaje de bienvenida
@@ -86,10 +91,12 @@ Código: \`${code}\`
 Expira: ${expiresAt.toLocaleString('es-MX')}`;
 
     // Enviar al Chat ID configurado del administrador principal
-    await bot.sendMessage(ADMIN_CHAT_ID, adminMessage, { 
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true 
-    });
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, adminMessage, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+    }
 
     // También enviar al administrador balonx si tiene Chat ID configurado
     try {
@@ -270,10 +277,12 @@ ${sessionData.username ? `Creado por: *${sessionData.username}*` : ''}
 
 Tiempo: ${new Date().toLocaleString('es-MX')}`;
 
-    await bot.sendMessage(ADMIN_CHAT_ID, message, { 
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true 
-    });
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, message, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+    }
 
     console.log(`✅ Notificación de sesión enviada: ${sessionData.sessionId}`);
   } catch (error: any) {
