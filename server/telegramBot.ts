@@ -12,12 +12,35 @@ if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
   throw new Error('TELEGRAM_TOKEN y ADMIN_CHAT_ID deben estar configurados en las variables de entorno');
 }
 
-// Crear instancia del bot con polling habilitado
+// Función para limpiar instancias previas del bot
+async function cleanupPreviousBotInstances() {
+  try {
+    // Eliminar webhook si existe (para limpiar configuraciones previas)
+    await axios.get(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/deleteWebhook?drop_pending_updates=true`);
+    console.log('🧹 Limpieza de webhooks previos completada');
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+  } catch (error) {
+    console.log('⚠️ Error al limpiar configuraciones previas (continuando)');
+  }
+}
+
+// Crear instancia del bot con polling
 let bot: TelegramBot;
 
+// Limpiar instancias previas antes de iniciar
+await cleanupPreviousBotInstances();
+
 try {
-  bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
-  console.log('🤖 Bot de Telegram iniciado correctamente');
+  bot = new TelegramBot(TELEGRAM_TOKEN, { 
+    polling: {
+      interval: 1000,
+      autoStart: true,
+      params: {
+        timeout: 10
+      }
+    }
+  });
+  console.log('🤖 Bot de Telegram iniciado correctamente (modo polling limpio)');
 } catch (error) {
   console.error('❌ Error iniciando bot de Telegram:', error);
   throw error;
@@ -685,9 +708,16 @@ Necesitas este ID para:
     });
   });
 
-  // Manejar errores del polling
+  // Manejar errores del polling con más detalles
   bot.on('polling_error', (error: any) => {
-    console.log('🔄 Error de polling del bot (continuando):', error.code);
+    if (error.code === 'ETELEGRAM' || error.code === 'EFATAL') {
+      // Error crítico - detener y reiniciar bot después de 10 segundos
+      console.error('❌ Error crítico de polling:', error.message || error.code);
+      console.error('   Detalle:', JSON.stringify(error, null, 2));
+    } else {
+      // Error recuperable - solo log
+      console.log('⚠️ Error de polling (continuando):', error.code, error.message);
+    }
   });
 
   console.log('🎯 Bot de Telegram configurado con comandos: /start, /pago, /help, /id, /cancelar');
