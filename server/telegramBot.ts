@@ -330,6 +330,25 @@ Por favor, registra tu cuenta primero en Balonx.pro/balonx`, {
       const systemConfig = await storage.getSystemConfig();
       const expectedAmount = user.customPrice || systemConfig?.subscriptionPrice || '0.00';
       
+      // Verificar si ya existe un pago reciente en Bitso
+      const { verifyPayment } = await import('./bitsoService');
+      const existingPayment = await verifyPayment(expectedAmount);
+      
+      if (existingPayment) {
+        await bot.sendMessage(chatId, `✅ *¡Pago Confirmado!*
+
+Tu depósito de *$${existingPayment.amount} MXN* ya fue verificado exitosamente.
+
+Tu cuenta está activa. Si necesitas renovar, contacta con @BalonxSistema`, { 
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true 
+        });
+        return;
+      }
+
+      // Obtener cuenta de depósito
+      const BITSO_RECEIVING_ACCOUNT = process.env.BITSO_RECEIVING_ACCOUNT || '';
+      
       // Crear sesión de pago
       paymentSessions.set(chatId, {
         chatId,
@@ -338,16 +357,26 @@ Por favor, registra tu cuenta primero en Balonx.pro/balonx`, {
         expectedAmount
       });
 
-      const message = `💳 *Verificación de Pago*
+      const message = `💳 *Instrucciones de Pago*
 
 Hola *${user.username}*,
 
-Para activar o renovar tu cuenta, el costo es de *$${expectedAmount} MXN*
+Para activar o renovar tu cuenta por 7 días:
 
-📸 *Paso 1:* Envía la captura de pantalla de tu transferencia
-📝 *Paso 2:* Confirma el monto transferido
+💰 *Monto a depositar:* $${expectedAmount} MXN
 
-⚠️ Asegúrate de que la captura sea clara y legible.
+📱 *Instrucciones:*
+1️⃣ Abre tu app de Bitso
+2️⃣ Deposita exactamente *$${expectedAmount} MXN*
+3️⃣ Usa la siguiente cuenta receptora:
+   \`${BITSO_RECEIVING_ACCOUNT}\`
+
+⏱️ *Verificación:*
+• El sistema verifica depósitos automáticamente cada 5 minutos
+• O puedes enviar tu captura de pantalla ahora para verificación manual
+
+📸 *Para verificación manual:*
+Envía la captura de pantalla de tu transferencia
 
 Para cancelar este proceso, envía /cancelar`;
 
