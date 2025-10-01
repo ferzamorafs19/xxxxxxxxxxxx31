@@ -441,3 +441,48 @@ export const insertVerificationCodeSchema = createInsertSchema(verificationCodes
 
 export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
+
+// Tabla para configuración del sistema (precios, etc)
+export const systemConfig = pgTable("system_config", {
+  id: serial("id").primaryKey(),
+  subscriptionPrice: numeric("subscription_price", { precision: 10, scale: 2 }).notNull().default('0'), // Precio de suscripción (7 días)
+  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedBy: integer("updated_by") // ID del admin que actualizó
+});
+
+export const insertSystemConfigSchema = createInsertSchema(systemConfig).pick({
+  subscriptionPrice: true,
+  updatedBy: true
+});
+
+export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
+export type SystemConfig = typeof systemConfig.$inferSelect;
+
+// Estados de pago
+export enum PaymentStatus {
+  PENDING = "pending",
+  COMPLETED = "completed",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled"
+}
+
+// Tabla para rastrear pagos de usuarios
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // Monto esperado
+  status: text("status").notNull().$type<PaymentStatus>().default(PaymentStatus.PENDING),
+  bitsoTransactionId: text("bitso_transaction_id"), // ID de transacción en Bitso
+  verifiedAt: timestamp("verified_at"), // Cuándo se verificó el pago
+  expiresAt: timestamp("expires_at"), // Cuándo expira esta espera de pago
+  createdAt: timestamp("created_at").defaultNow(),
+  notes: text("notes") // Notas adicionales
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true
+});
+
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;

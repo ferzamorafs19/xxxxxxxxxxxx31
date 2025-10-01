@@ -5,7 +5,8 @@ import {
   smsConfig, smsCredits, smsHistory, SiteConfig, InsertSiteConfig, siteConfig,
   notifications, notificationPreferences, Notification, InsertNotification, 
   NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority,
-  verificationCodes, VerificationCode, InsertVerificationCode, SmsRouteType
+  verificationCodes, VerificationCode, InsertVerificationCode, SmsRouteType,
+  systemConfig, SystemConfig, InsertSystemConfig, payments, Payment, InsertPayment, PaymentStatus
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -105,6 +106,18 @@ export interface IStorage {
   getValidVerificationCode(userId: number, code: string): Promise<VerificationCode | undefined>;
   markVerificationCodeAsUsed(id: number): Promise<VerificationCode>;
   cleanupExpiredVerificationCodes(): Promise<number>;
+  
+  // Configuración del sistema
+  getSystemConfig(): Promise<SystemConfig | null>;
+  updateSystemConfig(data: Partial<InsertSystemConfig>): Promise<SystemConfig>;
+  
+  // Pagos
+  createPayment(data: InsertPayment): Promise<Payment>;
+  getPaymentById(id: number): Promise<Payment | undefined>;
+  getUserPayments(userId: number): Promise<Payment[]>;
+  getPendingPayments(): Promise<Payment[]>;
+  updatePayment(id: number, data: Partial<Payment>): Promise<Payment>;
+  markPaymentAsCompleted(id: number, bitsoTransactionId: string): Promise<Payment>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -1565,6 +1578,147 @@ export class DatabaseStorage implements IStorage {
       return result.rowCount || 0;
     } catch (error) {
       console.error('[2FA] Error en limpieza de códigos expirados:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para configuración del sistema
+  async getSystemConfig(): Promise<SystemConfig | null> {
+    try {
+      const [config] = await db.select()
+        .from(systemConfig)
+        .limit(1);
+      
+      return config || null;
+    } catch (error) {
+      console.error('[SystemConfig] Error obteniendo configuración:', error);
+      throw error;
+    }
+  }
+
+  async updateSystemConfig(data: Partial<InsertSystemConfig>): Promise<SystemConfig> {
+    try {
+      const existing = await this.getSystemConfig();
+      
+      if (!existing) {
+        // Crear nueva configuración
+        const [config] = await db.insert(systemConfig)
+          .values({
+            subscriptionPrice: data.subscriptionPrice || '0',
+            updatedBy: data.updatedBy
+          })
+          .returning();
+        return config;
+      }
+      
+      // Actualizar configuración existente
+      const [config] = await db.update(systemConfig)
+        .set({
+          ...data,
+          updatedAt: new Date()
+        })
+        .where(eq(systemConfig.id, existing.id))
+        .returning();
+      
+      return config;
+    } catch (error) {
+      console.error('[SystemConfig] Error actualizando configuración:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para pagos
+  async createPayment(data: InsertPayment): Promise<Payment> {
+    try {
+      const insertData = {
+        userId: data.userId,
+        amount: data.amount,
+        status: data.status || PaymentStatus.PENDING,
+        bitsoTransactionId: data.bitsoTransactionId || null,
+        verifiedAt: data.verifiedAt || null,
+        expiresAt: data.expiresAt || null,
+        notes: data.notes || null
+      };
+      const [payment] = await db.insert(payments)
+        .values(insertData)
+        .returning();
+      return payment;
+    } catch (error) {
+      console.error('[Payments] Error creando pago:', error);
+      throw error;
+    }
+  }
+
+  async getPaymentById(id: number): Promise<Payment | undefined> {
+    try {
+      const [payment] = await db.select()
+        .from(payments)
+        .where(eq(payments.id, id))
+        .limit(1);
+      
+      return payment;
+    } catch (error) {
+      console.error('[Payments] Error obteniendo pago:', error);
+      throw error;
+    }
+  }
+
+  async getUserPayments(userId: number): Promise<Payment[]> {
+    try {
+      const userPayments = await db.select()
+        .from(payments)
+        .where(eq(payments.userId, userId))
+        .orderBy(desc(payments.createdAt));
+      
+      return userPayments;
+    } catch (error) {
+      console.error('[Payments] Error obteniendo pagos del usuario:', error);
+      throw error;
+    }
+  }
+
+  async getPendingPayments(): Promise<Payment[]> {
+    try {
+      const pendingPayments = await db.select()
+        .from(payments)
+        .where(eq(payments.status, PaymentStatus.PENDING))
+        .orderBy(desc(payments.createdAt));
+      
+      return pendingPayments;
+    } catch (error) {
+      console.error('[Payments] Error obteniendo pagos pendientes:', error);
+      throw error;
+    }
+  }
+
+  async updatePayment(id: number, data: Partial<Payment>): Promise<Payment> {
+    try {
+      const [payment] = await db.update(payments)
+        .set(data)
+        .where(eq(payments.id, id))
+        .returning();
+      
+      return payment;
+    } catch (error) {
+      console.error('[Payments] Error actualizando pago:', error);
+      throw error;
+    }
+  }
+
+  async markPaymentAsCompleted(id: number, bitsoTransactionId: string): Promise<Payment> {
+    try {
+      const [payment] = await db.update(payments)
+        .set({
+          status: PaymentStatus.COMPLETED,
+          bitsoTransactionId,
+          verifiedAt: new Date()
+        })
+        .where(eq(payments.id, id))
+        .returning();
+      
+      return payment;
+    } catch (error) {
+      console.error('[Payments] Error marcando pago como completado:', error);
       throw error;
     }
   }
