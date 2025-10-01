@@ -126,7 +126,7 @@ export interface IStorage {
   createDiscountCode(data: InsertDiscountCode): Promise<DiscountCode>;
   getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined>;
   markDiscountCodeAsUsed(id: number, userId: number): Promise<DiscountCode>;
-  claimDiscountCode(code: string, userId: number): Promise<DiscountCode | null>; // Operación atómica para reclamar
+  claimDiscountCode(code: string, userId?: number | null): Promise<DiscountCode | null>; // Operación atómica para reclamar
   getAllDiscountCodes(): Promise<DiscountCode[]>;
   
   // Propiedad de la sesión
@@ -207,6 +207,7 @@ export class DatabaseStorage implements IStorage {
       maxDevices: 3,
       allowedBanks: data.allowedBanks || 'all',
       telegramChatId: data.telegramChatId || null,
+      customPrice: data.customPrice || null,
       createdAt: new Date()
     };
     
@@ -1597,6 +1598,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [config] = await db.select()
         .from(systemConfig)
+        .orderBy(desc(systemConfig.id)) // Obtener la configuración más reciente
         .limit(1);
       
       return config || null;
@@ -1796,15 +1798,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async claimDiscountCode(code: string, userId: number): Promise<DiscountCode | null> {
+  async claimDiscountCode(code: string, userId: number | null = null): Promise<DiscountCode | null> {
     try {
       // Operación atómica: actualizar solo si no está usado
+      const updateData: any = {
+        isUsed: true,
+        usedAt: new Date()
+      };
+      
+      // Solo agregar userId si se proporciona (para evitar foreign key constraint en IDs temporales)
+      if (userId !== null) {
+        updateData.usedBy = userId;
+      }
+      
       const [claimed] = await db.update(discountCodes)
-        .set({
-          isUsed: true,
-          usedBy: userId,
-          usedAt: new Date()
-        })
+        .set(updateData)
         .where(
           and(
             eq(discountCodes.code, code),
@@ -1814,7 +1822,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       if (claimed) {
-        console.log(`[DiscountCode] Código ${code} reclamado atómicamente por usuario ${userId}`);
+        console.log(`[DiscountCode] Código ${code} reclamado atómicamente${userId ? ` por usuario ${userId}` : ''}`);
       } else {
         console.log(`[DiscountCode] Código ${code} ya fue usado o no existe`);
       }

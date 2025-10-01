@@ -297,11 +297,11 @@ export function setupAuth(app: Express) {
       // Validar y aplicar código de descuento si se proporcionó
       let customPrice: string | undefined = undefined;
       let discountApplied = 0;
-      let temporaryUserId = Math.floor(Math.random() * 1000000); // ID temporal para reserva
+      let claimedDiscount: any = null;
       
       if (discountCode) {
-        // Reclamar código de forma atómica (marca como usado solo si está disponible)
-        const claimedDiscount = await storage.claimDiscountCode(discountCode, temporaryUserId);
+        // Reclamar código de forma atómica (marca como usado sin userId primero)
+        claimedDiscount = await storage.claimDiscountCode(discountCode);
         
         if (!claimedDiscount) {
           return res.status(400).json({ message: "Código de descuento no válido o ya fue utilizado" });
@@ -342,12 +342,9 @@ export function setupAuth(app: Express) {
       });
       
       // Si se usó un código de descuento, actualizar el usedBy con el ID real del usuario
-      if (discountCode) {
-        const discount = await storage.getDiscountCodeByCode(discountCode);
-        if (discount && discount.usedBy === temporaryUserId) {
-          await storage.markDiscountCodeAsUsed(discount.id, user.id);
-          console.log(`[Auth] Código de descuento ${discountCode} actualizado con usuario real ${username}`);
-        }
+      if (discountCode && claimedDiscount) {
+        await storage.markDiscountCodeAsUsed(claimedDiscount.id, user.id);
+        console.log(`[Auth] Código de descuento ${discountCode} actualizado con usuario real ${username} (ID: ${user.id})`);
       }
       
       console.log(`[Auth] Usuario ${username} registrado exitosamente. Requiere aprobación del administrador.`);

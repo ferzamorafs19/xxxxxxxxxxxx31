@@ -60,6 +60,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   telegramChatId: true,
   apkFileName: true,
   apkFileUrl: true,
+  customPrice: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
