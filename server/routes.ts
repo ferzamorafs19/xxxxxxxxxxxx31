@@ -3531,6 +3531,93 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Rutas de configuración del sistema (precio de suscripción)
+  app.get("/api/system-config", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const config = await storage.getSystemConfig();
+      res.json(config || { subscriptionPrice: '0' });
+    } catch (error) {
+      console.error("Error getting system config:", error);
+      res.status(500).json({ message: "Error al obtener configuración" });
+    }
+  });
+
+  app.post("/api/system-config", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { subscriptionPrice } = req.body;
+      
+      if (!subscriptionPrice || isNaN(parseFloat(subscriptionPrice))) {
+        return res.status(400).json({ message: "Precio de suscripción inválido" });
+      }
+
+      const config = await storage.updateSystemConfig({
+        subscriptionPrice: subscriptionPrice.toString(),
+        updatedBy: req.user.id
+      });
+
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating system config:", error);
+      res.status(500).json({ message: "Error al actualizar configuración" });
+    }
+  });
+
+  // Rutas de pagos
+  app.get("/api/payments/pending", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const payments = await storage.getPendingPayments();
+      res.json(payments);
+    } catch (error) {
+      console.error("Error getting pending payments:", error);
+      res.status(500).json({ message: "Error al obtener pagos pendientes" });
+    }
+  });
+
+  app.get("/api/payments/user/:userId", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    const userId = parseInt(req.params.userId);
+    
+    // Los usuarios pueden ver sus propios pagos, los admins pueden ver todos
+    if (req.user.role !== UserRole.ADMIN && req.user.id !== userId) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const payments = await storage.getUserPayments(userId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error getting user payments:", error);
+      res.status(500).json({ message: "Error al obtener pagos del usuario" });
+    }
+  });
+
   return httpServer;
 }
 
