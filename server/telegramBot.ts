@@ -366,7 +366,7 @@ Para activar o renovar tu cuenta por 7 días:
 💰 *Monto a depositar:* $${expectedAmount} MXN
 
 📱 *Instrucciones:*
-1️⃣ Abre tu app de Bitso
+1️⃣ Abre tu app bancaria
 2️⃣ Deposita exactamente *$${expectedAmount} MXN*
 3️⃣ Usa la siguiente cuenta receptora:
    \`${BITSO_RECEIVING_ACCOUNT}\`
