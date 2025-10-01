@@ -64,7 +64,7 @@ The system runs dual verification using both APIs:
 **Auto-Activation Logic:**
 - ✅ If BOTH Bitso confirms AND AI confidence >70% → Auto-activate user for 7 days
 - ⏳ If either fails → Increment verification attempts
-- ⚠️ After 15 attempts (30 minutes) → Status changes to `MANUAL_REVIEW` + Admin notification
+- ⚠️ After 7 attempts (15 minutes) → Status changes to `MANUAL_REVIEW` + Admin notification
 
 ### Discount Code System
 - Admins create codes via `/descuento` command

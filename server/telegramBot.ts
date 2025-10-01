@@ -1372,21 +1372,21 @@ Para cancelar, envía /cancelar`, {
 
         console.log(`[Payment] Pending payment creado para usuario ${user.username} - Código: ${referenceCode} - Monto: $${amount} MXN`);
 
+        // Determinar si es activación o renovación
+        const isActive = user.isActive && user.expiresAt && new Date(user.expiresAt) > new Date();
+        const actionText = isActive ? 'renovaremos' : 'activaremos';
+        
         // Notificar al usuario
-        await bot.sendMessage(chatId, `🔄 *Procesando tu pago...*
+        await bot.sendMessage(chatId, `🔄 *Estamos procesando tu transferencia*
 
-Tu pago está siendo verificado automáticamente con:
-✅ API de Bitso
-✅ Inteligencia Artificial (Análisis de imagen)
+Cuando sea exitosa te *${actionText}* tu cuenta automáticamente.
 
 🔐 *Código de Referencia:* \`${referenceCode}\`
 💰 *Monto:* $${amount} MXN
-💵 *Monto esperado:* $${paymentSession.expectedAmount} MXN
 
-⏱️ El sistema verifica cada 2 minutos. La verificación puede tomar hasta 30 minutos.
-📱 Recibirás una notificación automática cuando se confirme tu pago.
+⏱️ Si en 15 minutos no se puede verificar automáticamente, tu caso será enviado al administrador para activación manual.
 
-💡 Guarda este código de referencia para futuras consultas.`, { 
+📱 Recibirás una notificación cuando tu cuenta sea activada.`, { 
           parse_mode: 'Markdown' 
         });
 
@@ -1399,11 +1399,10 @@ Tu pago está siendo verificado automáticamente con:
 💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
 🔐 Código: \`${referenceCode}\`
 
-🤖 *Verificación Automática Activada:*
-• Bitso API: Cada 2 minutos
-• AI Vision: Análisis de screenshot
-• Auto-activación si ambos confirman (>70% confianza)
-• Revisión manual después de 15 intentos (30 min)
+🤖 *Verificación Automática:*
+• Bitso API + AI Vision cada 2 minutos
+• Auto-${actionText} si se verifica exitosamente
+• Revisión manual después de 15 minutos
 
 📅 Fecha: ${new Date().toLocaleString('es-MX')}`,
           parse_mode: 'Markdown'

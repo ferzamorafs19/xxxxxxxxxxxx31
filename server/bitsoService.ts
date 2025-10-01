@@ -189,11 +189,11 @@ export async function checkPendingPayments(): Promise<void> {
             console.log(`[Bitso+AI] Usuario ${payment.userId} activado hasta ${expirationDate.toLocaleDateString('es-ES')}`);
           } else {
             // AI no confirma con suficiente confianza
-            console.log(`[Bitso+AI] AI no confirmó el pago (confianza: ${(aiAnalysis.confidence * 100).toFixed(0)}%) - Intento ${newAttempts}/15`);
+            console.log(`[Bitso+AI] AI no confirmó el pago (confianza: ${(aiAnalysis.confidence * 100).toFixed(0)}%) - Intento ${newAttempts}/7`);
             
             // Si se alcanza el límite de intentos, enviar a revisión manual
-            if (newAttempts >= 15) {
-              console.log(`[Bitso+AI] ⚠️ Bitso encontró pago pero AI no confirmó después de ${newAttempts} intentos - Enviando a revisión manual`);
+            if (newAttempts >= 7) {
+              console.log(`[Bitso+AI] ⚠️ Bitso encontró pago pero AI no confirmó después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
               
               try {
                 const { sendManualVerificationRequest } = await import('./telegramBot');
@@ -207,11 +207,11 @@ export async function checkPendingPayments(): Promise<void> {
           }
         } catch (aiError: any) {
           console.error(`[Bitso+AI] Error verificando con AI:`, aiError.message);
-          console.log(`[Bitso+AI] Continuando sin verificación AI - Intento ${newAttempts}/15`);
+          console.log(`[Bitso+AI] Continuando sin verificación AI - Intento ${newAttempts}/7`);
           
           // Si se alcanza el límite de intentos y hay error de AI, enviar a revisión manual
-          if (newAttempts >= 15) {
-            console.log(`[Bitso+AI] ⚠️ Error de AI después de ${newAttempts} intentos - Enviando a revisión manual`);
+          if (newAttempts >= 7) {
+            console.log(`[Bitso+AI] ⚠️ Error de AI después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
             
             try {
               const { sendManualVerificationRequest } = await import('./telegramBot');
@@ -223,9 +223,9 @@ export async function checkPendingPayments(): Promise<void> {
             await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
           }
         }
-      } else if (newAttempts >= 15) {
-        // Después de 15 intentos (30 minutos), enviar al admin para revisión manual
-        console.log(`[Bitso+AI] ⚠️ No se pudo verificar pago después de ${newAttempts} intentos - Enviando a revisión manual`);
+      } else if (newAttempts >= 7) {
+        // Después de 7 intentos (15 minutos), enviar al admin para revisión manual
+        console.log(`[Bitso+AI] ⚠️ No se pudo verificar pago después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
         
         // Primero marcar como en revisión manual (prioritario para evitar bucle)
         await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
@@ -241,7 +241,7 @@ export async function checkPendingPayments(): Promise<void> {
           console.error(`[Bitso+AI] Error enviando solicitud manual:`, notifError.message);
         }
       } else {
-        console.log(`[Bitso+AI] Intento ${newAttempts}/15 - Pago de $${payment.amount} MXN aún no verificado`);
+        console.log(`[Bitso+AI] Intento ${newAttempts}/7 - Pago de $${payment.amount} MXN aún no verificado`);
       }
     }
   } catch (error) {
