@@ -219,27 +219,38 @@ export async function checkPendingPayments(): Promise<void> {
       const newAttempts = (payment.verificationAttempts || 0) + 1;
       await storage.incrementPaymentVerificationAttempts(payment.id);
       
-      // Paso 1: Verificar con Bitso API si existe el pago
-      const bitsoPayment = await verifyPayment(payment.amount);
-      
-      if (bitsoPayment && payment.telegramFileId) {
-        // Paso 2: Si Bitso encuentra el pago, verificar con AI la captura de pantalla
-        console.log(`[Bitso+AI] Pago encontrado en Bitso, verificando captura con AI...`);
+      const user = await storage.getUserById(payment.userId);
+      if (!user) {
+        console.error(`[Bitso+AI] Usuario ${payment.userId} no encontrado`);
         
-        const user = await storage.getUserById(payment.userId);
-        if (!user) {
-          console.error(`[Bitso+AI] Usuario ${payment.userId} no encontrado`);
-          
-          // Si se alcanza el límite de intentos, escalar a revisión manual
-          if (newAttempts >= 15) {
-            console.log(`[Bitso+AI] ⚠️ Usuario no encontrado después de ${newAttempts} intentos - Marcando para revisión manual`);
-            await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
-          }
-          continue;
+        // Si se alcanza el límite de intentos, escalar a revisión manual
+        if (newAttempts >= 7) {
+          console.log(`[Bitso+AI] ⚠️ Usuario no encontrado después de ${newAttempts} intentos - Marcando para revisión manual`);
+          await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
         }
-        
+        continue;
+      }
+      
+      console.log(`[Bitso+AI] Verificando pago ${payment.referenceCode} - Intento ${newAttempts}/7`);
+      
+      // Paso 1: Verificar aumento de balance en Bitso (si tenemos previousBalance)
+      let bitsoVerified = false;
+      
+      if (payment.previousBalance) {
+        bitsoVerified = await verifyBalanceIncrease(payment.previousBalance, payment.amount);
+      } else {
+        // Fallback: usar método antiguo de buscar transacción
+        console.log(`[Bitso] Sin balance previo guardado, usando método de búsqueda de transacciones`);
+        const bitsoPayment = await verifyPayment(payment.amount);
+        bitsoVerified = bitsoPayment !== null;
+      }
+      
+      // Paso 2: Verificar con AI Vision la captura de pantalla
+      let aiVerified = false;
+      let aiConfidence = 0;
+      
+      if (payment.telegramFileId) {
         try {
-          // Obtener la imagen de Telegram y convertir a base64
           const TelegramBot = await import('node-telegram-bot-api');
           const bot = new TelegramBot.default(process.env.TELEGRAM_TOKEN || '', { polling: false });
           const fileLink = await bot.getFileLink(payment.telegramFileId);
@@ -251,85 +262,58 @@ export async function checkPendingPayments(): Promise<void> {
           const { verifyPaymentScreenshot } = await import('./paymentVerificationAI');
           const aiAnalysis = await verifyPaymentScreenshot(imageBase64, payment.amount, user.username);
           
-          // Paso 3: Activar solo si AI confirma con alta confianza (>70%)
-          if (aiAnalysis.isValid && aiAnalysis.confidence > 0.7) {
-            console.log(`[Bitso+AI] ✅ Verificación completa - Bitso: ${bitsoPayment.tid} | AI: ${(aiAnalysis.confidence * 100).toFixed(0)}% confianza`);
-            
-            await storage.markPaymentAsCompleted(payment.id, bitsoPayment.tid);
-            
-            const expirationDate = new Date();
-            expirationDate.setDate(expirationDate.getDate() + 7);
-            
-            await storage.updateUser(payment.userId, {
-              isActive: true,
-              expiresAt: expirationDate
-            });
-            
-            if (user.telegramChatId) {
-              try {
-                const { sendPaymentConfirmation } = await import('./telegramBot');
-                await sendPaymentConfirmation(user.id, bitsoPayment.amount, expirationDate);
-              } catch (notifError: any) {
-                console.error(`[Bitso+AI] Error enviando confirmación:`, notifError.message);
-              }
-            }
-            
-            console.log(`[Bitso+AI] Usuario ${payment.userId} activado hasta ${expirationDate.toLocaleDateString('es-ES')}`);
-          } else {
-            // AI no confirma con suficiente confianza
-            console.log(`[Bitso+AI] AI no confirmó el pago (confianza: ${(aiAnalysis.confidence * 100).toFixed(0)}%) - Intento ${newAttempts}/7`);
-            
-            // Si se alcanza el límite de intentos, enviar a revisión manual
-            if (newAttempts >= 7) {
-              console.log(`[Bitso+AI] ⚠️ Bitso encontró pago pero AI no confirmó después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
-              
-              try {
-                const { sendManualVerificationRequest } = await import('./telegramBot');
-                await sendManualVerificationRequest(payment.id, user, payment.amount, payment.telegramFileId);
-              } catch (notifError: any) {
-                console.error(`[Bitso+AI] Error enviando solicitud manual:`, notifError.message);
-              }
-              
-              await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
-            }
-          }
-        } catch (aiError: any) {
-          console.error(`[Bitso+AI] Error verificando con AI:`, aiError.message);
-          console.log(`[Bitso+AI] Continuando sin verificación AI - Intento ${newAttempts}/7`);
+          aiVerified = aiAnalysis.isValid && aiAnalysis.confidence > 0.7;
+          aiConfidence = aiAnalysis.confidence;
           
-          // Si se alcanza el límite de intentos y hay error de AI, enviar a revisión manual
-          if (newAttempts >= 7) {
-            console.log(`[Bitso+AI] ⚠️ Error de AI después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
-            
-            try {
+          console.log(`[AI] Confianza: ${(aiConfidence * 100).toFixed(0)}% - Válido: ${aiVerified}`);
+        } catch (aiError: any) {
+          console.error(`[AI] Error verificando:`, aiError.message);
+        }
+      }
+      
+      // Paso 3: Activar SOLO si AMBOS métodos confirman
+      if (bitsoVerified && aiVerified) {
+        console.log(`[Bitso+AI] ✅ VERIFICACIÓN COMPLETA - Balance: ✓ | AI: ${(aiConfidence * 100).toFixed(0)}% confianza`);
+        
+        await storage.markPaymentAsCompleted(payment.id, 'balance_verified');
+        
+        const expirationDate = new Date();
+        expirationDate.setDate(expirationDate.getDate() + 7);
+        
+        await storage.updateUser(payment.userId, {
+          isActive: true,
+          expiresAt: expirationDate
+        });
+        
+        if (user.telegramChatId) {
+          try {
+            const { sendPaymentConfirmation } = await import('./telegramBot');
+            await sendPaymentConfirmation(user.id, payment.amount, expirationDate);
+          } catch (notifError: any) {
+            console.error(`[Bitso+AI] Error enviando confirmación:`, notifError.message);
+          }
+        }
+        
+        console.log(`[Bitso+AI] Usuario ${user.username} activado hasta ${expirationDate.toLocaleDateString('es-ES')}`);
+      } else {
+        // Al menos uno de los métodos no confirmó
+        console.log(`[Bitso+AI] Verificación parcial - Bitso: ${bitsoVerified ? '✓' : '✗'} | AI: ${aiVerified ? '✓' : '✗'} - Intento ${newAttempts}/7`);
+        
+        // Si se alcanza el límite de intentos, enviar a revisión manual
+        if (newAttempts >= 7) {
+          console.log(`[Bitso+AI] ⚠️ No se pudo verificar completamente después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
+          
+          await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
+          
+          try {
+            if (payment.telegramFileId) {
               const { sendManualVerificationRequest } = await import('./telegramBot');
               await sendManualVerificationRequest(payment.id, user, payment.amount, payment.telegramFileId);
-            } catch (notifError: any) {
-              console.error(`[Bitso+AI] Error enviando solicitud manual:`, notifError.message);
             }
-            
-            await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
+          } catch (notifError: any) {
+            console.error(`[Bitso+AI] Error enviando solicitud manual:`, notifError.message);
           }
         }
-      } else if (newAttempts >= 7) {
-        // Después de 7 intentos (15 minutos), enviar al admin para revisión manual
-        console.log(`[Bitso+AI] ⚠️ No se pudo verificar pago después de ${newAttempts} intentos (15 min) - Enviando a revisión manual`);
-        
-        // Primero marcar como en revisión manual (prioritario para evitar bucle)
-        await storage.updatePaymentStatus(payment.id, PaymentStatus.MANUAL_REVIEW);
-        
-        // Luego intentar enviar notificación (no crítico si falla)
-        try {
-          const user = await storage.getUserById(payment.userId);
-          if (user && payment.telegramFileId) {
-            const { sendManualVerificationRequest } = await import('./telegramBot');
-            await sendManualVerificationRequest(payment.id, user, payment.amount, payment.telegramFileId);
-          }
-        } catch (notifError: any) {
-          console.error(`[Bitso+AI] Error enviando solicitud manual:`, notifError.message);
-        }
-      } else {
-        console.log(`[Bitso+AI] Intento ${newAttempts}/7 - Pago de $${payment.amount} MXN aún no verificado`);
       }
     }
   } catch (error) {
