@@ -13,6 +13,7 @@ import { parsePhoneNumbers, validateSMSMessage, sendSMSWithRoute, calculateCredi
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { z } from 'zod';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
@@ -3589,16 +3590,33 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
 
     try {
-      const userId = parseInt(req.params.userId);
-      const { customPrice } = req.body;
+      // Validar parámetro userId
+      const userIdSchema = z.object({
+        userId: z.string().regex(/^\d+$/).transform(Number)
+      });
       
-      // Validar que el precio sea un número válido o null (para eliminar el precio personalizado)
-      if (customPrice !== null && customPrice !== undefined && customPrice !== '' && isNaN(parseFloat(customPrice))) {
-        return res.status(400).json({ message: "Precio personalizado inválido" });
-      }
+      const { userId } = userIdSchema.parse({ userId: req.params.userId });
+      
+      // Validar el cuerpo con Zod
+      const customPriceSchema = z.object({
+        customPrice: z.union([
+          z.string().regex(/^\d+(\.\d{1,2})?$/, {
+            message: "El precio debe tener formato válido (ej: 150 o 150.50)"
+          }).refine(val => parseFloat(val) > 0, {
+            message: "El precio debe ser un número positivo"
+          }),
+          z.null()
+        ])
+      });
 
-      // Convertir a string o null
-      const priceValue = (customPrice === null || customPrice === undefined || customPrice === '') ? null : customPrice.toString();
+      const validatedData = customPriceSchema.parse(req.body);
+      
+      // Normalizar el precio a 2 decimales si no es null
+      let priceValue: string | null = null;
+      if (validatedData.customPrice !== null) {
+        const numericPrice = parseFloat(validatedData.customPrice);
+        priceValue = numericPrice.toFixed(2);
+      }
 
       await storage.updateUser(userId, {
         customPrice: priceValue
@@ -3607,6 +3625,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const updatedUser = await storage.getUserById(userId);
       res.json(updatedUser);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
       console.error("Error updating user custom price:", error);
       res.status(500).json({ message: "Error al actualizar precio personalizado" });
     }
@@ -3649,6 +3670,71 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     } catch (error) {
       console.error("Error getting user payments:", error);
       res.status(500).json({ message: "Error al obtener pagos del usuario" });
+    }
+  });
+
+  // Crear pago pendiente para un usuario (usa precio personalizado si existe)
+  app.post("/api/payments/create-pending", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    if (req.user.role !== UserRole.ADMIN) {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      // Validar el cuerpo con Zod
+      const createPaymentSchema = z.object({
+        userId: z.number().int().positive()
+      });
+
+      const validatedData = createPaymentSchema.parse(req.body);
+
+      // Obtener el usuario para verificar si tiene precio personalizado
+      const user = await storage.getUserById(validatedData.userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      // Determinar el precio a usar
+      let amount: string;
+      if (user.customPrice) {
+        // Usar precio personalizado del usuario (validar y normalizar)
+        const customPriceNum = parseFloat(user.customPrice);
+        if (!isFinite(customPriceNum) || customPriceNum <= 0) {
+          return res.status(400).json({ 
+            message: "El precio personalizado del usuario es inválido. Actualícelo antes de crear el pago." 
+          });
+        }
+        amount = customPriceNum.toFixed(2);
+      } else {
+        // Usar precio del sistema (validar y normalizar)
+        const systemConfig = await storage.getSystemConfig();
+        const systemPriceNum = systemConfig?.subscriptionPrice ? parseFloat(systemConfig.subscriptionPrice) : NaN;
+        
+        if (!isFinite(systemPriceNum) || systemPriceNum <= 0) {
+          return res.status(400).json({ 
+            message: "No hay precio del sistema válido configurado. Configure el precio del sistema o un precio personalizado para este usuario." 
+          });
+        }
+        amount = systemPriceNum.toFixed(2);
+      }
+
+      // Crear el pago pendiente
+      const payment = await storage.createPayment({
+        userId: user.id,
+        amount,
+        status: 'pending'
+      });
+
+      res.json(payment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      console.error("Error creating pending payment:", error);
+      res.status(500).json({ message: "Error al crear pago pendiente" });
     }
   });
 

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle, DollarSign } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -26,6 +26,8 @@ interface User {
   createdAt: string | null;
   lastLogin: string | null;
   allowedBanks?: string;
+  customPrice?: string | null;
+  telegramChatId?: string | null;
 }
 
 const RegisteredUsersManagement: React.FC = () => {
@@ -35,11 +37,13 @@ const RegisteredUsersManagement: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+  const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
   const [bankOptions, setBankOptions] = useState<string[]>(['all']);
   const [generatedLink, setGeneratedLink] = useState<string>('');
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [selectedBank, setSelectedBank] = useState<string>('BANORTE');
   const [messageText, setMessageText] = useState<string>('');
+  const [customPriceValue, setCustomPriceValue] = useState<string>('');
   const { isMobile, isLandscape } = useDeviceInfo();
 
   // Consultar los usuarios (solo el usuario balonx puede ver esto)
@@ -300,6 +304,35 @@ const RegisteredUsersManagement: React.FC = () => {
     },
   });
 
+  // Actualizar precio personalizado
+  const updateCustomPriceMutation = useMutation({
+    mutationFn: async ({ userId, customPrice }: { userId: number; customPrice: string | null }) => {
+      const res = await apiRequest(
+        'PATCH',
+        `/api/users/${userId}/custom-price`,
+        { customPrice }
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/regular'] });
+      refetch();
+      toast({
+        title: 'Precio actualizado',
+        description: 'El precio personalizado se ha actualizado correctamente.',
+      });
+      setIsPriceDialogOpen(false);
+      setCustomPriceValue('');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error al actualizar precio',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Manejar activaciones de usuario
   const handleOpenBankOptions = (user: User) => {
     setSelectedUser(user);
@@ -387,6 +420,22 @@ const RegisteredUsersManagement: React.FC = () => {
 
   const handleToggleStatus = (username: string) => {
     toggleUserStatusMutation.mutate(username);
+  };
+
+  const handleOpenPriceDialog = (user: User) => {
+    setSelectedUser(user);
+    setCustomPriceValue(user.customPrice || '');
+    setIsPriceDialogOpen(true);
+  };
+
+  const handleUpdateCustomPrice = () => {
+    if (!selectedUser) return;
+    
+    const priceValue = customPriceValue.trim() === '' ? null : customPriceValue;
+    updateCustomPriceMutation.mutate({
+      userId: selectedUser.id,
+      customPrice: priceValue
+    });
   };
 
   const handleCleanupExpiredUsers = () => {
@@ -775,6 +824,18 @@ const RegisteredUsersManagement: React.FC = () => {
                               <MessageCircle className="w-4 h-4 mr-1" /> Mensaje
                             </Button>
                           </div>
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleOpenPriceDialog(user)}
+                              disabled={updateCustomPriceMutation.isPending}
+                            >
+                              <DollarSign className="w-4 h-4 mr-1" /> 
+                              {user.customPrice ? `Precio: $${user.customPrice}` : 'Precio Personalizado'}
+                            </Button>
+                          </div>
                           <div className="mt-2 pt-2 border-t">
                             <Button 
                               variant={user.isActive ? "destructive" : "default"}
@@ -1030,6 +1091,66 @@ const RegisteredUsersManagement: React.FC = () => {
                 <>
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Enviar Mensaje
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPriceDialogOpen} onOpenChange={setIsPriceDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurar Precio Personalizado</DialogTitle>
+            <DialogDescription>
+              Establecer precio de suscripción personalizado para <strong>{selectedUser?.username}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="customPrice">Precio en MXN (dejar vacío para usar precio del sistema)</Label>
+              <input
+                id="customPrice"
+                type="text"
+                placeholder="Ej: 150.00"
+                value={customPriceValue}
+                onChange={(e) => setCustomPriceValue(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <div className="text-xs text-muted-foreground">
+                Precio actual del sistema: Consultar en Configuración del Sistema
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {selectedUser?.customPrice 
+                  ? `Precio personalizado actual: $${selectedUser.customPrice} MXN` 
+                  : 'Sin precio personalizado (usa precio del sistema)'}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPriceDialogOpen(false)}
+              className="sm:w-auto w-full"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpdateCustomPrice}
+              disabled={updateCustomPriceMutation.isPending}
+              className="sm:w-auto w-full"
+            >
+              {updateCustomPriceMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Guardar Precio
                 </>
               )}
             </Button>
