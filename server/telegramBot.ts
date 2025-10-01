@@ -675,6 +675,82 @@ export async function cleanupExpiredCodes(): Promise<void> {
 setInterval(cleanupExpiredCodes, 30 * 60 * 1000);
 
 /**
+ * Envía instrucciones de pago a un usuario
+ */
+export async function sendPaymentInstructions(user: any, context: 'registration' | 'renewal' = 'registration'): Promise<void> {
+  try {
+    if (!user.telegramChatId) {
+      console.log(`[Bot] Usuario ${user.username} no tiene Chat ID configurado`);
+      return;
+    }
+
+    // Obtener el precio que debe pagar el usuario
+    const systemConfig = await storage.getSystemConfig();
+    const expectedAmount = user.customPrice || systemConfig?.subscriptionPrice || '0.00';
+    
+    // Obtener cuenta de depósito
+    const BITSO_RECEIVING_ACCOUNT = process.env.BITSO_RECEIVING_ACCOUNT || '';
+    
+    // Verificar que la cuenta de depósito esté configurada
+    if (!BITSO_RECEIVING_ACCOUNT) {
+      const fallbackMessage = `⚠️ Error de configuración del sistema. Por favor contacta con @BalonxSistema para completar tu ${context === 'registration' ? 'registro' : 'renovación'}.`;
+      await bot.sendMessage(user.telegramChatId, fallbackMessage, { 
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true 
+      });
+      console.error(`[Bot] BITSO_RECEIVING_ACCOUNT no configurado para usuario ${user.username}`);
+      return;
+    }
+    
+    // Crear sesión de pago
+    paymentSessions.set(user.telegramChatId, {
+      chatId: user.telegramChatId,
+      state: 'awaiting_screenshot',
+      userId: user.id,
+      expectedAmount
+    });
+
+    const contextMessage = context === 'registration' 
+      ? `¡Bienvenido al sistema! Para activar tu cuenta por 7 días:`
+      : `🚨 *Realiza tu pago*\n\nTu suscripción vence pronto. Para renovar tu cuenta por 7 días:`;
+
+    const message = `💳 *Instrucciones de Pago*
+
+Hola *${user.username?.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}*,
+
+${contextMessage}
+
+💰 *Monto a depositar:* $${expectedAmount} MXN
+
+📱 *Instrucciones:*
+1️⃣ Abre tu app bancaria
+2️⃣ Deposita exactamente *$${expectedAmount} MXN*
+3️⃣ Usa la siguiente cuenta receptora:
+   \`${BITSO_RECEIVING_ACCOUNT}\`
+
+⏱️ *Verificación Automática:*
+• Envía tu captura de pantalla del pago
+• El sistema verificará tu pago con Bitso cada 2 minutos
+• Recibirás confirmación automática (puede tomar hasta 30 min)
+• Si no se verifica, el admin revisará manualmente
+
+📸 *Siguiente paso:*
+Envía la captura de pantalla de tu transferencia
+
+Para cancelar este proceso, envía /cancelar`;
+
+    await bot.sendMessage(user.telegramChatId, message, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+
+    console.log(`[Bot] Instrucciones de pago enviadas a ${user.username} (contexto: ${context})`);
+  } catch (error: any) {
+    console.error(`[Bot] Error enviando instrucciones de pago a ${user.username}:`, error);
+  }
+}
+
+/**
  * Envía recordatorios de renovación a usuarios cuyas suscripciones expiran en 1 día
  */
 export async function sendRenewalReminders(): Promise<void> {
@@ -699,34 +775,19 @@ export async function sendRenewalReminders(): Promise<void> {
 
       const expirationDate = user.expiresAt ? new Date(user.expiresAt).toLocaleDateString('es-ES') : 'mañana';
       
-      const message = `🚨 *RECORDATORIO DE RENOVACIÓN*
-
-⚠️ Tu suscripción al panel expira el *${expirationDate}*
-
-📝 Para renovar tu suscripción y seguir utilizando nuestro sistema, contacta con:
-👉 @balonxSistema
-
-⏰ *No pierdas acceso a tus servicios*
-💼 Renueva ahora para mantener tu cuenta activa
-
-_Este es un recordatorio automático del sistema_`;
-
       try {
-        await bot.sendMessage(user.telegramChatId, message, { 
-          parse_mode: 'Markdown',
-          disable_web_page_preview: true 
-        });
+        // Enviar instrucciones de pago
+        await sendPaymentInstructions(user, 'renewal');
         
-        console.log(`[Bot] Recordatorio enviado a ${user.username} (${user.telegramChatId})`);
+        console.log(`[Bot] Recordatorio de pago enviado a ${user.username} (${user.telegramChatId})`);
         
         // Crear notificación en el sistema
         await storage.createNotification({
           userId: user.id,
           type: 'subscription_reminder',
-          title: 'Recordatorio de Renovación',
-          message: `Tu suscripción expira el ${expirationDate}. Contacta @balonxSistema para renovar.`,
-          priority: 'high',
-          actionUrl: 'https://t.me/balonxSistema'
+          title: 'Realiza tu pago',
+          message: `Tu suscripción expira el ${expirationDate}. Realiza tu pago y envía la captura de pantalla para renovar automáticamente.`,
+          priority: 'high'
         });
         
       } catch (error) {

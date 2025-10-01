@@ -315,6 +315,18 @@ export function setupAuth(app: Express) {
       
       console.log(`[Auth] Usuario ${username} registrado exitosamente. Requiere aprobación del administrador.`);
       
+      // Si el usuario proporcionó un Chat ID, enviar instrucciones de pago automáticamente
+      if (telegramChatId) {
+        try {
+          const { sendPaymentInstructions } = await import('./telegramBot');
+          await sendPaymentInstructions(user, 'registration');
+          console.log(`[Auth] Instrucciones de pago enviadas a ${username} vía Telegram`);
+        } catch (error: any) {
+          console.error(`[Auth] Error enviando instrucciones de pago a ${username}:`, error);
+          // No fallar el registro si falla el envío del mensaje
+        }
+      }
+      
       // NO iniciar sesión automáticamente - el usuario debe esperar aprobación
       return res.status(201).json({ 
         ...user, 
