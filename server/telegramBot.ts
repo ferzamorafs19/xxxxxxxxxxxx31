@@ -372,11 +372,13 @@ Para activar o renovar tu cuenta por 7 días:
 3️⃣ Usa la siguiente cuenta receptora:
    \`${BITSO_RECEIVING_ACCOUNT}\`
 
-⏱️ *Verificación:*
-• El sistema verifica depósitos automáticamente cada 5 minutos
-• O puedes enviar tu captura de pantalla ahora para verificación manual
+⏱️ *Verificación Automática:*
+• Envía tu captura de pantalla del pago
+• El sistema verificará tu pago con Bitso cada 2 minutos
+• Recibirás confirmación automática (puede tomar hasta 30 min)
+• Si no se verifica, el admin revisará manualmente
 
-📸 *Para verificación manual:*
+📸 *Siguiente paso:*
 Envía la captura de pantalla de tu transferencia
 
 Para cancelar este proceso, envía /cancelar`;
