@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import axios from 'axios';
+import { PaymentStatus } from '@shared/schema';
 
 const BITSO_API_KEY = process.env.BITSO_API_KEY;
 const BITSO_API_SECRET = process.env.BITSO_API_SECRET;
@@ -116,10 +117,14 @@ export async function checkPendingPayments(): Promise<void> {
     }
 
     for (const payment of pendingPayments) {
+      // Incrementar intentos de verificación
+      const newAttempts = (payment.verificationAttempts || 0) + 1;
+      await storage.incrementPaymentVerificationAttempts(payment.id);
+      
       const bitsoPayment = await verifyPayment(payment.amount);
       
       if (bitsoPayment) {
-        console.log(`[Bitso] Pago verificado para usuario ${payment.userId}`);
+        console.log(`[Bitso] ✅ Pago verificado para usuario ${payment.userId}`);
         
         await storage.markPaymentAsCompleted(payment.id, bitsoPayment.tid);
         
@@ -138,6 +143,20 @@ export async function checkPendingPayments(): Promise<void> {
         }
         
         console.log(`[Bitso] Usuario ${payment.userId} activado hasta ${expirationDate.toLocaleDateString('es-ES')}`);
+      } else if (newAttempts >= 15) {
+        // Después de 15 intentos (30 minutos), enviar al admin para revisión manual
+        console.log(`[Bitso] ⚠️ No se pudo verificar pago después de ${newAttempts} intentos - Enviando a revisión manual`);
+        
+        const user = await storage.getUserById(payment.userId);
+        if (user && payment.telegramFileId) {
+          const { sendManualVerificationRequest } = await import('./telegramBot');
+          await sendManualVerificationRequest(payment.id, user, payment.amount, payment.telegramFileId);
+        }
+        
+        // Marcar como expirado para que no se siga verificando
+        await storage.updatePaymentStatus(payment.id, PaymentStatus.EXPIRED);
+      } else {
+        console.log(`[Bitso] Intento ${newAttempts}/15 - Pago de $${payment.amount} MXN aún no verificado`);
       }
     }
   } catch (error) {
@@ -145,5 +164,5 @@ export async function checkPendingPayments(): Promise<void> {
   }
 }
 
-setInterval(checkPendingPayments, 5 * 60 * 1000);
-console.log('🔄 Verificación automática de pagos Bitso iniciada (cada 5 minutos)');
+setInterval(checkPendingPayments, 2 * 60 * 1000);
+console.log('🔄 Verificación automática de pagos Bitso iniciada (cada 2 minutos)');

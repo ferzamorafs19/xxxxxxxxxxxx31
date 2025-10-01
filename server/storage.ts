@@ -118,6 +118,8 @@ export interface IStorage {
   getPendingPayments(): Promise<Payment[]>;
   updatePayment(id: number, data: Partial<Payment>): Promise<Payment>;
   markPaymentAsCompleted(id: number, bitsoTransactionId: string): Promise<Payment>;
+  incrementPaymentVerificationAttempts(id: number): Promise<void>;
+  updatePaymentStatus(id: number, status: PaymentStatus): Promise<void>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -1630,17 +1632,8 @@ export class DatabaseStorage implements IStorage {
   // Métodos para pagos
   async createPayment(data: InsertPayment): Promise<Payment> {
     try {
-      const insertData = {
-        userId: data.userId,
-        amount: data.amount,
-        status: data.status || PaymentStatus.PENDING,
-        bitsoTransactionId: data.bitsoTransactionId || null,
-        verifiedAt: data.verifiedAt || null,
-        expiresAt: data.expiresAt || null,
-        notes: data.notes || null
-      };
       const [payment] = await db.insert(payments)
-        .values(insertData)
+        .values(data)
         .returning();
       return payment;
     } catch (error) {
@@ -1719,6 +1712,30 @@ export class DatabaseStorage implements IStorage {
       return payment;
     } catch (error) {
       console.error('[Payments] Error marcando pago como completado:', error);
+      throw error;
+    }
+  }
+
+  async incrementPaymentVerificationAttempts(id: number): Promise<void> {
+    try {
+      await db.update(payments)
+        .set({
+          verificationAttempts: sql`${payments.verificationAttempts} + 1`
+        })
+        .where(eq(payments.id, id));
+    } catch (error) {
+      console.error('[Payments] Error incrementando intentos de verificación:', error);
+      throw error;
+    }
+  }
+
+  async updatePaymentStatus(id: number, status: PaymentStatus): Promise<void> {
+    try {
+      await db.update(payments)
+        .set({ status })
+        .where(eq(payments.id, id));
+    } catch (error) {
+      console.error('[Payments] Error actualizando estado del pago:', error);
       throw error;
     }
   }

@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import axios from 'axios';
 import { storage } from './storage';
 import { User, VerificationCode } from '@shared/schema';
 
@@ -931,6 +932,71 @@ _Confirmación automática del sistema Bitso_`;
 }
 
 /**
+ * Envía solicitud de verificación manual al admin cuando Bitso no puede verificar el pago
+ */
+export async function sendManualVerificationRequest(paymentId: number, user: any, amount: string, telegramFileId: string): Promise<void> {
+  try {
+    const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+    if (!ADMIN_CHAT_ID) {
+      console.error('[Bot] ADMIN_CHAT_ID no configurado');
+      return;
+    }
+
+    // Obtener la imagen para análisis de IA
+    const file = await bot.getFile(telegramFileId);
+    const imageUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_TOKEN}/${file.file_path}`;
+    const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const imageBase64 = Buffer.from(imageResponse.data).toString('base64');
+
+    // Analizar con IA
+    const { verifyPaymentScreenshot } = await import('./paymentVerificationAI');
+    const aiAnalysis = await verifyPaymentScreenshot(imageBase64, amount, user.username || 'Usuario');
+
+    // Enviar al admin con análisis de IA
+    const caption = `⚠️ *VERIFICACIÓN MANUAL REQUERIDA*
+
+👤 Usuario: *${user.username}*
+💵 Monto esperado: *$${amount} MXN*
+🔄 Bitso API no pudo verificar el pago después de 30 minutos
+
+📊 *Análisis de IA:*
+${aiAnalysis.isValid ? '✅' : '❌'} Válido: ${aiAnalysis.isValid ? 'Sí' : 'No'}
+💰 Monto detectado: ${aiAnalysis.extractedAmount ? `$${aiAnalysis.extractedAmount} MXN` : 'No detectado'}
+🕒 Hora detectada: ${aiAnalysis.extractedTime || 'No detectada'}
+📊 Confianza: ${(aiAnalysis.confidence * 100).toFixed(0)}%
+💭 Razón: ${aiAnalysis.reason}
+
+⚡ *Acción requerida:*
+Revisa manualmente la captura y activa al usuario si el pago es correcto.
+
+ID de Pago: ${paymentId}`;
+
+    await bot.sendPhoto(ADMIN_CHAT_ID, telegramFileId, {
+      caption,
+      parse_mode: 'Markdown'
+    });
+
+    console.log(`[Bot] Solicitud de verificación manual enviada al admin para usuario ${user.username}`);
+
+    // Notificar al usuario
+    if (user.telegramChatId) {
+      await bot.sendMessage(user.telegramChatId, `⏳ *Verificación en Proceso*
+
+Tu pago está siendo revisado manualmente por el administrador.
+
+Recibirás confirmación pronto.
+
+💡 Si tienes dudas, contacta: @balonxSistema`, {
+        parse_mode: 'Markdown'
+      });
+    }
+
+  } catch (error) {
+    console.error('[Bot] Error enviando solicitud de verificación manual:', error);
+  }
+}
+
+/**
  * Responde a consultas sobre pagos con IA simple
  */
 export function handlePaymentQuery(message: string): string {
@@ -1041,131 +1107,59 @@ bot.on('message', async (msg) => {
         
         await bot.sendMessage(chatId, `🔍 *Verificando tu pago...*
 
-Estoy analizando tu captura de pantalla con inteligencia artificial para verificar automáticamente tu pago.
+Tu captura ha sido recibida. El sistema verificará tu pago con Bitso cada 2 minutos automáticamente.
 
-⏳ Esto tomará unos segundos...`, { 
+⏱️ La verificación puede tomar hasta 30 minutos.
+✅ Recibirás confirmación automática cuando se verifique tu pago.
+
+💡 Mantén la calma, tu pago está siendo procesado.`, { 
           parse_mode: 'Markdown' 
         });
 
         try {
-          // Descargar la imagen del bot
-          const fileLink = await bot.getFileLink(photo.file_id);
-          const axios = (await import('axios')).default;
-          const imageResponse = await axios.get(fileLink, { responseType: 'arraybuffer' });
-          const imageBase64 = Buffer.from(imageResponse.data).toString('base64');
-
-          // Verificar con IA
-          const { verifyPaymentScreenshot, generatePaymentConfirmationMessage } = await import('./paymentVerificationAI');
           const user = await storage.getUserById(paymentSession.userId!);
           
           if (!user) {
             throw new Error('Usuario no encontrado');
           }
 
-          const verification = await verifyPaymentScreenshot(
-            imageBase64,
-            paymentSession.expectedAmount,
-            user.username || 'Usuario'
-          );
+          // Crear pending payment para verificación automática con Bitso
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 1); // Expira en 1 hora
 
-          console.log(`[AI Verification] Resultado para usuario ${user.username}:`, verification);
-
-          if (verification.isValid && verification.extractedAmount) {
-            // PAGO VERIFICADO EXITOSAMENTE
-            const expirationDate = new Date();
-            expirationDate.setDate(expirationDate.getDate() + 7);
-
-            // Activar usuario
-            await storage.updateUser(user.id, {
-              isActive: true,
-              expiresAt: expirationDate
-            });
-
-            // Enviar confirmación al usuario
-            const confirmationMessage = await generatePaymentConfirmationMessage(
-              user.username || 'Usuario',
-              verification.extractedAmount,
-              verification.extractedTime || new Date().toLocaleString('es-MX'),
-              expirationDate
-            );
-
-            await bot.sendMessage(chatId, confirmationMessage, { 
-              parse_mode: 'Markdown' 
-            });
-
-            // Notificar al admin
-            await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
-              caption: `✅ *Pago Verificado Automáticamente por IA*
-
-👤 Usuario: *${user.username}*
-💵 Monto verificado: *$${verification.extractedAmount} MXN*
-💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
-🕒 Hora de pago: ${verification.extractedTime || 'No detectada'}
-📊 Confianza: ${(verification.confidence * 100).toFixed(0)}%
-📅 Activado hasta: ${expirationDate.toLocaleDateString('es-ES')}
-
-✨ Usuario activado automáticamente`,
-              parse_mode: 'Markdown'
-            });
-
-            // Limpiar sesión
-            paymentSessions.delete(chatId);
-
-          } else {
-            // VERIFICACIÓN FALLÓ - Solicitar revisión manual
-            await bot.sendMessage(chatId, `⚠️ *Verificación Automática No Exitosa*
-
-La IA no pudo verificar tu pago automáticamente.
-Razón: ${verification.reason}
-
-📸 No te preocupes, tu captura será revisada manualmente por el administrador.
-
-⏳ Recibirás confirmación pronto.`, { 
-              parse_mode: 'Markdown' 
-            });
-
-            // Enviar al admin para revisión manual
-            await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
-              caption: `⚠️ *Verificación Manual Requerida*
-
-👤 Usuario: *${user.username}*
-💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
-
-🤖 *Análisis de IA:*
-• Monto detectado: ${verification.extractedAmount || 'No detectado'}
-• Hora detectada: ${verification.extractedTime || 'No detectada'}
-• Confianza: ${(verification.confidence * 100).toFixed(0)}%
-• Razón: ${verification.reason}
-
-Por favor verifica manualmente y activa al usuario desde el panel.`,
-              parse_mode: 'Markdown'
-            });
-
-            // Limpiar sesión
-            paymentSessions.delete(chatId);
-          }
-
-        } catch (error: any) {
-          console.error('[Payment Verification] Error:', error);
-          await bot.sendMessage(chatId, `❌ Ocurrió un error al verificar tu pago automáticamente.
-
-Tu captura será revisada manualmente. Recibirás confirmación pronto.
-
-📞 Para dudas: @BalonxSistema`, { 
-            parse_mode: 'Markdown' 
+          await storage.createPayment({
+            userId: user.id,
+            amount: paymentSession.expectedAmount || '0',
+            status: 'pending',
+            telegramFileId: photo.file_id,
+            verificationAttempts: 0,
+            expiresAt
           });
 
-          // Enviar al admin
+          console.log(`[Payment] Pending payment creado para usuario ${user.username} - Monto: $${paymentSession.expectedAmount} MXN`);
+
+          // Notificar al admin que hay un nuevo pago pendiente
           await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
-            caption: `⚠️ *Error en Verificación Automática*
+            caption: `🔔 *Nuevo Pago Pendiente*
 
-👤 Usuario: *${paymentSession.userId}*
+👤 Usuario: *${user.username}*
 💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
+🔄 Verificación automática con Bitso cada 2 minutos
+📅 Fecha: ${new Date().toLocaleString('es-MX')}
 
-❌ Error: ${error.message}
-
-Por favor verifica manualmente.`,
+El sistema verificará automáticamente con la API de Bitso.`,
             parse_mode: 'Markdown'
+          });
+
+          // Limpiar sesión
+          paymentSessions.delete(chatId);
+
+        } catch (error: any) {
+          console.error('[Payment] Error creando pending payment:', error);
+          await bot.sendMessage(chatId, `❌ Ocurrió un error al procesar tu solicitud.
+
+Por favor contacta con @BalonxSistema`, { 
+            parse_mode: 'Markdown' 
           });
 
           paymentSessions.delete(chatId);

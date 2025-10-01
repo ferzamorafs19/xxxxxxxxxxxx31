@@ -477,7 +477,9 @@ export const payments = pgTable("payments", {
   verifiedAt: timestamp("verified_at"), // Cuándo se verificó el pago
   expiresAt: timestamp("expires_at"), // Cuándo expira esta espera de pago
   createdAt: timestamp("created_at").defaultNow(),
-  notes: text("notes") // Notas adicionales
+  notes: text("notes"), // Notas adicionales
+  telegramFileId: text("telegram_file_id"), // ID del archivo de Telegram (captura de pantalla)
+  verificationAttempts: integer("verification_attempts").default(0) // Contador de intentos de verificación con Bitso
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).omit({
