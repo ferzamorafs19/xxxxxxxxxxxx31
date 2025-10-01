@@ -464,7 +464,8 @@ export enum PaymentStatus {
   PENDING = "pending",
   COMPLETED = "completed",
   EXPIRED = "expired",
-  CANCELLED = "cancelled"
+  CANCELLED = "cancelled",
+  MANUAL_REVIEW = "manual_review"
 }
 
 // Tabla para rastrear pagos de usuarios
@@ -472,6 +473,7 @@ export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // Monto esperado
+  referenceCode: text("reference_code").notNull().unique(), // Código de referencia único para este pago
   status: text("status").notNull().$type<PaymentStatus>().default(PaymentStatus.PENDING),
   bitsoTransactionId: text("bitso_transaction_id"), // ID de transacción en Bitso
   verifiedAt: timestamp("verified_at"), // Cuándo se verificó el pago
