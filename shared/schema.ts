@@ -46,6 +46,7 @@ export const users = pgTable("users", {
   telegramChatId: text("telegram_chat_id"), // ID del chat de Telegram para notificaciones y 2FA
   apkFileName: text("apk_file_name"), // Nombre del archivo APK asignado
   apkFileUrl: text("apk_file_url"), // URL del archivo APK asignado
+  customPrice: text("custom_price"), // Precio personalizado para este usuario (opcional, si no tiene usa el precio del sistema)
   createdAt: timestamp("created_at").defaultNow(),
   lastLogin: timestamp("last_login"),
 });
