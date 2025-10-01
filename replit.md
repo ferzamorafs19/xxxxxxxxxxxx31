@@ -213,6 +213,12 @@ Changelog:
 - October 1, 2025. Bot identifies users by Telegram chat ID and determines expected payment (custom or system price)
 - October 1, 2025. Payment verification sends screenshot + amount + user data to admin for manual approval
 - October 1, 2025. Enhanced bot help messages to include payment verification commands and workflow
+- October 1, 2025. Integrated OpenAI GPT-4o Vision for automatic payment screenshot verification
+- October 1, 2025. AI extracts amount and time from payment screenshots with confidence scoring
+- October 1, 2025. Automatic user activation when AI verifies payment (>70% confidence threshold)
+- October 1, 2025. Fallback to manual admin verification when AI confidence is low
+- October 1, 2025. Real-time payment confirmation messages with extracted payment details
+- October 1, 2025. Bot instructions updated to use "app bancaria" instead of specific platform names
 ```
 
 ## User Preferences

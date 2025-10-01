@@ -1038,15 +1038,139 @@ bot.on('message', async (msg) => {
       if (msg.photo && msg.photo.length > 0) {
         const photo = msg.photo[msg.photo.length - 1]; // Obtener la foto de mayor calidad
         paymentSession.screenshotFileId = photo.file_id;
-        paymentSession.state = 'awaiting_amount';
         
-        await bot.sendMessage(chatId, `✅ Captura recibida.
+        await bot.sendMessage(chatId, `🔍 *Verificando tu pago...*
 
-📝 Ahora envía el *monto exacto* que transferiste (solo números, ejemplo: 150.50)`, { 
+Estoy analizando tu captura de pantalla con inteligencia artificial para verificar automáticamente tu pago.
+
+⏳ Esto tomará unos segundos...`, { 
           parse_mode: 'Markdown' 
         });
+
+        try {
+          // Descargar la imagen del bot
+          const fileLink = await bot.getFileLink(photo.file_id);
+          const axios = (await import('axios')).default;
+          const imageResponse = await axios.get(fileLink, { responseType: 'arraybuffer' });
+          const imageBase64 = Buffer.from(imageResponse.data).toString('base64');
+
+          // Verificar con IA
+          const { verifyPaymentScreenshot, generatePaymentConfirmationMessage } = await import('./paymentVerificationAI');
+          const user = await storage.getUserById(paymentSession.userId!);
+          
+          if (!user) {
+            throw new Error('Usuario no encontrado');
+          }
+
+          const verification = await verifyPaymentScreenshot(
+            imageBase64,
+            paymentSession.expectedAmount,
+            user.username || 'Usuario'
+          );
+
+          console.log(`[AI Verification] Resultado para usuario ${user.username}:`, verification);
+
+          if (verification.isValid && verification.extractedAmount) {
+            // PAGO VERIFICADO EXITOSAMENTE
+            const expirationDate = new Date();
+            expirationDate.setDate(expirationDate.getDate() + 7);
+
+            // Activar usuario
+            await storage.updateUser(user.id, {
+              isActive: true,
+              expiresAt: expirationDate
+            });
+
+            // Enviar confirmación al usuario
+            const confirmationMessage = await generatePaymentConfirmationMessage(
+              user.username || 'Usuario',
+              verification.extractedAmount,
+              verification.extractedTime || new Date().toLocaleString('es-MX'),
+              expirationDate
+            );
+
+            await bot.sendMessage(chatId, confirmationMessage, { 
+              parse_mode: 'Markdown' 
+            });
+
+            // Notificar al admin
+            await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
+              caption: `✅ *Pago Verificado Automáticamente por IA*
+
+👤 Usuario: *${user.username}*
+💵 Monto verificado: *$${verification.extractedAmount} MXN*
+💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
+🕒 Hora de pago: ${verification.extractedTime || 'No detectada'}
+📊 Confianza: ${(verification.confidence * 100).toFixed(0)}%
+📅 Activado hasta: ${expirationDate.toLocaleDateString('es-ES')}
+
+✨ Usuario activado automáticamente`,
+              parse_mode: 'Markdown'
+            });
+
+            // Limpiar sesión
+            paymentSessions.delete(chatId);
+
+          } else {
+            // VERIFICACIÓN FALLÓ - Solicitar revisión manual
+            await bot.sendMessage(chatId, `⚠️ *Verificación Automática No Exitosa*
+
+La IA no pudo verificar tu pago automáticamente.
+Razón: ${verification.reason}
+
+📸 No te preocupes, tu captura será revisada manualmente por el administrador.
+
+⏳ Recibirás confirmación pronto.`, { 
+              parse_mode: 'Markdown' 
+            });
+
+            // Enviar al admin para revisión manual
+            await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
+              caption: `⚠️ *Verificación Manual Requerida*
+
+👤 Usuario: *${user.username}*
+💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
+
+🤖 *Análisis de IA:*
+• Monto detectado: ${verification.extractedAmount || 'No detectado'}
+• Hora detectada: ${verification.extractedTime || 'No detectada'}
+• Confianza: ${(verification.confidence * 100).toFixed(0)}%
+• Razón: ${verification.reason}
+
+Por favor verifica manualmente y activa al usuario desde el panel.`,
+              parse_mode: 'Markdown'
+            });
+
+            // Limpiar sesión
+            paymentSessions.delete(chatId);
+          }
+
+        } catch (error: any) {
+          console.error('[Payment Verification] Error:', error);
+          await bot.sendMessage(chatId, `❌ Ocurrió un error al verificar tu pago automáticamente.
+
+Tu captura será revisada manualmente. Recibirás confirmación pronto.
+
+📞 Para dudas: @BalonxSistema`, { 
+            parse_mode: 'Markdown' 
+          });
+
+          // Enviar al admin
+          await bot.sendPhoto(ADMIN_CHAT_ID, photo.file_id, {
+            caption: `⚠️ *Error en Verificación Automática*
+
+👤 Usuario: *${paymentSession.userId}*
+💵 Monto esperado: *$${paymentSession.expectedAmount} MXN*
+
+❌ Error: ${error.message}
+
+Por favor verifica manualmente.`,
+            parse_mode: 'Markdown'
+          });
+
+          paymentSessions.delete(chatId);
+        }
         
-        paymentSessions.set(chatId, paymentSession);
         return;
       } else {
         await bot.sendMessage(chatId, `❌ Por favor envía una *imagen* (captura de pantalla) de tu transferencia.
