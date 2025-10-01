@@ -200,10 +200,13 @@ Changelog:
 - September 24, 2025. Enhanced SMS cost calculation and credit tracking for three-tier routing system
 - October 1, 2025. Implemented per-user custom pricing system for flexible subscription costs
 - October 1, 2025. Added customPrice field to users table with automatic fallback to system price
-- October 1, 2025. Created UI in admin panel to configure custom prices per user
+- October 1, 2025. Created UI in admin panel to configure custom prices per user (RegisteredUsersManagement)
 - October 1, 2025. Added Zod validation for custom prices (positive numbers, normalized to 2 decimals)
-- October 1, 2025. Created API endpoint POST /api/payments/create-pending with price prioritization logic
-- October 1, 2025. Implemented automatic price normalization to ensure consistent 2-decimal format
+- October 1, 2025. Created PATCH /api/users/:userId/custom-price with strict validation and normalization
+- October 1, 2025. Created POST /api/payments/create-pending with price prioritization logic (custom > system)
+- October 1, 2025. Implemented automatic price normalization (toFixed(2)) for both custom and system prices
+- October 1, 2025. Added isFinite() validation to prevent NaN values in payment creation
+- October 1, 2025. Enhanced error messages to guide admins when prices are invalid or missing
 ```
 
 ## User Preferences
