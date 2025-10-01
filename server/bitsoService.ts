@@ -74,28 +74,36 @@ export async function verifyPayment(expectedAmount: string, receivingAccount?: s
     throw new Error('BITSO_RECEIVING_ACCOUNT no está configurado');
   }
   try {
-    console.log(`[Bitso] Buscando pago de ${expectedAmount}`);
+    console.log(`[Bitso] Buscando depósito de exactamente $${expectedAmount} MXN`);
     
     const fundings = await getBitsoFundings(50);
     
+    // Buscar un depósito que coincida EXACTAMENTE con el monto esperado
     const recentPayment = fundings.find(funding => {
-      const amountMatch = parseFloat(funding.amount) >= parseFloat(expectedAmount) * 0.99 && 
-                         parseFloat(funding.amount) <= parseFloat(expectedAmount) * 1.01;
+      // Comparar montos con exactitud de 2 decimales
+      const fundingAmount = parseFloat(funding.amount).toFixed(2);
+      const expected = parseFloat(expectedAmount).toFixed(2);
+      const amountMatch = fundingAmount === expected;
       
       const accountMatch = funding.details?.receiving_account === accountToVerify;
       
+      // Buscar en las últimas 24 horas
       const isRecent = new Date(funding.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000;
       
       const isCompleted = funding.status === 'complete';
+      
+      if (amountMatch) {
+        console.log(`[Bitso] Coincidencia encontrada: Monto=${funding.amount}, Cuenta=${funding.details?.receiving_account}, Reciente=${isRecent}, Completado=${isCompleted}`);
+      }
       
       return amountMatch && accountMatch && isRecent && isCompleted;
     });
 
     if (recentPayment) {
-      console.log(`[Bitso] Pago encontrado: ${recentPayment.tid} - ${recentPayment.amount} ${recentPayment.currency}`);
+      console.log(`[Bitso] ✅ Depósito verificado: ${recentPayment.tid} - $${recentPayment.amount} ${recentPayment.currency}`);
       return recentPayment;
     } else {
-      console.log('[Bitso] No se encontró pago que coincida con los criterios');
+      console.log(`[Bitso] ❌ No se encontró depósito de $${expectedAmount} MXN en las últimas 24 horas`);
       return null;
     }
   } catch (error) {
