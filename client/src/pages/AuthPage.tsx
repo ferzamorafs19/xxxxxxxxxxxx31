@@ -175,7 +175,6 @@ export default function AuthPage() {
           />
         </div>
       </div>
-      
       {/* Formularios */}
       <div className="w-full md:w-1/2 flex justify-center items-center p-5">
         <div className="w-full max-w-md">
@@ -334,7 +333,8 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle>Registrar Usuario</CardTitle>
+                  <CardTitle>¡No Se dejen Estafar Única venta por Telegram @Balonxsistema
+                   Registrar Usuario</CardTitle>
                   <CardDescription>
                     Crea una nueva cuenta para acceder al sistema
                   </CardDescription>
