@@ -195,6 +195,13 @@ export default function AuthPage() {
                     Ingresa tus credenciales para acceder al panel de administración
                   </CardDescription>
                   
+                  <Alert className="mt-4 border-red-500 bg-red-50 dark:bg-red-950">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800 dark:text-red-200">
+                      <strong>⚠️ ¡No se dejen estafar!</strong> La única venta oficial es por Telegram con <strong>@balonxsistema</strong>
+                    </AlertDescription>
+                  </Alert>
+                  
                   {/* Indicador de detección de bots */}
                   {botDetection.showDetection && (
                     <Alert className={botDetection.isBot ? "border-red-500" : "border-yellow-500"}>
