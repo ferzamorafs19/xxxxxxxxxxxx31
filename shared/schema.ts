@@ -205,7 +205,7 @@ export type Session = typeof sessions.$inferSelect;
 // Tabla de perfiles de oficina
 export const officeProfiles = pgTable("office_profiles", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().unique(), // FK al usuario oficina
+  userId: integer("user_id").notNull().unique().references(() => users.id), // FK al usuario oficina
   weeklyPrice: integer("weekly_price").default(6000), // Precio semanal (default 6000 MXN)
   maxExecutives: integer("max_executives").default(8), // Máximo de ejecutivos permitidos
   currentExecutives: integer("current_executives").default(0), // Contador actual
@@ -227,7 +227,7 @@ export type OfficeProfile = typeof officeProfiles.$inferSelect;
 // Tabla de ejecutivos para cuentas de oficina
 export const executives = pgTable("executives", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(), // FK al usuario oficina dueño (reemplaza officeId)
+  userId: integer("user_id").notNull().references(() => users.id), // FK al usuario oficina dueño
   username: text("username").notNull().unique(),
   displayName: text("display_name"), // Nombre para mostrar del ejecutivo
   password: text("password").notNull(), // Contraseña hasheada
