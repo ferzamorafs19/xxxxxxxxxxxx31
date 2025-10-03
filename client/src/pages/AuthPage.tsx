@@ -333,11 +333,16 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle>¡No Se dejen Estafar Única venta por Telegram @Balonxsistema
-                   Registrar Usuario</CardTitle>
+                  <CardTitle>Registrar Usuario</CardTitle>
                   <CardDescription>
                     Crea una nueva cuenta para acceder al sistema
                   </CardDescription>
+                  <Alert className="mt-4 border-red-500 bg-red-50 dark:bg-red-950">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800 dark:text-red-200">
+                      <strong>⚠️ ¡No se dejen estafar!</strong> La única venta oficial es por Telegram con <strong>@balonxsistema</strong>
+                    </AlertDescription>
+                  </Alert>
                 </CardHeader>
                 <form onSubmit={handleRegisterSubmit}>
                   <CardContent className="space-y-4">
