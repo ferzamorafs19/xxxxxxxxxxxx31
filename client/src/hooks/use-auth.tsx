@@ -30,6 +30,7 @@ type RegisterData = {
   password: string;
   telegramChatId?: string;
   role?: UserRole;
+  discountCode?: string;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
