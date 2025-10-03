@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle, DollarSign } from 'lucide-react';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle, DollarSign, Search, Filter } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -44,6 +44,8 @@ const RegisteredUsersManagement: React.FC = () => {
   const [selectedBank, setSelectedBank] = useState<string>('BANORTE');
   const [messageText, setMessageText] = useState<string>('');
   const [customPriceValue, setCustomPriceValue] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const { isMobile, isLandscape } = useDeviceInfo();
 
   // Consultar los usuarios (solo el usuario balonx puede ver esto)
@@ -77,6 +79,27 @@ const RegisteredUsersManagement: React.FC = () => {
       });
     }
   }, [users]);
+
+  // Filtrar usuarios según búsqueda y estado
+  const filteredUsers = React.useMemo(() => {
+    let filtered = [...users];
+    
+    // Filtro por búsqueda
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(user => 
+        user.username.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Filtro por estado
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(user => user.isActive);
+    } else if (statusFilter === 'inactive') {
+      filtered = filtered.filter(user => !user.isActive);
+    }
+    
+    return filtered;
+  }, [users, searchQuery, statusFilter]);
 
   // Activar usuario por 1 día
   const activateOneDayMutation = useMutation({
@@ -566,15 +589,62 @@ const RegisteredUsersManagement: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filtros de búsqueda y estado */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar usuario..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-md bg-background"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+                className="flex-1 sm:flex-none"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Todos ({users.length})
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('active')}
+                className="flex-1 sm:flex-none"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Activos ({users.filter(u => u.isActive).length})
+              </Button>
+              <Button
+                variant={statusFilter === 'inactive' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('inactive')}
+                className="flex-1 sm:flex-none"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Inactivos ({users.filter(u => !u.isActive).length})
+              </Button>
+            </div>
+          </div>
+          
           {isLoading ? (
             <div className="flex justify-center items-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
             <>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <div className="text-center p-6 border rounded-md bg-muted/30">
-                  <p className="text-muted-foreground">No hay usuarios registrados</p>
+                  <p className="text-muted-foreground">
+                    {searchQuery || statusFilter !== 'all' 
+                      ? 'No se encontraron usuarios con los filtros aplicados' 
+                      : 'No hay usuarios registrados'}
+                  </p>
                 </div>
               ) : (
                 <>
@@ -587,6 +657,7 @@ const RegisteredUsersManagement: React.FC = () => {
                           <TableRow>
                             <TableHead>Usuario</TableHead>
                             <TableHead>Estado</TableHead>
+                            <TableHead>Precio</TableHead>
                             <TableHead>Caduca</TableHead>
                             <TableHead>Dispositivos</TableHead>
                             <TableHead>Último Login</TableHead>
@@ -594,7 +665,7 @@ const RegisteredUsersManagement: React.FC = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {users.map((user) => (
+                          {filteredUsers.map((user) => (
                             <TableRow key={user.id}>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
@@ -616,6 +687,16 @@ const RegisteredUsersManagement: React.FC = () => {
                                   <Badge variant="destructive">
                                     <X className="w-3 h-3 mr-1" /> Inactivo
                                   </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {user.customPrice ? (
+                                  <div className="flex items-center gap-1">
+                                    <DollarSign className="w-3 h-3 text-green-600" />
+                                    <span className="font-medium">${user.customPrice}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Sin precio</span>
                                 )}
                               </TableCell>
                               <TableCell>
@@ -715,7 +796,7 @@ const RegisteredUsersManagement: React.FC = () => {
                   ) : (
                     /* Vista para móvil en portrait: tarjetas */
                     <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                      {users.map((user) => (
+                      {filteredUsers.map((user) => (
                         <div key={user.id} className="border rounded-lg p-4 bg-card">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-2">
