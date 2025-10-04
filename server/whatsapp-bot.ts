@@ -288,14 +288,35 @@ export class WhatsAppBot {
       }
 
       const currentTime = Date.now();
+      
+      // Verificar si la opción tiene sub-menús
+      const hasSubMenu = allMenuOptions.some(opt => opt.parentId === selectedOption.id);
+
+      // Procesar el mensaje de respuesta si existe
+      if (selectedOption.responseMessage) {
+        let messageToSend = selectedOption.responseMessage;
+        
+        // Reemplazar (liga) con la última liga del panel si existe en el mensaje
+        if (messageToSend.includes('(liga)')) {
+          const panelUrl = await this.generatePanelLink();
+          messageToSend = messageToSend.replace(/\(liga\)/g, panelUrl);
+        }
+        
+        await this.sendMessage(phoneNumber, messageToSend);
+      }
 
       // Procesar según el tipo de acción
       switch (selectedOption.actionType) {
         case 'message':
-          if (selectedOption.responseMessage) {
-            await this.sendMessage(phoneNumber, selectedOption.responseMessage);
+          // Si tiene sub-menú, mostrarlo después del mensaje
+          if (hasSubMenu) {
+            setTimeout(async () => {
+              await this.sendMenu(phoneNumber, selectedOption.id);
+            }, 1000);
+            this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: selectedOption.id });
+          } else {
+            this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime, currentMenuId });
           }
-          this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime, currentMenuId });
           break;
           
         case 'transfer':
@@ -305,9 +326,6 @@ export class WhatsAppBot {
           break;
           
         case 'info':
-          if (selectedOption.responseMessage) {
-            await this.sendMessage(phoneNumber, selectedOption.responseMessage);
-          }
           // Volver a mostrar el menú después de dar la información
           setTimeout(() => this.sendMenu(phoneNumber, currentMenuId), 2000);
           this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId });
@@ -317,15 +335,6 @@ export class WhatsAppBot {
           // Mostrar el sub-menú
           await this.sendMenu(phoneNumber, selectedOption.id);
           this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: selectedOption.id });
-          break;
-
-        case 'command':
-          if (selectedOption.commandType === 'liga') {
-            // Generar y enviar la última liga del panel
-            const panelUrl = await this.generatePanelLink();
-            await this.sendMessage(phoneNumber, `Aquí está tu liga de acceso al panel:\n\n${panelUrl}\n\nEsta liga es válida y te permitirá acceder al sistema.`);
-          }
-          this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime, currentMenuId });
           break;
       }
 
