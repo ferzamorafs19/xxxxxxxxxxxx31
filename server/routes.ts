@@ -1543,11 +1543,18 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             } 
             else {
               // NUEVA IMPLEMENTACIÓN UNIFICADA PARA TODOS LOS USUARIOS
-              // Obtenemos tanto las sesiones guardadas como las actuales
-              const allSavedSessions = await storage.getSavedSessions();
-              const currentSessions = await storage.getCurrentSessions();
+              // Filtrado en base de datos por userId
+              const isExecutive = (user as any).isExecutive === true;
               
-              console.log(`WebSocket: Encontradas ${allSavedSessions.length} sesiones guardadas y ${currentSessions.length} sesiones actuales en total`);
+              // Admins (role === 'admin') ven todas las sesiones (userId = undefined)
+              // Ejecutivos y usuarios normales ven sesiones filtradas
+              const userId = user.role === 'admin' ? undefined : user.id;
+              
+              // Obtenemos tanto las sesiones guardadas como las actuales (filtradas por usuario)
+              const allSavedSessions = await storage.getSavedSessions(userId, isExecutive);
+              const currentSessions = await storage.getCurrentSessions(userId, isExecutive);
+              
+              console.log(`WebSocket: Usuario ${userName} (rol: ${user.role}, ejecutivo: ${isExecutive}, filtrado: ${userId ? 'sí' : 'no'}) - ${allSavedSessions.length} guardadas, ${currentSessions.length} actuales`);
               
               // Combinamos ambas listas (evitando duplicados por sessionId)
               const allSessionsMap = new Map();
@@ -1555,34 +1562,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
                 allSessionsMap.set(session.sessionId, session);
               });
               
-              let sessions = Array.from(allSessionsMap.values());
+              const sessions = Array.from(allSessionsMap.values());
               
-              // Solo el usuario "balonx" puede ver todas las sesiones
-              // Todos los demás (incluso con rol admin) solo ven sus propias sesiones
-              if (user.username !== 'balonx') {
-                console.log(`WebSocket: Filtrando sesiones para el usuario regular: ${userName}`);
-                
-                const beforeCount = sessions.length;
-                
-                // Filtrar explícitamente solo las sesiones creadas por este usuario
-                sessions = sessions.filter(session => {
-                  const isCreatedByCurrentUser = session.createdBy === userName;
-                  
-                  if (isCreatedByCurrentUser) {
-                    console.log(`WebSocket: Incluida sesión ${session.sessionId} para ${userName} (creador: ${session.createdBy || 'desconocido'})`);
-                  } else if (session.createdBy) {
-                    console.log(`WebSocket: Excluida sesión ${session.sessionId} para ${userName} (creador: ${session.createdBy})`);
-                  } else {
-                    console.log(`WebSocket: Excluida sesión ${session.sessionId} para ${userName} (sin creador)`);
-                  }
-                  
-                  return isCreatedByCurrentUser;
-                });
-                
-                console.log(`WebSocket: Usuario ${userName} (rol: ${user.role}), mostrando ${sessions.length} de ${beforeCount} sesiones`);
-              } else {
-                console.log(`WebSocket: Superadministrador balonx accediendo a todas las sesiones (${sessions.length})`);
-              }
+              console.log(`WebSocket: Enviando ${sessions.length} sesiones totales a ${userName}`);
               
               // Enviamos las sesiones al cliente
               ws.send(JSON.stringify({

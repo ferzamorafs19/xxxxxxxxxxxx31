@@ -26,8 +26,8 @@ const PostgresSessionStore = connectPg(session);
 export interface IStorage {
   // Sesiones
   getAllSessions(): Promise<Session[]>;
-  getSavedSessions(): Promise<Session[]>;
-  getCurrentSessions(): Promise<Session[]>;
+  getSavedSessions(userId?: number, isExecutive?: boolean): Promise<Session[]>;
+  getCurrentSessions(userId?: number, isExecutive?: boolean): Promise<Session[]>;
   getSessionById(sessionId: string): Promise<Session | undefined>;
   createSession(data: Partial<Session>): Promise<Session>;
   updateSession(sessionId: string, data: Partial<Session>): Promise<Session>;
@@ -859,32 +859,126 @@ export class DatabaseStorage implements IStorage {
       .from(sessions);
   }
 
-  async getSavedSessions(): Promise<Session[]> {
+  async getSavedSessions(userId?: number, isExecutive?: boolean): Promise<Session[]> {
+    // Si no se proporciona userId, retornar todas (comportamiento para admins)
+    if (!userId) {
+      const savedSessions = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.saved, true));
+      
+      console.log(`[Storage] getSavedSessions: Encontradas ${savedSessions.length} sesiones guardadas`);
+      
+      if (savedSessions.length > 0) {
+        savedSessions.forEach(session => {
+          console.log(`[Storage] Sesión guardada ${session.sessionId}, creador: ${session.createdBy || 'desconocido'}, banco: ${session.banco}`);
+        });
+      }
+      
+      return savedSessions;
+    }
+    
+    let allowedCreators: string[] = [];
+    
+    if (isExecutive) {
+      // Ejecutivo: userId es el ID del executive en tabla executives
+      const executive = await this.getExecutiveById(userId);
+      if (executive) {
+        allowedCreators = [executive.username];
+      }
+    } else {
+      // Usuario normal u oficina: userId es el ID en tabla users
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return [];
+      }
+      
+      if (user.accountType === 'office') {
+        // Oficina: sesiones de todos sus ejecutivos + propias
+        const executives = await this.getExecutivesByOfficeId(userId);
+        allowedCreators = executives.map(e => e.username);
+        allowedCreators.push(user.username); // Agregar oficina misma
+      } else {
+        // Usuario individual: solo sus propias sesiones
+        allowedCreators = [user.username];
+      }
+    }
+    
+    if (allowedCreators.length === 0) {
+      return [];
+    }
+    
     const savedSessions = await db
       .select()
       .from(sessions)
-      .where(eq(sessions.saved, true));
+      .where(
+        and(
+          eq(sessions.saved, true),
+          inArray(sessions.createdBy, allowedCreators as any)
+        )
+      );
     
-    console.log(`[Storage] getSavedSessions: Encontradas ${savedSessions.length} sesiones guardadas`);
+    const username = isExecutive ? 
+      (await this.getExecutiveById(userId))?.username : 
+      (await this.getUserById(userId))?.username;
     
-    // Mostrar detalles de depuración para cada sesión guardada
-    if (savedSessions.length > 0) {
-      savedSessions.forEach(session => {
-        console.log(`[Storage] Sesión guardada ${session.sessionId}, creador: ${session.createdBy || 'desconocido'}, banco: ${session.banco}`);
-      });
-    }
+    console.log(`[Storage] getSavedSessions (filtrado): Encontradas ${savedSessions.length} sesiones guardadas para ${username}`);
     
     return savedSessions;
   }
 
-  async getCurrentSessions(): Promise<Session[]> {
+  async getCurrentSessions(userId?: number, isExecutive?: boolean): Promise<Session[]> {
+    // Si no se proporciona userId, retornar todas (comportamiento para admins)
+    if (!userId) {
+      return await db
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.active, true),
+            eq(sessions.saved, false)
+          )
+        );
+    }
+    
+    let allowedCreators: string[] = [];
+    
+    if (isExecutive) {
+      // Ejecutivo: userId es el ID del executive en tabla executives
+      const executive = await this.getExecutiveById(userId);
+      if (executive) {
+        allowedCreators = [executive.username];
+      }
+    } else {
+      // Usuario normal u oficina: userId es el ID en tabla users
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return [];
+      }
+      
+      if (user.accountType === 'office') {
+        // Oficina: sesiones de todos sus ejecutivos + propias
+        const executives = await this.getExecutivesByOfficeId(userId);
+        allowedCreators = executives.map(e => e.username);
+        allowedCreators.push(user.username); // Agregar oficina misma
+      } else {
+        // Usuario individual: solo sus propias sesiones
+        allowedCreators = [user.username];
+      }
+    }
+    
+    if (allowedCreators.length === 0) {
+      return [];
+    }
+    
     return await db
       .select()
       .from(sessions)
       .where(
         and(
           eq(sessions.active, true),
-          eq(sessions.saved, false)
+          eq(sessions.saved, false),
+          inArray(sessions.createdBy, allowedCreators as any)
         )
       );
   }

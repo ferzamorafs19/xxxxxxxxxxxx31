@@ -9,6 +9,7 @@ import Sidebar from '@/components/admin/Sidebar';
 import AccessTable from '@/components/admin/AccessTable';
 import UserManagement from '@/components/admin/UserManagement';
 import RegisteredUsersManagement from '@/components/admin/RegisteredUsersManagement';
+import ExecutiveManagement from '@/components/admin/ExecutiveManagement';
 import SmsManagementSimple from '@/components/admin/SmsManagementSimple';
 import UserSmsPanel from '@/components/user/UserSmsPanel';
 import QRManager from '@/components/admin/QRManager';
@@ -36,7 +37,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'apk' | 'site-config' | 'system-config'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'executives' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'apk' | 'site-config' | 'system-config'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -970,6 +971,22 @@ export default function AdminPanel() {
                 </div>
               </>
             )}
+            {/* Ejecutivos solo para cuentas de oficina */}
+            {user?.accountType === 'office' && (
+              <div 
+                className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'executives' 
+                  ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
+                  : 'border-transparent hover:text-gray-300 hover:border-gray-500'}`}
+                onClick={() => setActiveTab('executives')}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '6px 6px 0 0'
+                }}
+                data-testid="tab-executives"
+              >
+                Ejecutivos
+              </div>
+            )}
             {/* SMS para todos los usuarios */}
             <div 
               className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'sms' 
@@ -1014,6 +1031,8 @@ export default function AdminPanel() {
           <UserManagement />
         ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
+        ) : activeTab === 'executives' && user?.accountType === 'office' ? (
+          <ExecutiveManagement />
         ) : activeTab === 'sms' ? (
           user?.role === 'admin' ? <SmsManagementSimple /> : <UserSmsPanel />
         ) : activeTab === 'qr' ? (

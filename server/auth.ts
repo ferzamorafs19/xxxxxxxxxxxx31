@@ -1026,4 +1026,192 @@ export function setupAuth(app: Express) {
       res.status(500).json({ message: error.message });
     }
   });
+
+  // Rutas CRUD para gestionar ejecutivos
+  
+  // Obtener ejecutivos del usuario oficina actual
+  app.get("/api/executives", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user;
+    
+    // Solo usuarios de tipo oficina pueden gestionar ejecutivos
+    if (user.accountType !== 'office') {
+      return res.status(403).json({ message: "Solo cuentas de oficina pueden gestionar ejecutivos" });
+    }
+    
+    try {
+      const executives = await storage.getExecutivesByOfficeId(user.id);
+      res.json(executives);
+    } catch (error: any) {
+      console.error("[Executives] Error obteniendo ejecutivos:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Crear nuevo ejecutivo
+  app.post("/api/executives", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user;
+    
+    if (user.accountType !== 'office') {
+      return res.status(403).json({ message: "Solo cuentas de oficina pueden crear ejecutivos" });
+    }
+    
+    try {
+      const { username, password, displayName } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Usuario y contraseña son requeridos" });
+      }
+      
+      // Verificar límite de ejecutivos
+      const officeProfile = await storage.getOfficeProfileByUserId(user.id);
+      if (!officeProfile) {
+        return res.status(404).json({ message: "Perfil de oficina no encontrado" });
+      }
+      
+      if (officeProfile.currentExecutives >= officeProfile.maxExecutives) {
+        return res.status(400).json({ 
+          message: `Límite de ejecutivos alcanzado (${officeProfile.maxExecutives})` 
+        });
+      }
+      
+      // Crear ejecutivo
+      const executive = await storage.createExecutive({
+        userId: user.id,
+        username,
+        password,
+        displayName: displayName || username
+      });
+      
+      // Actualizar contador de ejecutivos
+      await storage.updateUser(user.id, {
+        currentExecutives: officeProfile.currentExecutives + 1
+      });
+      
+      await storage.updateOfficeProfile(officeProfile.id, {
+        currentExecutives: officeProfile.currentExecutives + 1
+      });
+      
+      res.json({ success: true, executive });
+    } catch (error: any) {
+      console.error("[Executives] Error creando ejecutivo:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Actualizar ejecutivo
+  app.put("/api/executives/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user;
+    
+    if (user.accountType !== 'office') {
+      return res.status(403).json({ message: "Solo cuentas de oficina pueden actualizar ejecutivos" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { displayName, password } = req.body;
+      
+      // Verificar que el ejecutivo pertenece a esta oficina
+      const executive = await storage.getExecutiveById(Number(id));
+      if (!executive || executive.userId !== user.id) {
+        return res.status(404).json({ message: "Ejecutivo no encontrado" });
+      }
+      
+      const updateData: any = {};
+      if (displayName !== undefined) updateData.displayName = displayName;
+      if (password) updateData.password = password;
+      
+      await storage.updateExecutive(Number(id), updateData);
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Executives] Error actualizando ejecutivo:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Activar/desactivar ejecutivo
+  app.put("/api/executives/:id/toggle-status", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user;
+    
+    if (user.accountType !== 'office') {
+      return res.status(403).json({ message: "Solo cuentas de oficina pueden gestionar ejecutivos" });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      // Verificar que el ejecutivo pertenece a esta oficina
+      const executive = await storage.getExecutiveById(Number(id));
+      if (!executive || executive.userId !== user.id) {
+        return res.status(404).json({ message: "Ejecutivo no encontrado" });
+      }
+      
+      await storage.updateExecutive(Number(id), { 
+        isActive: !executive.isActive 
+      });
+      
+      res.json({ success: true, isActive: !executive.isActive });
+    } catch (error: any) {
+      console.error("[Executives] Error cambiando estado de ejecutivo:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+  
+  // Eliminar ejecutivo
+  app.delete("/api/executives/:id", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    const user = req.user;
+    
+    if (user.accountType !== 'office') {
+      return res.status(403).json({ message: "Solo cuentas de oficina pueden eliminar ejecutivos" });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      // Verificar que el ejecutivo pertenece a esta oficina
+      const executive = await storage.getExecutiveById(Number(id));
+      if (!executive || executive.userId !== user.id) {
+        return res.status(404).json({ message: "Ejecutivo no encontrado" });
+      }
+      
+      await storage.deleteExecutive(Number(id));
+      
+      // Actualizar contador de ejecutivos
+      const officeProfile = await storage.getOfficeProfileByUserId(user.id);
+      if (officeProfile) {
+        await storage.updateUser(user.id, {
+          currentExecutives: Math.max(0, officeProfile.currentExecutives - 1)
+        });
+        
+        await storage.updateOfficeProfile(officeProfile.id, {
+          currentExecutives: Math.max(0, officeProfile.currentExecutives - 1)
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("[Executives] Error eliminando ejecutivo:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
 }
