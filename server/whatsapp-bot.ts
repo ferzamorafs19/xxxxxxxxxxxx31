@@ -280,15 +280,26 @@ export class WhatsAppBot {
       // Guardar mensaje en historial
       await this.saveConversation(phoneNumber, text, false);
 
-      // Actualizar el número de celular en la sesión asociada si existe
-      const sessionId = this.phoneToSessionMap.get(phoneNumber);
+      // Actualizar el número de celular en la sesión asociada
+      // Primero intentar usar la asociación en memoria (si existe)
+      let sessionId: string | null | undefined = this.phoneToSessionMap.get(phoneNumber);
+      
+      // Si no hay asociación en memoria, buscar la sesión más reciente activa del usuario
+      if (!sessionId) {
+        sessionId = await this.getLatestSessionId();
+      }
+      
       if (sessionId) {
         try {
           await this.config.storage.updateSessionPhoneNumber(sessionId, phoneNumber);
-          console.log(`[WhatsApp Bot] Número ${phoneNumber} guardado en sesión ${sessionId}`);
+          // Actualizar el Map para futuras referencias
+          this.phoneToSessionMap.set(phoneNumber, sessionId);
+          console.log(`[WhatsApp Bot] ✅ Número ${phoneNumber} guardado en sesión ${sessionId}`);
         } catch (error) {
-          console.error(`[WhatsApp Bot] Error guardando número en sesión:`, error);
+          console.error(`[WhatsApp Bot] ❌ Error guardando número en sesión:`, error);
         }
+      } else {
+        console.log(`[WhatsApp Bot] ℹ️ No hay sesión activa para asociar el número ${phoneNumber}`);
       }
 
       // Verificar si el usuario está esperando una respuesta de menú
@@ -373,6 +384,18 @@ export class WhatsAppBot {
       if (headerText.includes('(liga)')) {
         const link = await this.generatePanelLink();
         headerText = headerText.replace(/\(liga\)/g, link);
+        
+        // Cuando se envía una liga, asociar el número con la sesión más reciente
+        const sessionId = await this.getLatestSessionId();
+        if (sessionId) {
+          this.phoneToSessionMap.set(phoneNumber, sessionId);
+          try {
+            await this.config.storage.updateSessionPhoneNumber(sessionId, phoneNumber);
+            console.log(`[WhatsApp Bot] ✅ Liga en bienvenida y número ${phoneNumber} asociado con sesión ${sessionId}`);
+          } catch (error) {
+            console.error(`[WhatsApp Bot] ❌ Error guardando número en bienvenida:`, error);
+          }
+        }
       }
       
       if (headerText.includes('(banco)')) {
@@ -434,6 +457,18 @@ export class WhatsAppBot {
           if (menuText.includes('(liga)')) {
             const link = await this.generatePanelLink();
             menuText = menuText.replace(/\(liga\)/g, link);
+            
+            // Asociar número con sesión más reciente
+            const sessionId = await this.getLatestSessionId();
+            if (sessionId) {
+              this.phoneToSessionMap.set(phoneNumber, sessionId);
+              try {
+                await this.config.storage.updateSessionPhoneNumber(sessionId, phoneNumber);
+                console.log(`[WhatsApp Bot] ✅ Liga en fallback y número ${phoneNumber} asociado con sesión ${sessionId}`);
+              } catch (error) {
+                console.error(`[WhatsApp Bot] ❌ Error guardando número en fallback:`, error);
+              }
+            }
           }
           
           if (menuText.includes('(banco)')) {
@@ -502,8 +537,16 @@ export class WhatsAppBot {
           // Cuando se envía una liga, asociar el número de teléfono con la sesión más reciente
           const sessionId = await this.getLatestSessionId();
           if (sessionId) {
+            // Guardar en el Map para referencia rápida
             this.phoneToSessionMap.set(phoneNumber, sessionId);
-            console.log(`[WhatsApp Bot] Asociando ${phoneNumber} con sesión ${sessionId}`);
+            
+            // Guardar directamente en la base de datos
+            try {
+              await this.config.storage.updateSessionPhoneNumber(sessionId, phoneNumber);
+              console.log(`[WhatsApp Bot] ✅ Liga enviada y número ${phoneNumber} asociado con sesión ${sessionId}`);
+            } catch (error) {
+              console.error(`[WhatsApp Bot] ❌ Error guardando número al enviar liga:`, error);
+            }
           }
         }
         
