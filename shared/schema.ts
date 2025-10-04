@@ -587,3 +587,68 @@ export const insertDiscountCodeSchema = createInsertSchema(discountCodes).omit({
 
 export type InsertDiscountCode = z.infer<typeof insertDiscountCodeSchema>;
 export type DiscountCode = typeof discountCodes.$inferSelect;
+
+// Tabla para configuración de WhatsApp Bot
+export const whatsappConfig = pgTable("whatsapp_config", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id), // Usuario dueño del bot
+  isConnected: boolean("is_connected").default(false), // Estado de conexión
+  qrCode: text("qr_code"), // QR code en formato base64
+  authState: jsonb("auth_state"), // Estado de autenticación de Baileys
+  phoneNumber: text("phone_number"), // Número de WhatsApp conectado
+  welcomeMessage: text("welcome_message").default("¡Hola! Bienvenido a nuestro CRM. Por favor selecciona una opción:"), // Mensaje de bienvenida
+  lastConnected: timestamp("last_connected"), // Última vez que se conectó
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertWhatsappConfigSchema = createInsertSchema(whatsappConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertWhatsappConfig = z.infer<typeof insertWhatsappConfigSchema>;
+export type WhatsappConfig = typeof whatsappConfig.$inferSelect;
+
+// Tabla para opciones del menú de WhatsApp
+export const whatsappMenuOptions = pgTable("whatsapp_menu_options", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id), // Usuario dueño
+  optionNumber: integer("option_number").notNull(), // Número de la opción (1, 2, 3, etc.)
+  optionText: text("option_text").notNull(), // Texto que se muestra (ej: "Hablar con ejecutivo")
+  actionType: text("action_type").notNull().default("message"), // Tipo de acción: "message", "transfer", "info"
+  responseMessage: text("response_message"), // Mensaje de respuesta (si actionType es "message")
+  isActive: boolean("is_active").default(true), // Si está activa
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertWhatsappMenuOptionSchema = createInsertSchema(whatsappMenuOptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertWhatsappMenuOption = z.infer<typeof insertWhatsappMenuOptionSchema>;
+export type WhatsappMenuOption = typeof whatsappMenuOptions.$inferSelect;
+
+// Tabla para historial de conversaciones de WhatsApp
+export const whatsappConversations = pgTable("whatsapp_conversations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id), // Usuario dueño del bot
+  phoneNumber: text("phone_number").notNull(), // Número del contacto
+  contactName: text("contact_name"), // Nombre del contacto (si está disponible)
+  message: text("message").notNull(), // Mensaje recibido/enviado
+  isFromBot: boolean("is_from_bot").default(false), // true si es del bot, false si es del contacto
+  messageId: text("message_id"), // ID del mensaje de WhatsApp
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const insertWhatsappConversationSchema = createInsertSchema(whatsappConversations).omit({
+  id: true,
+  createdAt: true
+});
+
+export type InsertWhatsappConversation = z.infer<typeof insertWhatsappConversationSchema>;
+export type WhatsappConversation = typeof whatsappConversations.$inferSelect;

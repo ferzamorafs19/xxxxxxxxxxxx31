@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Menu, X, QrCode, Bot, Send, Package, Globe, DollarSign, Users } from 'lucide-react';
+import { MessageSquare, Menu, X, QrCode, Bot, Send, Package, Globe, DollarSign, Users, Smartphone } from 'lucide-react';
 import balonxLogo from '@assets/balonx_1756163316921.jpg';
 
 interface SidebarProps {
@@ -136,6 +136,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
               >
                 <Bot className="mr-2 h-4 w-4" />
                 Bot Telegram
+              </button>
+              
+              <button 
+                onClick={() => handleTabChange('whatsapp')}
+                className={`block w-full text-left ${activeTab === 'whatsapp' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+              >
+                <Smartphone className="mr-2 h-4 w-4" />
+                Bot WhatsApp
               </button>
               
               <button 
