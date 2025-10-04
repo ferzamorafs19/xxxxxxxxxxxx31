@@ -6,15 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Send, Save, MessageSquare, QrCode, Power, CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Send, Save, MessageSquare, QrCode, Power, CheckCircle, XCircle, ChevronRight, ChevronDown, Link as LinkIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { WhatsappConfig, WhatsappMenuOption } from "@shared/schema";
+
+interface MenuOptionEdit extends Partial<WhatsappMenuOption> {
+  isNew?: boolean;
+  hasChanges?: boolean;
+}
 
 export default function WhatsAppBotPanel() {
   const { toast } = useToast();
   const [testNumber, setTestNumber] = useState("5531781885");
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [editedOptions, setEditedOptions] = useState<MenuOptionEdit[]>([]);
+  const [expandedMenus, setExpandedMenus] = useState<Set<number>>(new Set());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Obtener configuración
   const { data: config, isLoading: loadingConfig } = useQuery<WhatsappConfig>({
@@ -29,7 +38,7 @@ export default function WhatsAppBotPanel() {
   // Obtener estado de conexión (polling cada 3 segundos)
   const { data: status } = useQuery<{ isConnected: boolean; qrCode: string | null; phoneNumber: string }>({
     queryKey: ["/api/whatsapp/status"],
-    refetchInterval: 3000, // Actualizar cada 3 segundos
+    refetchInterval: 3000,
   });
 
   // Sincronizar valores cuando carga la configuración
@@ -39,6 +48,13 @@ export default function WhatsAppBotPanel() {
       setPhoneNumber(config.phoneNumber || "");
     }
   }, [config]);
+
+  // Sincronizar opciones editables con las opciones del servidor
+  useEffect(() => {
+    if (menuOptions.length > 0 && editedOptions.length === 0) {
+      setEditedOptions(menuOptions.map(opt => ({ ...opt, hasChanges: false })));
+    }
+  }, [menuOptions]);
 
   // Mutación para actualizar configuración
   const updateConfigMutation = useMutation({
@@ -61,64 +77,19 @@ export default function WhatsAppBotPanel() {
     },
   });
 
-  // Mutación para crear opción de menú
-  const createMenuOptionMutation = useMutation({
-    mutationFn: async (data: Partial<WhatsappMenuOption>) => {
-      return await apiRequest("POST", "/api/whatsapp/menu", data);
+  // Mutación para iniciar/detener bot
+  const startStopBotMutation = useMutation({
+    mutationFn: async (action: "start" | "stop") => {
+      return await apiRequest("POST", `/api/whatsapp/${action}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
-      toast({
-        title: "Opción creada",
-        description: "La opción de menú ha sido creada.",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/config"] });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "No se pudo crear la opción de menú.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutación para actualizar opción de menú
-  const updateMenuOptionMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<WhatsappMenuOption> }) => {
-      return await apiRequest("PUT", `/api/whatsapp/menu/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
-      toast({
-        title: "Opción actualizada",
-        description: "La opción de menú ha sido actualizada.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar la opción de menú.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutación para eliminar opción de menú
-  const deleteMenuOptionMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/whatsapp/menu/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
-      toast({
-        title: "Opción eliminada",
-        description: "La opción de menú ha sido eliminada.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la opción de menú.",
+        description: "No se pudo realizar la acción.",
         variant: "destructive",
       });
     },
@@ -126,109 +97,30 @@ export default function WhatsAppBotPanel() {
 
   // Mutación para enviar mensaje de prueba
   const sendTestMessageMutation = useMutation({
-    mutationFn: async (phoneNumber: string) => {
-      return await apiRequest("POST", "/api/whatsapp/send-test", { phoneNumber });
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/whatsapp/send-test", { phoneNumber: testNumber });
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
       toast({
         title: "Mensaje enviado",
-        description: `Mensaje enviado a ${data.sentTo}`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo enviar el mensaje de prueba.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutación para iniciar el bot
-  const startBotMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/whatsapp/start");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/config"] });
-      toast({
-        title: "Bot iniciado",
-        description: "Escanea el código QR con WhatsApp para conectar.",
+        description: `Mensaje de prueba enviado a ${testNumber}`,
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "No se pudo iniciar el bot de WhatsApp.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Mutación para detener el bot
-  const stopBotMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/whatsapp/stop");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/config"] });
-      toast({
-        title: "Bot detenido",
-        description: "El bot de WhatsApp ha sido desconectado.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo detener el bot de WhatsApp.",
+        description: "No se pudo enviar el mensaje de prueba.",
         variant: "destructive",
       });
     },
   });
 
   const handleSaveConfig = () => {
-    updateConfigMutation.mutate({
-      welcomeMessage: welcomeMessage,
-      phoneNumber: phoneNumber,
-    });
-  };
-
-  const handleAddMenuOption = () => {
-    const nextNumber = menuOptions.length > 0 
-      ? Math.max(...menuOptions.map(o => o.optionNumber)) + 1 
-      : 1;
-    
-    createMenuOptionMutation.mutate({
-      optionNumber: nextNumber,
-      optionText: `Opción ${nextNumber}`,
-      responseMessage: "",
-      actionType: "message",
-    });
-  };
-
-  const handleUpdateMenuOption = (id: number, field: string, value: string | number) => {
-    const option = menuOptions.find(o => o.id === id);
-    if (!option) return;
-
-    updateMenuOptionMutation.mutate({
-      id,
-      data: {
-        ...option,
-        [field]: value,
-      },
-    });
-  };
-
-  const handleDeleteMenuOption = (id: number) => {
-    if (confirm("¿Estás seguro de que quieres eliminar esta opción?")) {
-      deleteMenuOptionMutation.mutate(id);
-    }
+    updateConfigMutation.mutate({ welcomeMessage, phoneNumber });
   };
 
   const handleSendTestMessage = () => {
-    if (!testNumber) {
+    if (!testNumber || testNumber.trim() === "") {
       toast({
         title: "Error",
         description: "Por favor ingresa un número de teléfono.",
@@ -236,135 +128,384 @@ export default function WhatsAppBotPanel() {
       });
       return;
     }
-    sendTestMessageMutation.mutate(testNumber);
+    sendTestMessageMutation.mutate();
   };
 
-  if (loadingConfig || loadingMenu) {
-    return <div className="p-6">Cargando...</div>;
-  }
+  const handleStartStop = (action: "start" | "stop") => {
+    startStopBotMutation.mutate(action);
+  };
+
+  // Agregar nueva opción al menú principal o sub-menú
+  const handleAddOption = (parentId: number | null = null) => {
+    const newOptionNumber = editedOptions.filter(opt => 
+      (parentId === null ? !opt.parentId : opt.parentId === parentId)
+    ).length + 1;
+
+    const newOption: MenuOptionEdit = {
+      userId: config?.userId || 1,
+      parentId: parentId,
+      optionNumber: newOptionNumber,
+      optionText: "Nueva opción",
+      actionType: "message",
+      responseMessage: "",
+      commandType: null,
+      isActive: true,
+      isNew: true,
+      hasChanges: true,
+    };
+
+    setEditedOptions([...editedOptions, newOption]);
+    setHasUnsavedChanges(true);
+  };
+
+  // Actualizar opción editada
+  const handleUpdateOption = (index: number, field: string, value: any) => {
+    const updated = [...editedOptions];
+    updated[index] = { ...updated[index], [field]: value, hasChanges: true };
+    setEditedOptions(updated);
+    setHasUnsavedChanges(true);
+  };
+
+  // Eliminar opción
+  const handleDeleteOption = (index: number) => {
+    const updated = [...editedOptions];
+    updated.splice(index, 1);
+    setEditedOptions(updated);
+    setHasUnsavedChanges(true);
+  };
+
+  // Guardar todos los cambios
+  const handleSaveAllChanges = async () => {
+    try {
+      // Primero, eliminar opciones que no están en editedOptions pero están en menuOptions
+      const deletedOptions = menuOptions.filter(
+        opt => !editedOptions.find(edited => edited.id === opt.id)
+      );
+      
+      for (const deleted of deletedOptions) {
+        if (deleted.id) {
+          await apiRequest("DELETE", `/api/whatsapp/menu/${deleted.id}`);
+        }
+      }
+
+      // Crear o actualizar opciones
+      for (const option of editedOptions) {
+        if (option.hasChanges || option.isNew) {
+          if (option.isNew || !option.id) {
+            // Crear nueva opción
+            const { isNew, hasChanges, id, createdAt, updatedAt, ...data } = option;
+            await apiRequest("POST", "/api/whatsapp/menu", data);
+          } else {
+            // Actualizar opción existente
+            const { isNew, hasChanges, id, createdAt, updatedAt, ...data } = option;
+            await apiRequest("PUT", `/api/whatsapp/menu/${id}`, data);
+          }
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
+      setHasUnsavedChanges(false);
+      
+      toast({
+        title: "Cambios guardados",
+        description: "Todas las opciones del menú han sido actualizadas.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron guardar todos los cambios.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Toggle expandir/colapsar menú
+  const toggleExpand = (menuId: number) => {
+    const newExpanded = new Set(expandedMenus);
+    if (newExpanded.has(menuId)) {
+      newExpanded.delete(menuId);
+    } else {
+      newExpanded.add(menuId);
+    }
+    setExpandedMenus(newExpanded);
+  };
+
+  // Renderizar una opción de menú (con soporte para sub-menús)
+  const renderMenuOption = (option: MenuOptionEdit, index: number, level: number = 0) => {
+    const hasChildren = editedOptions.some(opt => opt.parentId === option.id);
+    const isExpanded = option.id ? expandedMenus.has(option.id) : false;
+    const childOptions = editedOptions.filter(opt => opt.parentId === option.id);
+
+    return (
+      <div key={index} className="space-y-2">
+        <Card className={`${level > 0 ? 'ml-8 border-l-4 border-l-primary/30' : ''}`}>
+          <CardContent className="p-4 space-y-3">
+            {/* Header con botón de expandir si tiene hijos */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {hasChildren && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => option.id && toggleExpand(option.id)}
+                    data-testid={`button-toggle-${index}`}
+                  >
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </Button>
+                )}
+                <span className="font-semibold">
+                  {level > 0 ? `${option.optionNumber} (Sub-menú)` : `Opción ${option.optionNumber}`}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                {/* Botón para agregar sub-menú */}
+                {option.actionType === 'submenu' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddOption(option.id || null)}
+                    data-testid={`button-add-submenu-${index}`}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Sub-menú
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteOption(index)}
+                  data-testid={`button-delete-${index}`}
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Campos de edición */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Número</Label>
+                <Input
+                  type="number"
+                  value={option.optionNumber}
+                  onChange={(e) => handleUpdateOption(index, "optionNumber", parseInt(e.target.value))}
+                  data-testid={`input-number-${index}`}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Texto de la opción</Label>
+                <Input
+                  value={option.optionText}
+                  onChange={(e) => handleUpdateOption(index, "optionText", e.target.value)}
+                  data-testid={`input-text-${index}`}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de acción</Label>
+              <Select
+                value={option.actionType}
+                onValueChange={(value) => handleUpdateOption(index, "actionType", value)}
+              >
+                <SelectTrigger data-testid={`select-action-${index}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="message">Mensaje</SelectItem>
+                  <SelectItem value="transfer">Transferir a ejecutivo</SelectItem>
+                  <SelectItem value="info">Información (vuelve al menú)</SelectItem>
+                  <SelectItem value="submenu">Sub-menú</SelectItem>
+                  <SelectItem value="command">Comando especial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Mostrar campo de comando si es tipo comando */}
+            {option.actionType === 'command' && (
+              <div className="space-y-2">
+                <Label>Tipo de comando</Label>
+                <Select
+                  value={option.commandType || "liga"}
+                  onValueChange={(value) => handleUpdateOption(index, "commandType", value)}
+                >
+                  <SelectTrigger data-testid={`select-command-${index}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="liga">
+                      <div className="flex items-center">
+                        <LinkIcon className="w-4 h-4 mr-2" />
+                        Liga del panel
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Envía automáticamente la última liga generada del panel al usuario
+                </p>
+              </div>
+            )}
+
+            {/* Campo de respuesta solo para ciertos tipos */}
+            {(option.actionType === 'message' || option.actionType === 'info' || option.actionType === 'transfer') && (
+              <div className="space-y-2">
+                <Label>Mensaje de respuesta</Label>
+                <Textarea
+                  rows={3}
+                  value={option.responseMessage || ""}
+                  onChange={(e) => handleUpdateOption(index, "responseMessage", e.target.value)}
+                  placeholder="Escribe el mensaje que se enviará cuando se seleccione esta opción..."
+                  data-testid={`textarea-response-${index}`}
+                />
+              </div>
+            )}
+
+            {option.actionType === 'submenu' && !hasChildren && (
+              <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
+                Este menú aún no tiene opciones. Haz clic en "Sub-menú" para agregar.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Renderizar sub-menús si están expandidos */}
+        {hasChildren && isExpanded && (
+          <div className="space-y-2">
+            {childOptions.map((childOption, childIndex) => {
+              const actualIndex = editedOptions.indexOf(childOption);
+              return renderMenuOption(childOption, actualIndex, level + 1);
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const mainMenuOptions = editedOptions.filter(opt => !opt.parentId);
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Bot de WhatsApp</h1>
-        <p className="text-muted-foreground">
-          Configura el bot de WhatsApp para enviar mensajes automáticos con menú de opciones.
-        </p>
-      </div>
-
-      {/* Estado de Conexión y QR */}
+    <div className="space-y-6">
+      {/* Estado de Conexión */}
       <Card>
         <CardHeader>
-          <CardTitle>Conexión de WhatsApp</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Power className="w-5 h-5" />
+            Estado de Conexión
+          </CardTitle>
           <CardDescription>
-            Conecta tu cuenta de WhatsApp escaneando el código QR
+            Estado actual del bot de WhatsApp
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Estado de conexión */}
-          <div className="flex items-center gap-3 p-4 border rounded-lg">
-            {status?.isConnected ? (
-              <>
-                <CheckCircle className="w-6 h-6 text-green-500" />
-                <div>
-                  <p className="font-semibold text-green-600">WhatsApp Conectado</p>
-                  <p className="text-sm text-muted-foreground">El bot está listo para enviar mensajes</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <XCircle className="w-6 h-6 text-gray-400" />
-                <div>
-                  <p className="font-semibold text-gray-600">WhatsApp Desconectado</p>
-                  <p className="text-sm text-muted-foreground">Inicia el bot y escanea el código QR para conectar</p>
-                </div>
-              </>
-            )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {status?.isConnected ? (
+                <>
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                  <div>
+                    <p className="font-medium">Conectado</p>
+                    {status?.phoneNumber && (
+                      <p className="text-sm text-muted-foreground">
+                        Número: {status.phoneNumber}
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-6 h-6 text-red-500" />
+                  <div>
+                    <p className="font-medium">Desconectado</p>
+                    <p className="text-sm text-muted-foreground">
+                      El bot no está conectado
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {status?.isConnected ? (
+                <Button
+                  variant="destructive"
+                  onClick={() => handleStartStop("stop")}
+                  disabled={startStopBotMutation.isPending}
+                  data-testid="button-stop-bot"
+                >
+                  <Power className="w-4 h-4 mr-2" />
+                  Detener Bot
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => handleStartStop("start")}
+                  disabled={startStopBotMutation.isPending}
+                  data-testid="button-start-bot"
+                >
+                  <Power className="w-4 h-4 mr-2" />
+                  Iniciar Bot
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Código QR */}
+          {/* QR Code */}
           {status?.qrCode && !status?.isConnected && (
-            <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg bg-muted/50">
+            <div className="flex flex-col items-center gap-4 p-6 bg-muted rounded-lg">
               <QrCode className="w-8 h-8 text-primary" />
               <p className="text-sm font-medium">Escanea este código QR con WhatsApp</p>
-              <img 
-                src={status.qrCode} 
-                alt="WhatsApp QR Code" 
-                className="w-64 h-64 border-4 border-white rounded-lg shadow-lg"
+              <img
+                src={status.qrCode}
+                alt="QR Code"
+                className="w-64 h-64 bg-white p-4 rounded-lg"
+                data-testid="qr-code-image"
               />
-              <p className="text-xs text-muted-foreground text-center max-w-md">
-                Abre WhatsApp en tu teléfono → Menú → Dispositivos vinculados → Vincular un dispositivo → Escanea este código
+              <p className="text-xs text-muted-foreground">
+                WhatsApp → Dispositivos vinculados → Vincular un dispositivo
               </p>
             </div>
           )}
-
-          {/* Botones de control */}
-          <div className="flex gap-3">
-            {!status?.isConnected ? (
-              <Button
-                data-testid="button-start-bot"
-                onClick={() => startBotMutation.mutate()}
-                disabled={startBotMutation.isPending}
-                className="flex-1"
-              >
-                <Power className="w-4 h-4 mr-2" />
-                {startBotMutation.isPending ? "Iniciando..." : "Iniciar Bot y Generar QR"}
-              </Button>
-            ) : (
-              <Button
-                data-testid="button-stop-bot"
-                onClick={() => stopBotMutation.mutate()}
-                disabled={stopBotMutation.isPending}
-                variant="destructive"
-                className="flex-1"
-              >
-                <Power className="w-4 h-4 mr-2" />
-                {stopBotMutation.isPending ? "Deteniendo..." : "Detener Bot"}
-              </Button>
-            )}
-          </div>
         </CardContent>
       </Card>
 
-      {/* Configuración General */}
+      {/* Configuración */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuración General</CardTitle>
+          <CardTitle>Configuración del Bot</CardTitle>
           <CardDescription>
-            Configura el mensaje de bienvenida y el número de WhatsApp del bot
+            Configura el mensaje de bienvenida y el número de WhatsApp
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="phone-number">Número de WhatsApp</Label>
-            <Input
-              id="phone-number"
-              data-testid="input-phone-number"
-              placeholder="5531781885"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="welcome-message">Mensaje de Bienvenida</Label>
             <Textarea
               id="welcome-message"
-              data-testid="textarea-welcome-message"
-              rows={4}
-              placeholder="Hola! Bienvenido a nuestro servicio..."
+              rows={3}
               value={welcomeMessage}
               onChange={(e) => setWelcomeMessage(e.target.value)}
+              placeholder="¡Hola! Bienvenido a nuestro servicio..."
+              data-testid="textarea-welcome-message"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone-number">Número de WhatsApp (opcional)</Label>
+            <Input
+              id="phone-number"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              placeholder="521234567890"
+              data-testid="input-phone-number"
             />
           </div>
 
           <Button
-            data-testid="button-save-config"
             onClick={handleSaveConfig}
             disabled={updateConfigMutation.isPending}
+            data-testid="button-save-config"
           >
             <Save className="w-4 h-4 mr-2" />
-            {updateConfigMutation.isPending ? "Guardando..." : "Guardar Configuración"}
+            Guardar Configuración
           </Button>
         </CardContent>
       </Card>
@@ -376,87 +517,44 @@ export default function WhatsAppBotPanel() {
             <div>
               <CardTitle>Opciones del Menú</CardTitle>
               <CardDescription>
-                Define las opciones que aparecerán en el menú del bot
+                Configura las opciones del menú principal y sub-menús
               </CardDescription>
             </div>
-            <Button
-              data-testid="button-add-option"
-              onClick={handleAddMenuOption}
-              disabled={createMenuOptionMutation.isPending}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar Opción
-            </Button>
+            <div className="flex gap-2">
+              {hasUnsavedChanges && (
+                <Button
+                  onClick={handleSaveAllChanges}
+                  data-testid="button-save-all"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Guardar Cambios
+                </Button>
+              )}
+              <Button
+                onClick={() => handleAddOption(null)}
+                variant="outline"
+                data-testid="button-add-option"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Agregar Opción
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {menuOptions.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                No hay opciones de menú configuradas. Haz clic en "Agregar Opción" para crear una.
-              </p>
-            ) : (
-              menuOptions.map((option) => (
-                <div
-                  key={option.id}
-                  className="border rounded-lg p-4 space-y-3"
-                  data-testid={`menu-option-${option.id}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor={`option-number-${option.id}`}>Número</Label>
-                        <Input
-                          id={`option-number-${option.id}`}
-                          data-testid={`input-option-number-${option.id}`}
-                          type="number"
-                          value={option.optionNumber}
-                          onChange={(e) =>
-                            handleUpdateMenuOption(option.id, "optionNumber", parseInt(e.target.value))
-                          }
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor={`option-text-${option.id}`}>Etiqueta</Label>
-                        <Input
-                          id={`option-text-${option.id}`}
-                          data-testid={`input-option-text-${option.id}`}
-                          value={option.optionText}
-                          onChange={(e) =>
-                            handleUpdateMenuOption(option.id, "optionText", e.target.value)
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <Button
-                      data-testid={`button-delete-option-${option.id}`}
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2"
-                      onClick={() => handleDeleteMenuOption(option.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`option-response-${option.id}`}>Texto de Respuesta</Label>
-                    <Textarea
-                      id={`option-response-${option.id}`}
-                      data-testid={`textarea-option-response-${option.id}`}
-                      rows={3}
-                      value={option.responseMessage || ""}
-                      onChange={(e) =>
-                        handleUpdateMenuOption(option.id, "responseMessage", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+        <CardContent className="space-y-4">
+          {mainMenuOptions.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              No hay opciones de menú configuradas. Haz clic en "Agregar Opción" para crear una.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {mainMenuOptions.map((option, index) => {
+                const actualIndex = editedOptions.indexOf(option);
+                return renderMenuOption(option, actualIndex, 0);
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -465,25 +563,28 @@ export default function WhatsAppBotPanel() {
         <CardHeader>
           <CardTitle>Enviar Mensaje de Prueba</CardTitle>
           <CardDescription>
-            Envía un mensaje de prueba con el mensaje de bienvenida y el menú configurado
+            Envía un mensaje de prueba con el menú configurado (solo 10 dígitos)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="test-number">Número de Teléfono</Label>
+            <Label htmlFor="test-number">Número de Teléfono (10 dígitos)</Label>
             <Input
               id="test-number"
-              data-testid="input-test-number"
               placeholder="5531781885"
               value={testNumber}
               onChange={(e) => setTestNumber(e.target.value)}
+              data-testid="input-test-number"
             />
+            <p className="text-xs text-muted-foreground">
+              El sistema automáticamente agregará el código 521 (México celular)
+            </p>
           </div>
 
           <Button
-            data-testid="button-send-test"
             onClick={handleSendTestMessage}
             disabled={sendTestMessageMutation.isPending}
+            data-testid="button-send-test"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
             {sendTestMessageMutation.isPending ? "Enviando..." : "Enviar Mensaje de Prueba"}
@@ -495,14 +596,16 @@ export default function WhatsAppBotPanel() {
               <h4 className="font-semibold mb-2">Vista Previa:</h4>
               <div className="whitespace-pre-wrap text-sm">
                 {welcomeMessage}
-                {menuOptions.length > 0 && (
+                {mainMenuOptions.length > 0 && (
                   <>
-                    {"\n\n"}
-                    {menuOptions.map((option) => (
-                      <div key={option.id}>
-                        {option.optionNumber}. {option.optionText}
-                      </div>
-                    ))}
+                    {"\n\nPor favor selecciona una opción:\n\n"}
+                    {mainMenuOptions
+                      .filter(opt => opt.isActive)
+                      .map((option) => (
+                        <div key={option.id || option.optionNumber}>
+                          {option.optionNumber}. {option.optionText}
+                        </div>
+                      ))}
                   </>
                 )}
               </div>
