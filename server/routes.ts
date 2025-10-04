@@ -3862,14 +3862,15 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
     
     try {
-      const { optionNumber, optionText, responseMessage, actionType } = req.body;
+      const { optionNumber, optionText, responseMessage, actionType, parentId } = req.body;
       
       const option = await storage.createWhatsAppMenuOption({
         userId: req.user.id,
         optionNumber,
         optionText,
         responseMessage,
-        actionType
+        actionType,
+        parentId: parentId || null
       });
       
       res.json(option);
@@ -3887,13 +3888,22 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     
     try {
       const { id } = req.params;
-      const { optionNumber, optionText, responseMessage, actionType } = req.body;
+      const { optionNumber, optionText, responseMessage, actionType, parentId } = req.body;
+      
+      // Verificar que la opción pertenece al usuario antes de actualizar
+      const existingOptions = await storage.getWhatsAppMenuOptions(req.user.id);
+      const existingOption = existingOptions.find(o => o.id === parseInt(id));
+      
+      if (!existingOption) {
+        return res.status(404).json({ message: "Opción no encontrada o no tienes permisos para modificarla" });
+      }
       
       const option = await storage.updateWhatsAppMenuOption(parseInt(id), {
         optionNumber,
         optionText,
         responseMessage,
-        actionType
+        actionType,
+        parentId
       });
       
       res.json(option);
@@ -3911,6 +3921,15 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     
     try {
       const { id } = req.params;
+      
+      // Verificar que la opción pertenece al usuario antes de eliminar
+      const existingOptions = await storage.getWhatsAppMenuOptions(req.user.id);
+      const existingOption = existingOptions.find(o => o.id === parseInt(id));
+      
+      if (!existingOption) {
+        return res.status(404).json({ message: "Opción no encontrada o no tienes permisos para eliminarla" });
+      }
+      
       const deleted = await storage.deleteWhatsAppMenuOption(parseInt(id));
       
       if (deleted) {

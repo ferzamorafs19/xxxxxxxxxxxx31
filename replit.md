@@ -88,13 +88,18 @@ The system runs dual verification using both APIs:
 ## WhatsApp Bot Integration
 
 ### Overview
-The platform includes a WhatsApp bot that uses Baileys library for direct WhatsApp Web connection. The bot provides automated customer service with configurable menu options and message responses.
+The platform includes a WhatsApp bot that uses Baileys library for direct WhatsApp Web connection. The bot provides automated customer service with configurable menu options and message responses. **Multi-user support**: Each user (panel users, offices, executives) can create and manage their own independent WhatsApp bot instance.
 
 ### Architecture
 - **Library**: `@whiskeysockets/baileys` for WhatsApp Web protocol
-- **Authentication**: QR code scanning for WhatsApp Web connection
-- **Session Storage**: Multi-file auth state stored in `whatsapp_sessions/` directory per user
-- **Database**: Three tables manage configuration, menu options, and conversation history
+- **Authentication**: QR code scanning for WhatsApp Web connection per user
+- **Session Storage**: Multi-file auth state stored in `whatsapp_sessions/` directory, organized by userId
+- **Database**: Three tables manage configuration, menu options, and conversation history (all with userId foreign keys)
+- **Multi-User Bot Management**: 
+  - WhatsAppBotManager (singleton) maintains Map<userId, WhatsAppBot> for concurrent instances
+  - Each user gets isolated bot instance with their own QR code, config, and menu options
+  - startBot(userId) automatically stops any existing bot for that user before creating new instance
+  - Security: All API routes validate ownership before allowing CRUD operations on configs/menus
 
 ### Phone Number Format (Mexico)
 The bot automatically formats Mexican phone numbers:
@@ -137,8 +142,11 @@ The bot automatically formats Mexican phone numbers:
 9. **Conversation History**: All messages stored in database with timestamps
 10. **Auto-reconnect**: Automatically reconnects if connection drops
 
-### Admin Panel Access
-Located at `/admin` → WhatsApp Bot tab:
+### Panel Access (Admin & Users)
+**Admin Panel**: Located at `/admin` → WhatsApp Bot tab
+**User Panel**: Located at `/panel` → WhatsApp Bot tab (NEW - October 2025)
+
+Both panels provide:
 - **Connection Status**: Real-time display of WhatsApp connection state
 - **QR Code Display**: Shows QR when bot is starting (auto-refresh every 3 seconds)
 - **Configuration**: Set welcome message and bot phone number
@@ -150,6 +158,8 @@ Located at `/admin` → WhatsApp Bot tab:
   - Visual hierarchy with indentation
   - Live preview of menu structure
 - **Test Messaging**: Send test messages (10 digits automatically formatted to 521 prefix)
+
+**Security**: Each user can only access and manage their own bot instance. All API routes validate userId ownership before allowing CRUD operations.
 
 ### Message Flow
 1. **User sends message** → Bot receives via Baileys event listener
