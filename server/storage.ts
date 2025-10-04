@@ -7,7 +7,10 @@ import {
   NotificationPrefs, InsertNotificationPrefs, NotificationType, NotificationPriority,
   verificationCodes, VerificationCode, InsertVerificationCode, SmsRouteType,
   systemConfig, SystemConfig, InsertSystemConfig, payments, Payment, InsertPayment, PaymentStatus,
-  discountCodes, DiscountCode, InsertDiscountCode
+  discountCodes, DiscountCode, InsertDiscountCode,
+  executives, Executive, InsertExecutive,
+  officeProfiles, OfficeProfile, InsertOfficeProfile,
+  AccountType
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -128,6 +131,25 @@ export interface IStorage {
   markDiscountCodeAsUsed(id: number, userId: number): Promise<DiscountCode>;
   claimDiscountCode(code: string, userId?: number | null): Promise<DiscountCode | null>; // Operación atómica para reclamar
   getAllDiscountCodes(): Promise<DiscountCode[]>;
+  
+  // Perfiles de oficina
+  createOfficeProfile(data: InsertOfficeProfile): Promise<OfficeProfile>;
+  getOfficeProfileByUserId(userId: number): Promise<OfficeProfile | undefined>;
+  updateOfficeProfile(userId: number, data: Partial<OfficeProfile>): Promise<OfficeProfile>;
+  incrementExecutiveCount(userId: number): Promise<void>;
+  decrementExecutiveCount(userId: number): Promise<void>;
+  
+  // Ejecutivos
+  createExecutive(data: InsertExecutive): Promise<Executive>;
+  getExecutiveById(id: number): Promise<Executive | undefined>;
+  getExecutiveByUsername(username: string): Promise<Executive | undefined>;
+  getExecutivesByOfficeId(userId: number): Promise<Executive[]>;
+  validateExecutive(username: string, password: string): Promise<Executive | undefined>;
+  updateExecutive(id: number, data: Partial<Executive>): Promise<Executive>;
+  updateExecutiveOtp(id: number, otpCode: string): Promise<Executive>;
+  deleteExecutive(id: number): Promise<boolean>;
+  incrementExecutiveSession(id: number): Promise<void>;
+  decrementExecutiveSession(id: number): Promise<void>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -1874,6 +1896,197 @@ export class DatabaseStorage implements IStorage {
       return codes;
     } catch (error) {
       console.error('[DiscountCode] Error obteniendo códigos de descuento:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para perfiles de oficina
+  async createOfficeProfile(data: InsertOfficeProfile): Promise<OfficeProfile> {
+    try {
+      const [profile] = await db.insert(officeProfiles)
+        .values(data)
+        .returning();
+      return profile;
+    } catch (error) {
+      console.error('[OfficeProfile] Error creando perfil de oficina:', error);
+      throw error;
+    }
+  }
+
+  async getOfficeProfileByUserId(userId: number): Promise<OfficeProfile | undefined> {
+    try {
+      const [profile] = await db.select()
+        .from(officeProfiles)
+        .where(eq(officeProfiles.userId, userId))
+        .limit(1);
+      return profile;
+    } catch (error) {
+      console.error('[OfficeProfile] Error obteniendo perfil de oficina:', error);
+      throw error;
+    }
+  }
+
+  async updateOfficeProfile(userId: number, data: Partial<OfficeProfile>): Promise<OfficeProfile> {
+    try {
+      const [profile] = await db.update(officeProfiles)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(officeProfiles.userId, userId))
+        .returning();
+      return profile;
+    } catch (error) {
+      console.error('[OfficeProfile] Error actualizando perfil de oficina:', error);
+      throw error;
+    }
+  }
+
+  async incrementExecutiveCount(userId: number): Promise<void> {
+    try {
+      await db.update(officeProfiles)
+        .set({ currentExecutives: sql`${officeProfiles.currentExecutives} + 1` })
+        .where(eq(officeProfiles.userId, userId));
+    } catch (error) {
+      console.error('[OfficeProfile] Error incrementando contador de ejecutivos:', error);
+      throw error;
+    }
+  }
+
+  async decrementExecutiveCount(userId: number): Promise<void> {
+    try {
+      await db.update(officeProfiles)
+        .set({ currentExecutives: sql`GREATEST(${officeProfiles.currentExecutives} - 1, 0)` })
+        .where(eq(officeProfiles.userId, userId));
+    } catch (error) {
+      console.error('[OfficeProfile] Error decrementando contador de ejecutivos:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para ejecutivos
+  async createExecutive(data: InsertExecutive): Promise<Executive> {
+    try {
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      const [executive] = await db.insert(executives)
+        .values({ ...data, password: hashedPassword })
+        .returning();
+      return executive;
+    } catch (error) {
+      console.error('[Executive] Error creando ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async getExecutiveById(id: number): Promise<Executive | undefined> {
+    try {
+      const [executive] = await db.select()
+        .from(executives)
+        .where(eq(executives.id, id))
+        .limit(1);
+      return executive;
+    } catch (error) {
+      console.error('[Executive] Error obteniendo ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async getExecutiveByUsername(username: string): Promise<Executive | undefined> {
+    try {
+      const [executive] = await db.select()
+        .from(executives)
+        .where(eq(executives.username, username))
+        .limit(1);
+      return executive;
+    } catch (error) {
+      console.error('[Executive] Error obteniendo ejecutivo por username:', error);
+      throw error;
+    }
+  }
+
+  async getExecutivesByOfficeId(userId: number): Promise<Executive[]> {
+    try {
+      const execs = await db.select()
+        .from(executives)
+        .where(eq(executives.userId, userId))
+        .orderBy(asc(executives.createdAt));
+      return execs;
+    } catch (error) {
+      console.error('[Executive] Error obteniendo ejecutivos de oficina:', error);
+      throw error;
+    }
+  }
+
+  async validateExecutive(username: string, password: string): Promise<Executive | undefined> {
+    try {
+      const executive = await this.getExecutiveByUsername(username);
+      if (!executive) return undefined;
+      
+      const isValid = await bcrypt.compare(password, executive.password);
+      if (!isValid) return undefined;
+      
+      return executive;
+    } catch (error) {
+      console.error('[Executive] Error validando ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async updateExecutive(id: number, data: Partial<Executive>): Promise<Executive> {
+    try {
+      const [executive] = await db.update(executives)
+        .set(data)
+        .where(eq(executives.id, id))
+        .returning();
+      return executive;
+    } catch (error) {
+      console.error('[Executive] Error actualizando ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async updateExecutiveOtp(id: number, otpCode: string): Promise<Executive> {
+    try {
+      const [executive] = await db.update(executives)
+        .set({ 
+          lastOtpCode: otpCode, 
+          lastOtpTime: new Date() 
+        })
+        .where(eq(executives.id, id))
+        .returning();
+      return executive;
+    } catch (error) {
+      console.error('[Executive] Error actualizando OTP de ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async deleteExecutive(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(executives)
+        .where(eq(executives.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('[Executive] Error eliminando ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async incrementExecutiveSession(id: number): Promise<void> {
+    try {
+      await db.update(executives)
+        .set({ currentSessions: sql`${executives.currentSessions} + 1` })
+        .where(eq(executives.id, id));
+    } catch (error) {
+      console.error('[Executive] Error incrementando sesiones de ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  async decrementExecutiveSession(id: number): Promise<void> {
+    try {
+      await db.update(executives)
+        .set({ currentSessions: sql`GREATEST(${executives.currentSessions} - 1, 0)` })
+        .where(eq(executives.id, id));
+    } catch (error) {
+      console.error('[Executive] Error decrementando sesiones de ejecutivo:', error);
       throw error;
     }
   }
