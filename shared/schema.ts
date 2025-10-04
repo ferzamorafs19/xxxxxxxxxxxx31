@@ -57,7 +57,6 @@ export const users = pgTable("users", {
   weeklyPrice: integer("weekly_price"), // Precio semanal específico para esta cuenta
   maxExecutives: integer("max_executives").default(0), // Máximo de ejecutivos (solo para cuentas de oficina)
   currentExecutives: integer("current_executives").default(0), // Contador de ejecutivos activos
-  parentOfficeId: integer("parent_office_id"), // ID de la oficina padre (solo para ejecutivos)
   createdAt: timestamp("created_at").defaultNow(),
   lastLogin: timestamp("last_login"),
 });

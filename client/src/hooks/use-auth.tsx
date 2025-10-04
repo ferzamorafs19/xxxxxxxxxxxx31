@@ -31,6 +31,7 @@ type RegisterData = {
   telegramChatId?: string;
   role?: UserRole;
   discountCode?: string;
+  accountType?: 'individual' | 'office';
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);

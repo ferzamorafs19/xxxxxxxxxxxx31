@@ -30,7 +30,8 @@ export default function AuthPage() {
     confirmPassword: '',
     telegramChatId: '',
     hasDiscountCode: false,
-    discountCode: ''
+    discountCode: '',
+    accountType: 'individual' // 'individual' o 'office'
   });
   
   const [botDetection, setBotDetection] = useState({
@@ -159,7 +160,8 @@ export default function AuthPage() {
       username: registerData.username,
       password: registerData.password,
       telegramChatId: registerData.telegramChatId,
-      discountCode: registerData.hasDiscountCode ? registerData.discountCode : undefined
+      discountCode: registerData.hasDiscountCode ? registerData.discountCode : undefined,
+      accountType: registerData.accountType as 'individual' | 'office'
     });
   };
 
@@ -353,6 +355,51 @@ export default function AuthPage() {
                 </CardHeader>
                 <form onSubmit={handleRegisterSubmit}>
                   <CardContent className="space-y-4">
+                    {/* Tabs para tipo de cuenta */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold">Tipo de Cuenta</Label>
+                      <Tabs 
+                        value={registerData.accountType} 
+                        onValueChange={(value) => setRegisterData({...registerData, accountType: value})}
+                        className="w-full"
+                      >
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="individual" data-testid="tab-account-individual">
+                            Usuario Individual
+                          </TabsTrigger>
+                          <TabsTrigger value="office" data-testid="tab-account-office">
+                            Oficina
+                          </TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="individual" className="mt-3">
+                          <Alert className="border-blue-500">
+                            <Info className="h-4 w-4 text-blue-600" />
+                            <AlertDescription className="text-sm">
+                              <strong>Cuenta Individual</strong><br/>
+                              • Máximo 2 dispositivos<br/>
+                              • Precio: <strong>3,000 MXN / semana</strong><br/>
+                              • Ideal para uso personal
+                            </AlertDescription>
+                          </Alert>
+                        </TabsContent>
+                        
+                        <TabsContent value="office" className="mt-3">
+                          <Alert className="border-purple-500">
+                            <Info className="h-4 w-4 text-purple-600" />
+                            <AlertDescription className="text-sm">
+                              <strong>Cuenta Oficina</strong><br/>
+                              • Hasta 8 ejecutivos<br/>
+                              • 1 sesión activa por ejecutivo<br/>
+                              • OTP por Telegram para ejecutivos<br/>
+                              • Precio: <strong>6,000 MXN / semana</strong><br/>
+                              • Ideal para equipos
+                            </AlertDescription>
+                          </Alert>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                    
                     <div className="space-y-2">
                       <Label htmlFor="register-username">Usuario</Label>
                       <Input 
@@ -361,6 +408,7 @@ export default function AuthPage() {
                         value={registerData.username} 
                         onChange={e => setRegisterData({...registerData, username: e.target.value})}
                         placeholder="Nombre de usuario"
+                        data-testid="input-register-username"
                       />
                     </div>
                     <div className="space-y-2">
