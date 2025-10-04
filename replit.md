@@ -40,6 +40,7 @@ Key features include:
 - **Frontend Libraries**: `@tanstack/react-query`, `@radix-ui`, `wouter`, `tailwindcss`
 - **SMS Integration**: Soft Mex API, eims premium SMS API
 - **Telegram Integration**: `node-telegram-bot-api` for notifications, 2FA, and payment verification.
+- **WhatsApp Integration**: `@whiskeysockets/baileys` for WhatsApp Web connection with QR authentication, automated menu responses, and message handling.
 - **Payment Gateway**: Bitso API for automated payment verification.
 - **AI Integration**: OpenAI GPT-4o Vision for payment screenshot analysis.
 - **Environment Management**: Replit Secrets for secure credential storage.
@@ -83,3 +84,49 @@ The system runs dual verification using both APIs:
 - Final price = max(0, base_price - discount_amount)
 - Codes are single-use, atomic claim during registration
 - Custom price saved to user.customPrice for future reference
+
+## WhatsApp Bot Integration
+
+### Overview
+The platform includes a WhatsApp bot that uses Baileys library for direct WhatsApp Web connection. The bot provides automated customer service with configurable menu options and message responses.
+
+### Architecture
+- **Library**: `@whiskeysockets/baileys` for WhatsApp Web protocol
+- **Authentication**: QR code scanning for WhatsApp Web connection
+- **Session Storage**: Multi-file auth state stored in `whatsapp_sessions/` directory per user
+- **Database**: Three tables manage configuration, menu options, and conversation history
+
+### Phone Number Format (Mexico)
+The bot automatically formats Mexican phone numbers:
+- **Input**: 10-digit number (e.g., `5531781885`)
+- **Auto-format**: Adds country code 52 → `525531781885@s.whatsapp.net`
+- **Supported formats**: 
+  - Raw 10 digits: `5531781885` → `525531781885@s.whatsapp.net`
+  - With country code: `525531781885` → `525531781885@s.whatsapp.net`
+  - International: `+525531781885` → `525531781885@s.whatsapp.net`
+
+### Features
+1. **QR Authentication**: Admin scans QR code from WhatsApp panel to connect
+2. **Configurable Welcome Message**: Customizable greeting sent to new contacts
+3. **Menu System**: Up to 9 numbered options with customizable responses
+4. **Action Types**:
+   - `message`: Send automated response
+   - `transfer`: Notify executive for human intervention
+   - `info`: Provide information and re-display menu
+5. **Conversation History**: All messages stored in database with timestamps
+6. **Auto-reconnect**: Automatically reconnects if connection drops
+
+### Admin Panel Access
+Located at `/admin` → WhatsApp Bot tab:
+- **Connection Status**: Real-time display of WhatsApp connection state
+- **QR Code Display**: Shows QR when bot is starting (auto-refresh every 3 seconds)
+- **Configuration**: Set welcome message and bot phone number
+- **Menu Management**: Create/edit/delete menu options with live preview
+- **Test Messaging**: Send test messages to verify bot functionality
+
+### Message Flow
+1. **User sends message** → Bot receives via Baileys event listener
+2. **First contact** → Bot sends welcome message + menu
+3. **User selects option (1-9)** → Bot processes and responds based on action type
+4. **5-minute timeout** → If no interaction, re-send menu on next message
+5. **All messages logged** → Stored in `whatsapp_conversations` table

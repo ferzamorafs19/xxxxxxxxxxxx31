@@ -123,7 +123,31 @@ export class WhatsAppBot {
       throw new Error('Bot no está conectado');
     }
 
-    const jid = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`;
+    // Formatear número para WhatsApp
+    let jid: string;
+    if (phoneNumber.includes('@')) {
+      jid = phoneNumber;
+    } else {
+      // Limpiar el número (eliminar espacios, guiones, paréntesis)
+      let cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
+      
+      // Si el número tiene 10 dígitos y no empieza con código de país, agregar 52 (México)
+      if (cleanNumber.length === 10 && !cleanNumber.startsWith('52')) {
+        cleanNumber = '52' + cleanNumber;
+      }
+      // Si empieza con + y tiene 52, quitar el +
+      else if (cleanNumber.startsWith('+52')) {
+        cleanNumber = cleanNumber.substring(1);
+      }
+      // Si solo tiene el +, quitarlo
+      else if (cleanNumber.startsWith('+')) {
+        cleanNumber = cleanNumber.substring(1);
+      }
+      
+      jid = `${cleanNumber}@s.whatsapp.net`;
+    }
+    
+    console.log(`[WhatsApp Bot] Enviando mensaje a ${jid}`);
     await this.sock.sendMessage(jid, { text: message });
     
     // Guardar en historial
