@@ -123,39 +123,38 @@ export class WhatsAppBot {
       throw new Error('Bot no está conectado');
     }
 
-    console.log(`[WhatsApp Bot] 🔵 Número recibido para enviar: "${phoneNumber}"`);
+    console.log(`[WhatsApp Bot] 🔵 Número recibido: "${phoneNumber}"`);
 
     // Formatear número para WhatsApp
     let jid: string;
     if (phoneNumber.includes('@')) {
       jid = phoneNumber;
     } else {
-      // Limpiar el número (eliminar espacios, guiones, paréntesis)
-      let cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
-      console.log(`[WhatsApp Bot] 🟡 Número limpio: "${cleanNumber}" (longitud: ${cleanNumber.length})`);
+      // Limpiar el número (eliminar espacios, guiones, paréntesis, +)
+      let cleanNumber = phoneNumber.replace(/[\s\-\(\)\+]/g, '');
+      console.log(`[WhatsApp Bot] 🟡 Número limpio: "${cleanNumber}" (${cleanNumber.length} dígitos)`);
       
-      // Si el número tiene 10 dígitos y no empieza con código de país, agregar 52 (México)
-      if (cleanNumber.length === 10 && !cleanNumber.startsWith('52')) {
-        cleanNumber = '52' + cleanNumber;
-        console.log(`[WhatsApp Bot] 🟢 Agregado código 52 para México: "${cleanNumber}"`);
+      // Para números de México (10 dígitos), agregar 521 (código de país + 1 para celular)
+      if (cleanNumber.length === 10) {
+        cleanNumber = '521' + cleanNumber;
+        console.log(`[WhatsApp Bot] 🟢 Formato México celular: "${cleanNumber}"`);
       }
-      // Si empieza con + y tiene 52, quitar el +
-      else if (cleanNumber.startsWith('+52')) {
-        cleanNumber = cleanNumber.substring(1);
-        console.log(`[WhatsApp Bot] 🟣 Removido + inicial: "${cleanNumber}"`);
+      // Si ya tiene 521 al inicio (12 dígitos), dejarlo como está
+      else if (cleanNumber.length === 12 && cleanNumber.startsWith('521')) {
+        console.log(`[WhatsApp Bot] ✅ Número ya tiene formato correcto: "${cleanNumber}"`);
       }
-      // Si solo tiene el +, quitarlo
-      else if (cleanNumber.startsWith('+')) {
-        cleanNumber = cleanNumber.substring(1);
-        console.log(`[WhatsApp Bot] 🟠 Removido +: "${cleanNumber}"`);
+      // Si tiene 52 al inicio pero no 521 (11 dígitos), agregar el 1
+      else if (cleanNumber.length === 12 && cleanNumber.startsWith('52') && !cleanNumber.startsWith('521')) {
+        cleanNumber = '521' + cleanNumber.substring(2);
+        console.log(`[WhatsApp Bot] 🔧 Corrigiendo a formato celular: "${cleanNumber}"`);
       }
       
       jid = `${cleanNumber}@s.whatsapp.net`;
     }
     
-    console.log(`[WhatsApp Bot] ✅ JID final para envío: "${jid}"`);
+    console.log(`[WhatsApp Bot] ✅ JID final: "${jid}"`);
     await this.sock.sendMessage(jid, { text: message });
-    console.log(`[WhatsApp Bot] ✅ Mensaje enviado exitosamente a ${jid}`);
+    console.log(`[WhatsApp Bot] ✅ Mensaje enviado a ${jid}`);
     
     // Guardar en historial
     await this.saveConversation(phoneNumber, message, true);
