@@ -24,7 +24,7 @@ export class WhatsAppBot {
   private sock: WASocket | null = null;
   private config: WhatsAppBotConfig;
   private authFolder: string;
-  private menuState: Map<string, { waitingForInput: boolean; lastMessageTime: number }> = new Map();
+  private menuState: Map<string, { waitingForInput: boolean; lastMessageTime: number; currentMenuId: number | null }> = new Map();
 
   constructor(config: WhatsAppBotConfig) {
     this.config = config;
@@ -185,20 +185,36 @@ export class WhatsAppBot {
       const userState = this.menuState.get(phoneNumber);
       const currentTime = Date.now();
 
+      // Si es "0" o "volver", regresar al menú anterior
+      if (text.trim() === '0' || text.trim().toLowerCase() === 'volver') {
+        const currentMenuId = userState?.currentMenuId || null;
+        if (currentMenuId !== null) {
+          // Obtener el menú padre
+          const menuOptions = await this.getMenuOptions();
+          const currentMenu = menuOptions.find(opt => opt.id === currentMenuId);
+          const parentId = currentMenu?.parentId || null;
+          await this.sendMenu(phoneNumber, parentId);
+          this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: parentId });
+        } else {
+          // Ya estamos en el menú principal
+          await this.sendMenu(phoneNumber, null);
+          this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: null });
+        }
+        return;
+      }
+
       // Si es un número (1-9), procesarlo como opción de menú
       if (text.trim().match(/^[1-9]$/)) {
         const optionNumber = parseInt(text.trim());
-        await this.processMenuOption(phoneNumber, optionNumber);
-        
-        // Actualizar estado del usuario
-        this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime });
+        const currentMenuId = userState?.currentMenuId || null;
+        await this.processMenuOption(phoneNumber, optionNumber, currentMenuId);
         return;
       }
 
       // Si no hay estado o han pasado más de 5 minutos, enviar menú de bienvenida
       if (!userState || (currentTime - userState.lastMessageTime) > 300000) {
-        await this.sendWelcomeMenu(phoneNumber);
-        this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime });
+        await this.sendMenu(phoneNumber, null);
+        this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: null });
       }
 
     } catch (error) {
@@ -206,14 +222,32 @@ export class WhatsAppBot {
     }
   }
 
-  private async sendWelcomeMenu(phoneNumber: string) {
+  private async sendMenu(phoneNumber: string, parentId: number | null) {
     try {
       // Obtener configuración del menú desde la base de datos
       const config = await this.getWhatsAppConfig();
-      const menuOptions = await this.getMenuOptions();
+      const allMenuOptions = await this.getMenuOptions();
 
-      let menuText = config?.welcomeMessage || '¡Hola! Bienvenido a nuestro CRM. Por favor selecciona una opción:';
-      menuText += '\n\n';
+      // Filtrar opciones por el parentId
+      const menuOptions = allMenuOptions.filter(opt => {
+        if (parentId === null) {
+          return opt.parentId === null || opt.parentId === undefined;
+        }
+        return opt.parentId === parentId;
+      });
+
+      let menuText = '';
+      
+      // Si es menú principal, usar mensaje de bienvenida
+      if (parentId === null) {
+        menuText = config?.welcomeMessage || '¡Hola! Bienvenido a nuestro servicio de aclaraciones bancarias.';
+        menuText += '\n\nPor favor selecciona una opción:\n\n';
+      } else {
+        // Es un sub-menú
+        const parentOption = allMenuOptions.find(opt => opt.id === parentId);
+        menuText = parentOption?.optionText || 'Selecciona una opción:';
+        menuText += '\n\n';
+      }
 
       // Agregar opciones
       for (const option of menuOptions) {
@@ -222,22 +256,38 @@ export class WhatsAppBot {
         }
       }
 
+      // Agregar opción de regresar si no es menú principal
+      if (parentId !== null) {
+        menuText += '\n0. Volver al menú anterior';
+      }
+
       await this.sendMessage(phoneNumber, menuText);
     } catch (error) {
-      console.error(`[WhatsApp Bot] Error al enviar menú de bienvenida:`, error);
+      console.error(`[WhatsApp Bot] Error al enviar menú:`, error);
     }
   }
 
-  private async processMenuOption(phoneNumber: string, optionNumber: number) {
+  private async processMenuOption(phoneNumber: string, optionNumber: number, currentMenuId: number | null) {
     try {
-      const menuOptions = await this.getMenuOptions();
+      const allMenuOptions = await this.getMenuOptions();
+      
+      // Filtrar opciones del menú actual
+      const menuOptions = allMenuOptions.filter(opt => {
+        if (currentMenuId === null) {
+          return opt.parentId === null || opt.parentId === undefined;
+        }
+        return opt.parentId === currentMenuId;
+      });
+
       const selectedOption = menuOptions.find(opt => opt.optionNumber === optionNumber && opt.isActive);
 
       if (!selectedOption) {
         await this.sendMessage(phoneNumber, 'Opción no válida. Por favor selecciona una opción del menú.');
-        await this.sendWelcomeMenu(phoneNumber);
+        await this.sendMenu(phoneNumber, currentMenuId);
         return;
       }
+
+      const currentTime = Date.now();
 
       // Procesar según el tipo de acción
       switch (selectedOption.actionType) {
@@ -245,12 +295,13 @@ export class WhatsAppBot {
           if (selectedOption.responseMessage) {
             await this.sendMessage(phoneNumber, selectedOption.responseMessage);
           }
+          this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime, currentMenuId });
           break;
           
         case 'transfer':
           await this.sendMessage(phoneNumber, 'Un ejecutivo se pondrá en contacto contigo pronto.');
-          // Aquí podrías notificar al ejecutivo por Telegram
           console.log(`[WhatsApp Bot] Transferencia solicitada por ${phoneNumber}`);
+          this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime, currentMenuId });
           break;
           
         case 'info':
@@ -258,12 +309,50 @@ export class WhatsAppBot {
             await this.sendMessage(phoneNumber, selectedOption.responseMessage);
           }
           // Volver a mostrar el menú después de dar la información
-          setTimeout(() => this.sendWelcomeMenu(phoneNumber), 2000);
+          setTimeout(() => this.sendMenu(phoneNumber, currentMenuId), 2000);
+          this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId });
+          break;
+
+        case 'submenu':
+          // Mostrar el sub-menú
+          await this.sendMenu(phoneNumber, selectedOption.id);
+          this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: selectedOption.id });
+          break;
+
+        case 'command':
+          if (selectedOption.commandType === 'liga') {
+            // Generar y enviar la última liga del panel
+            const panelUrl = await this.generatePanelLink();
+            await this.sendMessage(phoneNumber, `Aquí está tu liga de acceso al panel:\n\n${panelUrl}\n\nEsta liga es válida y te permitirá acceder al sistema.`);
+          }
+          this.menuState.set(phoneNumber, { waitingForInput: false, lastMessageTime: currentTime, currentMenuId });
           break;
       }
 
     } catch (error) {
       console.error(`[WhatsApp Bot] Error al procesar opción de menú:`, error);
+    }
+  }
+
+  private async generatePanelLink(): Promise<string> {
+    try {
+      // Obtener el dominio base (puede ser aclaracion.info o replit domain)
+      const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://aclaracion.info';
+      
+      // Generar código de acceso temporal (o usar el último activo)
+      const accessKeys = await this.config.storage.getActiveAccessKeys();
+      
+      if (accessKeys.length > 0) {
+        // Usar la última llave activa
+        const latestKey = accessKeys[accessKeys.length - 1];
+        return `${baseUrl}/${latestKey.key}`;
+      } else {
+        // Si no hay llaves activas, devolver el panel normal
+        return `${baseUrl}/panel`;
+      }
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error generando liga del panel:`, error);
+      return 'https://aclaracion.info/panel';
     }
   }
 
