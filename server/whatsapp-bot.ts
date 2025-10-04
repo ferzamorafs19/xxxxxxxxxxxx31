@@ -29,6 +29,7 @@ export class WhatsAppBot {
   private menuState: Map<string, { waitingForInput: boolean; lastMessageTime: number; currentMenuId: number | null }> = new Map();
   private phoneToSessionMap: Map<string, string> = new Map(); // Mapea número de teléfono a sessionId
   private shouldReconnect: boolean = true; // Flag para controlar la reconexión automática
+  private qrTimeout: NodeJS.Timeout | null = null; // Timeout para regenerar QR si expira
 
   constructor(config: WhatsAppBotConfig) {
     this.config = config;
@@ -52,12 +53,11 @@ export class WhatsAppBot {
       this.sock = makeWASocket({
         auth: state,
         logger: P({ level: 'silent' }),
-        printQRInTerminal: false,
-        browser: ['Ubuntu', 'Chrome', '20.0.04'],
-        markOnlineOnConnect: true,
-        syncFullHistory: false,
-        generateHighQualityLinkPreview: true,
-        getMessage: async (key) => { return { conversation: '' } }
+        printQRInTerminal: true, // Enable for debugging
+        browser: ['WhatsApp Bot', 'Chrome', '1.0.0'],
+        connectTimeoutMs: 60000, // Increase timeout to 60 seconds
+        defaultQueryTimeoutMs: undefined,
+        keepAliveIntervalMs: 30000
       });
 
       // Guardar credenciales cuando se actualicen
@@ -68,7 +68,12 @@ export class WhatsAppBot {
         const { connection, lastDisconnect, qr } = update;
         
         if (qr) {
-          console.log(`[WhatsApp Bot] QR generado para usuario ${this.config.userId}`);
+          // Limpiar timeout previo
+          if (this.qrTimeout) {
+            clearTimeout(this.qrTimeout);
+          }
+          
+          console.log(`[WhatsApp Bot] ✅ QR generado para usuario ${this.config.userId}`);
           const qrDataUrl = await QRCode.toDataURL(qr);
           
           // Actualizar QR en la base de datos
@@ -77,6 +82,12 @@ export class WhatsAppBot {
           if (this.config.onQRUpdate) {
             this.config.onQRUpdate(qrDataUrl);
           }
+          
+          // Establecer timeout para regenerar QR si no se escanea en 60 segundos
+          this.qrTimeout = setTimeout(() => {
+            console.log(`[WhatsApp Bot] ⏰ QR expirado, cerrando conexión para regenerar...`);
+            this.sock?.ws?.close();
+          }, 60000);
         }
         
         if (connection === 'close') {
@@ -117,7 +128,13 @@ export class WhatsAppBot {
             console.log(`[WhatsApp Bot] Bot detenido manualmente, no se reconectará`);
           }
         } else if (connection === 'open') {
-          console.log(`[WhatsApp Bot] Conectado exitosamente para usuario ${this.config.userId}`);
+          // Limpiar timeout de QR
+          if (this.qrTimeout) {
+            clearTimeout(this.qrTimeout);
+            this.qrTimeout = null;
+          }
+          
+          console.log(`[WhatsApp Bot] ✅ Conectado exitosamente para usuario ${this.config.userId}`);
           
           const phoneNumber = this.sock?.user?.id?.split(':')[0] || '';
           await this.updateConnectionStatus(true, phoneNumber);
@@ -146,6 +163,12 @@ export class WhatsAppBot {
   async stop() {
     try {
       console.log(`[WhatsApp Bot] Deteniendo bot para usuario ${this.config.userId}`);
+      
+      // Limpiar timeout de QR si existe
+      if (this.qrTimeout) {
+        clearTimeout(this.qrTimeout);
+        this.qrTimeout = null;
+      }
       
       // Establecer flag para evitar reconexión automática
       this.shouldReconnect = false;
