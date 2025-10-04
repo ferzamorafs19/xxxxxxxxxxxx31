@@ -111,16 +111,18 @@ The bot automatically formats Mexican phone numbers:
 2. **Configurable Welcome Message**: Customizable greeting sent to new contacts
 3. **Hierarchical Menu System**: Support for main menu and unlimited sub-menus
 4. **Action Types**:
-   - `message`: Send automated response
+   - `message`: Send automated response (can include sub-menu options after message)
    - `transfer`: Notify executive for human intervention
    - `info`: Provide information and re-display menu
    - `submenu`: Create nested sub-menus for better organization
-   - `command`: Execute special commands (e.g., send panel link)
 5. **Navigation**: Users can type "0" or "volver" to return to previous menu
-6. **Command Types**:
-   - `liga`: Sends the latest generated panel access link to the user
-7. **Conversation History**: All messages stored in database with timestamps
-8. **Auto-reconnect**: Automatically reconnects if connection drops
+6. **Dynamic Content Placeholder**:
+   - `(liga)`: Can be used in any message text to insert the latest panel access link
+   - Example: "Accede al panel en (liga)" → "Accede al panel en https://aclaracion.info/abc123"
+   - Automatically replaced when message is sent
+7. **Sub-menus after Messages**: Options of type "message" can have child options that display after the message is sent
+8. **Conversation History**: All messages stored in database with timestamps
+9. **Auto-reconnect**: Automatically reconnects if connection drops
 
 ### Admin Panel Access
 Located at `/admin` → WhatsApp Bot tab:
@@ -140,8 +142,11 @@ Located at `/admin` → WhatsApp Bot tab:
 1. **User sends message** → Bot receives via Baileys event listener
 2. **First contact** → Bot sends welcome message + main menu
 3. **User selects option (1-9)** → Bot processes and responds based on action type
-4. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
-5. **User types "0" or "volver"** → Bot returns to previous menu level
-6. **Command execution** → Special commands like `(liga)` send dynamic content
-7. **5-minute timeout** → If no interaction, re-send current menu on next message
-8. **All messages logged** → Stored in `whatsapp_conversations` table
+4. **Message with (liga) placeholder** → Bot replaces (liga) with actual panel link before sending
+   - Example: Message text "Visita (liga) para acceder"
+   - User receives: "Visita https://aclaracion.info/xyz123 para acceder"
+5. **Message with sub-options** → After sending the message, bot displays child menu options
+6. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
+7. **User types "0" or "volver"** → Bot returns to previous menu level
+8. **5-minute timeout** → If no interaction, re-send current menu on next message
+9. **All messages logged** → Stored in `whatsapp_conversations` table
