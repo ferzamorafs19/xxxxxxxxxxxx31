@@ -40,6 +40,7 @@ export interface IStorage {
   cleanupExpiredSessions(): Promise<number>; // Devuelve la cantidad de sesiones eliminadas
   updateSessionActivity(sessionId: string): Promise<void>; // Actualiza la última actividad
   markSessionHasUserData(sessionId: string): Promise<void>; // Marca que una sesión tiene datos
+  updateSessionPhoneNumber(sessionId: string, phoneNumber: string): Promise<void>; // Actualiza el número de teléfono
   
   // Usuarios
   createUser(data: InsertUser): Promise<User>;
@@ -1523,6 +1524,16 @@ export class DatabaseStorage implements IStorage {
       await db
         .update(sessions)
         .set({ hasUserData: true })
+        .where(eq(sessions.sessionId, sessionId));
+    }
+  }
+
+  async updateSessionPhoneNumber(sessionId: string, phoneNumber: string): Promise<void> {
+    const session = await this.getSessionById(sessionId);
+    if (session) {
+      await db
+        .update(sessions)
+        .set({ celular: phoneNumber })
         .where(eq(sessions.sessionId, sessionId));
     }
   }
