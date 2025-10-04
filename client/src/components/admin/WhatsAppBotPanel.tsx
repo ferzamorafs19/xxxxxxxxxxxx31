@@ -258,8 +258,8 @@ export default function WhatsAppBotPanel() {
                 </span>
               </div>
               <div className="flex gap-2">
-                {/* Botón para agregar sub-menú */}
-                {option.actionType === 'submenu' && (
+                {/* Botón para agregar sub-menú - disponible para mensaje y submenu */}
+                {(option.actionType === 'submenu' || option.actionType === 'message') && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -267,7 +267,7 @@ export default function WhatsAppBotPanel() {
                     data-testid={`button-add-submenu-${index}`}
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Sub-menú
+                    Agregar Opción
                   </Button>
                 )}
                 <Button
@@ -316,36 +316,9 @@ export default function WhatsAppBotPanel() {
                   <SelectItem value="transfer">Transferir a ejecutivo</SelectItem>
                   <SelectItem value="info">Información (vuelve al menú)</SelectItem>
                   <SelectItem value="submenu">Sub-menú</SelectItem>
-                  <SelectItem value="command">Comando especial</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Mostrar campo de comando si es tipo comando */}
-            {option.actionType === 'command' && (
-              <div className="space-y-2">
-                <Label>Tipo de comando</Label>
-                <Select
-                  value={option.commandType || "liga"}
-                  onValueChange={(value) => handleUpdateOption(index, "commandType", value)}
-                >
-                  <SelectTrigger data-testid={`select-command-${index}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="liga">
-                      <div className="flex items-center">
-                        <LinkIcon className="w-4 h-4 mr-2" />
-                        Liga del panel
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  Envía automáticamente la última liga generada del panel al usuario
-                </p>
-              </div>
-            )}
 
             {/* Campo de respuesta solo para ciertos tipos */}
             {(option.actionType === 'message' || option.actionType === 'info' || option.actionType === 'transfer') && (
@@ -358,6 +331,15 @@ export default function WhatsAppBotPanel() {
                   placeholder="Escribe el mensaje que se enviará cuando se seleccione esta opción..."
                   data-testid={`textarea-response-${index}`}
                 />
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <LinkIcon className="w-3 h-3" />
+                  Puedes usar <code className="bg-muted px-1 rounded">(liga)</code> en tu mensaje para insertar la última liga del panel
+                </p>
+                {hasChildren && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    ℹ️ Esta opción mostrará el sub-menú después de enviar el mensaje
+                  </p>
+                )}
               </div>
             )}
 
