@@ -3799,15 +3799,14 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
     
     try {
-      const { optionNumber, optionLabel, responseText, actionType, actionData } = req.body;
+      const { optionNumber, optionText, responseMessage, actionType } = req.body;
       
       const option = await storage.createWhatsAppMenuOption({
         userId: req.user.id,
         optionNumber,
-        optionLabel,
-        responseText,
-        actionType,
-        actionData
+        optionText,
+        responseMessage,
+        actionType
       });
       
       res.json(option);
@@ -3825,14 +3824,13 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     
     try {
       const { id } = req.params;
-      const { optionNumber, optionLabel, responseText, actionType, actionData } = req.body;
+      const { optionNumber, optionText, responseMessage, actionType } = req.body;
       
       const option = await storage.updateWhatsAppMenuOption(parseInt(id), {
         optionNumber,
-        optionLabel,
-        responseText,
-        actionType,
-        actionData
+        optionText,
+        responseMessage,
+        actionType
       });
       
       res.json(option);
@@ -3884,7 +3882,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       let message = config.welcomeMessage + '\n\n';
       
       menuOptions.forEach(option => {
-        message += `${option.optionNumber}. ${option.optionLabel}\n`;
+        message += `${option.optionNumber}. ${option.optionText}\n`;
       });
       
       // Aquí iría la lógica para enviar el mensaje vía WhatsApp Bot
