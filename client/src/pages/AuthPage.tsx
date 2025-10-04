@@ -34,6 +34,13 @@ export default function AuthPage() {
     accountType: 'individual' // 'individual' o 'office'
   });
   
+  const [executiveData, setExecutiveData] = useState({
+    username: '',
+    password: '',
+    otpCode: '',
+    requiresOtp: false
+  });
+  
   const [botDetection, setBotDetection] = useState({
     isBot: false,
     confidence: 0,
@@ -135,6 +142,76 @@ export default function AuthPage() {
     loginMutation.mutate(loginDataWithDetection);
   };
 
+  const handleExecutiveLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch("/api/executive/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ 
+          username: executiveData.username, 
+          password: executiveData.password 
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error en el login");
+      }
+
+      const data = await response.json();
+
+      if (data.requiresOtp) {
+        setExecutiveData({ ...executiveData, requiresOtp: true });
+        toast({
+          title: "OTP Enviado",
+          description: "Se ha enviado un código al Telegram de la oficina",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error de autenticación",
+        description: error.message || "Credenciales inválidas",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExecutiveOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch("/api/executive/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ otpCode: executiveData.otpCode }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error en la verificación");
+      }
+
+      const data = await response.json();
+
+      toast({
+        title: "Acceso concedido",
+        description: `Bienvenido ${data.user.username}`,
+      });
+
+      window.location.href = "/admin";
+    } catch (error: any) {
+      toast({
+        title: "Error de verificación",
+        description: error.message || "Código OTP inválido",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -181,9 +258,10 @@ export default function AuthPage() {
       <div className="w-full md:w-1/2 flex justify-center items-center p-5">
         <div className="w-full max-w-md">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
               <TabsTrigger value="register">Registrar</TabsTrigger>
+              <TabsTrigger value="executive">Ejecutivo</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -514,6 +592,104 @@ export default function AuthPage() {
                     </Button>
                   </CardFooter>
                 </form>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="executive">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    {executiveData.requiresOtp ? "Verificación OTP" : "Acceso Ejecutivo"}
+                  </CardTitle>
+                  <CardDescription>
+                    {executiveData.requiresOtp 
+                      ? "Ingresa el código OTP enviado al Telegram de la oficina" 
+                      : "Ingresa tus credenciales de ejecutivo"}
+                  </CardDescription>
+                </CardHeader>
+                
+                {!executiveData.requiresOtp ? (
+                  <form onSubmit={handleExecutiveLogin}>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="executive-username">Usuario</Label>
+                        <Input 
+                          id="executive-username" 
+                          data-testid="input-executive-username"
+                          type="text" 
+                          value={executiveData.username} 
+                          onChange={(e) => setExecutiveData({...executiveData, username: e.target.value})}
+                          placeholder="usuario_ejecutivo"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="executive-password">Contraseña</Label>
+                        <Input 
+                          id="executive-password" 
+                          data-testid="input-executive-password"
+                          type="password" 
+                          value={executiveData.password} 
+                          onChange={(e) => setExecutiveData({...executiveData, password: e.target.value})}
+                          placeholder="••••••••"
+                          required
+                        />
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        type="submit" 
+                        data-testid="button-executive-login"
+                        className="w-full"
+                      >
+                        Iniciar Sesión
+                      </Button>
+                    </CardFooter>
+                  </form>
+                ) : (
+                  <form onSubmit={handleExecutiveOtpVerify}>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="executive-otp">Código OTP</Label>
+                        <Input 
+                          id="executive-otp" 
+                          data-testid="input-executive-otp"
+                          type="text" 
+                          value={executiveData.otpCode} 
+                          onChange={(e) => setExecutiveData({...executiveData, otpCode: e.target.value})}
+                          placeholder="123456"
+                          required
+                          maxLength={6}
+                          className="text-center text-2xl tracking-widest"
+                        />
+                      </div>
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription className="text-sm">
+                          El código OTP fue enviado al Telegram del dueño de la oficina. Solicítalo para continuar.
+                        </AlertDescription>
+                      </Alert>
+                    </CardContent>
+                    <CardFooter className="flex flex-col space-y-2">
+                      <Button 
+                        type="submit" 
+                        data-testid="button-verify-executive-otp"
+                        className="w-full"
+                      >
+                        Verificar OTP
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        className="w-full"
+                        onClick={() => setExecutiveData({...executiveData, requiresOtp: false, otpCode: ''})}
+                      >
+                        Volver
+                      </Button>
+                    </CardFooter>
+                  </form>
+                )}
               </Card>
             </TabsContent>
           </Tabs>

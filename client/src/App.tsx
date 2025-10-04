@@ -10,7 +10,6 @@ import BankSelectionPage from "@/pages/BankSelectionPage";
 import QRGeneratorPage from "@/pages/QRGeneratorPage";
 import TwoFactorVerification from "@/pages/TwoFactorVerification";
 import UserPanel from "@/pages/UserPanel";
-import ExecutiveLogin from "@/pages/ExecutiveLogin";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -20,7 +19,6 @@ function Router() {
       <Route path="/" component={BankSelectionPage} />
       <Route path="/Balonx" component={AuthPage} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/executive-login" component={ExecutiveLogin} />
       <Route path="/2fa-verify" component={TwoFactorVerification} />
       <ProtectedRoute path="/admin" component={AdminPanel} adminOnly={false} />
       <ProtectedRoute path="/panel" component={UserPanel} adminOnly={false} />
