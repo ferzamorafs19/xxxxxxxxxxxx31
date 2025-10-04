@@ -199,7 +199,7 @@ export default function AuthPage() {
 
       toast({
         title: "Acceso concedido",
-        description: `Bienvenido ${data.user.username}`,
+        description: "Acceso concedido exitosamente",
       });
 
       // Ejecutivos van al panel de usuario, no al panel de admin

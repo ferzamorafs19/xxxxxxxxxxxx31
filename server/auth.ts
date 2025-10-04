@@ -1002,24 +1002,15 @@ export function setupAuth(app: Express) {
       // Actualizar último login
       await storage.updateExecutive(executive.id, { lastLogin: new Date() });
       
-      // El ejecutivo usa los datos del usuario dueño de la oficina con una marca especial
-      const executiveSessionUser = {
-        ...officeUser,
-        isExecutive: true,
-        executiveId: executive.id,
-        executiveUsername: executive.username,
-        executiveDisplayName: executive.displayName || executive.username
-      };
-      
-      // Marcar en sesión que es un ejecutivo
+      // Marcar en sesión que es un ejecutivo (solo en session, NO en user object)
       (req.session as any).executiveData = {
         executiveId: executive.id,
         executiveUsername: executive.username,
         officeUserId: officeUser.id
       };
       
-      // Establecer sesión usando el usuario de la oficina (no el ejecutivo)
-      req.login(executiveSessionUser as any, (err) => {
+      // Establecer sesión usando EXACTAMENTE el usuario de la oficina (sin modificaciones)
+      req.login(officeUser as any, (err) => {
         if (err) {
           console.error("[Auth] Error estableciendo sesión de ejecutivo:", err);
           return res.status(500).json({ message: "Error estableciendo sesión" });
@@ -1050,15 +1041,14 @@ export function setupAuth(app: Express) {
         
         console.log(`[Auth] Ejecutivo ${executive.username} autenticado exitosamente como ${officeUser.username}`);
         
+        // Devolver exactamente los mismos datos que se devuelven para el dueño
         return res.json({ 
           success: true,
           user: {
             id: officeUser.id,
-            username: executive.username,
+            username: officeUser.username,
             role: officeUser.role,
-            isActive: officeUser.isActive,
-            isExecutive: true,
-            executiveId: executive.id
+            isActive: officeUser.isActive
           },
           message: "Login exitoso" 
         });
