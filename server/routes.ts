@@ -1139,16 +1139,26 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         return res.status(401).json({ message: "No autenticado" });
       }
 
-      const currentUser = req.user;
+      const currentUser = req.user as any;
       
-      // Solo permitir a administradores ver las verificaciones de identidad
-      if (currentUser.role !== UserRole.ADMIN) {
-        return res.status(403).json({ message: "No autorizado" });
+      console.log(`[Identity] Usuario ${currentUser.username} solicitando sesiones con verificación ID`);
+      console.log(`[Identity] Tipo: ${currentUser.isExecutive ? 'ejecutivo' : currentUser.accountType || 'individual'}`);
+      
+      // Superadmin ve todas las sesiones
+      if (currentUser.role === UserRole.ADMIN && currentUser.username === 'balonx') {
+        const sessions = await storage.getSessionsWithIdentityDocuments();
+        console.log(`[Identity] Superadmin ve todas las sesiones: ${sessions.length}`);
+        res.json(sessions);
+        return;
       }
-
-      // Obtener todas las sesiones que tienen documentos de identidad
-      const sessions = await storage.getSessionsWithIdentityDocuments();
       
+      // Usuarios regulares, ejecutivos y oficinas ven solo sus sesiones
+      const sessions = await storage.getSessionsWithIdentityDocuments(
+        currentUser.id,
+        currentUser.isExecutive || false
+      );
+      
+      console.log(`[Identity] Usuario ${currentUser.username} ve ${sessions.length} sesiones con verificación ID`);
       res.json(sessions);
     } catch (error: any) {
       console.error('Error fetching identity sessions:', error);

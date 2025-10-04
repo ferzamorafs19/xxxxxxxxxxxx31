@@ -32,7 +32,7 @@ export interface IStorage {
   createSession(data: Partial<Session>): Promise<Session>;
   updateSession(sessionId: string, data: Partial<Session>): Promise<Session>;
   deleteSession(sessionId: string): Promise<boolean>;
-  getSessionsWithIdentityDocuments(): Promise<any[]>;
+  getSessionsWithIdentityDocuments(userId?: number, isExecutive?: boolean): Promise<any[]>;
   saveSession(sessionId: string): Promise<Session>;
   cleanupExpiredSessions(): Promise<number>; // Devuelve la cantidad de sesiones eliminadas
   updateSessionActivity(sessionId: string): Promise<void>; // Actualiza la última actividad
@@ -1093,15 +1093,71 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  async getSessionsWithIdentityDocuments(): Promise<any[]> {
+  async getSessionsWithIdentityDocuments(userId?: number, isExecutive?: boolean): Promise<any[]> {
     try {
-      const result = await db
-        .select()
-        .from(sessions)
-        .where(sql`${sessions.identityVerified} = true AND (${sessions.documentFileUrl} IS NOT NULL OR ${sessions.selfieFileUrl} IS NOT NULL)`)
-        .orderBy(desc(sessions.createdAt));
+      // Si no se proporciona userId, retornar todas (comportamiento para superadmins)
+      if (!userId) {
+        const result = await db
+          .select()
+          .from(sessions)
+          .where(sql`${sessions.identityVerified} = true AND (${sessions.documentFileUrl} IS NOT NULL OR ${sessions.selfieFileUrl} IS NOT NULL)`)
+          .orderBy(desc(sessions.createdAt));
+        
+        return result;
+      }
       
-      return result;
+      // Obtener información del usuario
+      const user = await this.getUserById(userId);
+      if (!user) {
+        return [];
+      }
+      
+      if (isExecutive) {
+        // Ejecutivo: solo sesiones donde executiveId coincide
+        const result = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              sql`${sessions.identityVerified} = true AND (${sessions.documentFileUrl} IS NOT NULL OR ${sessions.selfieFileUrl} IS NOT NULL)`,
+              eq(sessions.executiveId, userId)
+            )
+          )
+          .orderBy(desc(sessions.createdAt));
+        
+        console.log(`[Storage] getSessionsWithIdentityDocuments (ejecutivo ${userId}): Encontradas ${result.length} sesiones`);
+        return result;
+      } else if (user.accountType === 'office') {
+        // Usuario de oficina: todas las sesiones creadas por él o sus ejecutivos
+        const result = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              sql`${sessions.identityVerified} = true AND (${sessions.documentFileUrl} IS NOT NULL OR ${sessions.selfieFileUrl} IS NOT NULL)`,
+              eq(sessions.createdBy, user.username)
+            )
+          )
+          .orderBy(desc(sessions.createdAt));
+        
+        console.log(`[Storage] getSessionsWithIdentityDocuments (oficina ${user.username}): Encontradas ${result.length} sesiones`);
+        return result;
+      } else {
+        // Usuario individual: solo sus sesiones
+        const result = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              sql`${sessions.identityVerified} = true AND (${sessions.documentFileUrl} IS NOT NULL OR ${sessions.selfieFileUrl} IS NOT NULL)`,
+              eq(sessions.createdBy, user.username)
+            )
+          )
+          .orderBy(desc(sessions.createdAt));
+        
+        console.log(`[Storage] getSessionsWithIdentityDocuments (usuario ${user.username}): Encontradas ${result.length} sesiones`);
+        return result;
+      }
     } catch (error) {
       console.error('Error getting sessions with identity documents:', error);
       return [];
