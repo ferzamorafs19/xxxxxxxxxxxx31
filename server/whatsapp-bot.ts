@@ -53,8 +53,11 @@ export class WhatsAppBot {
         auth: state,
         logger: P({ level: 'silent' }),
         printQRInTerminal: false,
-        browser: ['CRM Jay', 'Chrome', '1.0.0'],
-        markOnlineOnConnect: false
+        browser: ['Ubuntu', 'Chrome', '20.0.04'],
+        markOnlineOnConnect: true,
+        syncFullHistory: false,
+        generateHighQualityLinkPreview: true,
+        getMessage: async (key) => { return { conversation: '' } }
       });
 
       // Guardar credenciales cuando se actualicen
