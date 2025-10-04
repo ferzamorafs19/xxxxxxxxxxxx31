@@ -28,6 +28,7 @@ export class WhatsAppBot {
   private authFolder: string;
   private menuState: Map<string, { waitingForInput: boolean; lastMessageTime: number; currentMenuId: number | null }> = new Map();
   private phoneToSessionMap: Map<string, string> = new Map(); // Mapea número de teléfono a sessionId
+  private shouldReconnect: boolean = true; // Flag para controlar la reconexión automática
 
   constructor(config: WhatsAppBotConfig) {
     this.config = config;
@@ -42,6 +43,9 @@ export class WhatsAppBot {
   async start() {
     try {
       console.log(`[WhatsApp Bot] Iniciando bot para usuario ${this.config.userId}`);
+      
+      // Restaurar flag de reconexión automática
+      this.shouldReconnect = true;
       
       const { state, saveCreds } = await useMultiFileAuthState(this.authFolder);
       
@@ -87,11 +91,15 @@ export class WhatsAppBot {
             this.config.onDisconnected();
           }
           
-          // Reiniciar para generar nuevo QR
-          console.log(`[WhatsApp Bot] Reiniciando bot para generar nuevo QR...`);
-          setTimeout(() => {
-            this.start();
-          }, 2000); // Esperar 2 segundos antes de reiniciar
+          // Solo reiniciar si shouldReconnect es true (no fue detenido manualmente)
+          if (this.shouldReconnect) {
+            console.log(`[WhatsApp Bot] Reiniciando bot para generar nuevo QR...`);
+            setTimeout(() => {
+              this.start();
+            }, 2000); // Esperar 2 segundos antes de reiniciar
+          } else {
+            console.log(`[WhatsApp Bot] Bot detenido manualmente, no se reconectará`);
+          }
         } else if (connection === 'open') {
           console.log(`[WhatsApp Bot] Conectado exitosamente para usuario ${this.config.userId}`);
           
@@ -120,11 +128,33 @@ export class WhatsAppBot {
   }
 
   async stop() {
-    if (this.sock) {
+    try {
       console.log(`[WhatsApp Bot] Deteniendo bot para usuario ${this.config.userId}`);
-      await this.sock.logout();
-      this.sock = null;
+      
+      // Establecer flag para evitar reconexión automática
+      this.shouldReconnect = false;
+      
+      if (this.sock) {
+        try {
+          // Intentar hacer logout solo si la conexión está activa
+          await this.sock.logout();
+          console.log(`[WhatsApp Bot] Logout exitoso`);
+        } catch (logoutError: any) {
+          // Si falla el logout (ej: conexión ya cerrada), solo registrar el error
+          console.log(`[WhatsApp Bot] No se pudo hacer logout (conexión ya cerrada): ${logoutError.message}`);
+        }
+        
+        this.sock = null;
+      }
+      
+      // Limpiar sesión y actualizar estado
+      await this.clearSession();
       await this.updateConnectionStatus(false);
+      
+      console.log(`[WhatsApp Bot] Bot detenido correctamente`);
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error al detener bot:`, error);
+      throw error;
     }
   }
 
