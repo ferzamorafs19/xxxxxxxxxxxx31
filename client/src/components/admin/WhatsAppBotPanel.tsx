@@ -542,7 +542,7 @@ export default function WhatsAppBotPanel() {
         <CardHeader>
           <CardTitle>Enviar Mensaje</CardTitle>
           <CardDescription>
-            Envía un mensaje de el menú configurado (solo 10 dígitos)
+            Envía un mensaje del menú configurado (solo 10 dígitos)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
