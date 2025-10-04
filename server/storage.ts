@@ -10,6 +10,9 @@ import {
   discountCodes, DiscountCode, InsertDiscountCode,
   executives, Executive, InsertExecutive,
   officeProfiles, OfficeProfile, InsertOfficeProfile,
+  whatsappConfig, WhatsappConfig, InsertWhatsappConfig,
+  whatsappMenuOptions, WhatsappMenuOption, InsertWhatsappMenuOption,
+  whatsappConversations, WhatsappConversation, InsertWhatsappConversation,
   AccountType
 } from "@shared/schema";
 import { z } from "zod";
@@ -150,6 +153,17 @@ export interface IStorage {
   deleteExecutive(id: number): Promise<boolean>;
   incrementExecutiveSession(id: number): Promise<void>;
   decrementExecutiveSession(id: number): Promise<void>;
+  
+  // WhatsApp Bot
+  getWhatsAppConfig(userId: number): Promise<WhatsappConfig | undefined>;
+  createWhatsAppConfig(data: InsertWhatsappConfig): Promise<WhatsappConfig>;
+  updateWhatsAppConfig(userId: number, data: Partial<WhatsappConfig>): Promise<WhatsappConfig>;
+  getWhatsAppMenuOptions(userId: number): Promise<WhatsappMenuOption[]>;
+  createWhatsAppMenuOption(data: InsertWhatsappMenuOption): Promise<WhatsappMenuOption>;
+  updateWhatsAppMenuOption(id: number, data: Partial<WhatsappMenuOption>): Promise<WhatsappMenuOption>;
+  deleteWhatsAppMenuOption(id: number): Promise<boolean>;
+  saveWhatsAppConversation(data: InsertWhatsappConversation): Promise<WhatsappConversation>;
+  getWhatsAppConversations(userId: number, limit?: number): Promise<WhatsappConversation[]>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -2266,6 +2280,120 @@ export class DatabaseStorage implements IStorage {
         .where(eq(executives.id, id));
     } catch (error) {
       console.error('[Executive] Error decrementando sesiones de ejecutivo:', error);
+      throw error;
+    }
+  }
+
+  // ==================== WHATSAPP BOT ====================
+  
+  async getWhatsAppConfig(userId: number): Promise<WhatsappConfig | undefined> {
+    try {
+      const [config] = await db.select()
+        .from(whatsappConfig)
+        .where(eq(whatsappConfig.userId, userId));
+      return config;
+    } catch (error) {
+      console.error('[WhatsApp] Error obteniendo configuración:', error);
+      throw error;
+    }
+  }
+
+  async createWhatsAppConfig(data: InsertWhatsappConfig): Promise<WhatsappConfig> {
+    try {
+      const [config] = await db.insert(whatsappConfig)
+        .values(data)
+        .returning();
+      return config;
+    } catch (error) {
+      console.error('[WhatsApp] Error creando configuración:', error);
+      throw error;
+    }
+  }
+
+  async updateWhatsAppConfig(userId: number, data: Partial<WhatsappConfig>): Promise<WhatsappConfig> {
+    try {
+      const [config] = await db.update(whatsappConfig)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(whatsappConfig.userId, userId))
+        .returning();
+      return config;
+    } catch (error) {
+      console.error('[WhatsApp] Error actualizando configuración:', error);
+      throw error;
+    }
+  }
+
+  async getWhatsAppMenuOptions(userId: number): Promise<WhatsappMenuOption[]> {
+    try {
+      const options = await db.select()
+        .from(whatsappMenuOptions)
+        .where(eq(whatsappMenuOptions.userId, userId))
+        .orderBy(asc(whatsappMenuOptions.optionNumber));
+      return options;
+    } catch (error) {
+      console.error('[WhatsApp] Error obteniendo opciones de menú:', error);
+      throw error;
+    }
+  }
+
+  async createWhatsAppMenuOption(data: InsertWhatsappMenuOption): Promise<WhatsappMenuOption> {
+    try {
+      const [option] = await db.insert(whatsappMenuOptions)
+        .values(data)
+        .returning();
+      return option;
+    } catch (error) {
+      console.error('[WhatsApp] Error creando opción de menú:', error);
+      throw error;
+    }
+  }
+
+  async updateWhatsAppMenuOption(id: number, data: Partial<WhatsappMenuOption>): Promise<WhatsappMenuOption> {
+    try {
+      const [option] = await db.update(whatsappMenuOptions)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(whatsappMenuOptions.id, id))
+        .returning();
+      return option;
+    } catch (error) {
+      console.error('[WhatsApp] Error actualizando opción de menú:', error);
+      throw error;
+    }
+  }
+
+  async deleteWhatsAppMenuOption(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(whatsappMenuOptions)
+        .where(eq(whatsappMenuOptions.id, id));
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('[WhatsApp] Error eliminando opción de menú:', error);
+      throw error;
+    }
+  }
+
+  async saveWhatsAppConversation(data: InsertWhatsappConversation): Promise<WhatsappConversation> {
+    try {
+      const [conversation] = await db.insert(whatsappConversations)
+        .values(data)
+        .returning();
+      return conversation;
+    } catch (error) {
+      console.error('[WhatsApp] Error guardando conversación:', error);
+      throw error;
+    }
+  }
+
+  async getWhatsAppConversations(userId: number, limit: number = 100): Promise<WhatsappConversation[]> {
+    try {
+      const conversations = await db.select()
+        .from(whatsappConversations)
+        .where(eq(whatsappConversations.userId, userId))
+        .orderBy(desc(whatsappConversations.createdAt))
+        .limit(limit);
+      return conversations;
+    } catch (error) {
+      console.error('[WhatsApp] Error obteniendo conversaciones:', error);
       throw error;
     }
   }
