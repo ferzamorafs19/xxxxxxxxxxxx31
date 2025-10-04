@@ -270,68 +270,30 @@ export class WhatsAppBot {
       // Formatear número para WhatsApp
       const jid = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`;
 
-      // Si hay 3 opciones o menos, usar botones
-      if (menuOptions.length <= 3 && menuOptions.length > 0) {
-        const buttons = menuOptions.map(option => ({
-          buttonId: option.optionNumber.toString(),
-          buttonText: { displayText: `${option.optionNumber}. ${option.optionText}` },
-          type: 1
-        }));
-
-        // Agregar botón de volver si no es menú principal
-        if (parentId !== null && buttons.length < 3) {
-          buttons.push({
-            buttonId: '0',
-            buttonText: { displayText: '0. Volver' },
-            type: 1
-          });
+      // Construir mensaje de menú mejorado con formato
+      if (menuOptions.length > 0) {
+        let menuText = `${headerText}\n\n`;
+        menuText += `━━━━━━━━━━━━━━━━━━\n`;
+        menuText += `📋 *OPCIONES DISPONIBLES*\n`;
+        menuText += `━━━━━━━━━━━━━━━━━━\n\n`;
+        
+        for (const option of menuOptions) {
+          menuText += `▪️ *${option.optionNumber}* - ${option.optionText}\n`;
         }
-
-        const buttonMessage = {
-          text: `${headerText}\n\n*Selecciona una opción:*\n\nTambién puedes escribir "asistencia" en cualquier momento para volver al menú principal.`,
-          buttons: buttons,
-          headerType: 1
-        };
-
-        await this.sock.sendMessage(jid, buttonMessage);
-        console.log(`[WhatsApp Bot] Menú con botones enviado a ${phoneNumber}`);
-      } 
-      // Si hay más de 3 opciones, usar lista
-      else if (menuOptions.length > 3) {
-        const rows = menuOptions.map(option => ({
-          title: `${option.optionNumber}. ${option.optionText}`,
-          rowId: option.optionNumber.toString(),
-          description: ''
-        }));
-
-        // Agregar opción de volver si no es menú principal
+        
         if (parentId !== null) {
-          rows.push({
-            title: '0. Volver al menú anterior',
-            rowId: '0',
-            description: ''
-          });
+          menuText += `\n▪️ *0* - Volver al menú anterior`;
         }
-
-        const sections = [{
-          title: 'Opciones disponibles',
-          rows: rows
-        }];
-
-        const listMessage = {
-          text: `${headerText}\n\nTambién puedes escribir "asistencia" en cualquier momento para volver al menú principal.`,
-          footer: 'Selecciona una opción',
-          title: 'Menú de Opciones',
-          buttonText: 'Ver opciones',
-          sections: sections
-        };
-
-        await this.sock.sendMessage(jid, listMessage);
-        console.log(`[WhatsApp Bot] Menú con lista enviado a ${phoneNumber}`);
+        
+        menuText += `\n━━━━━━━━━━━━━━━━━━\n`;
+        menuText += `💡 _Escribe el número de la opción que deseas o escribe "asistencia" en cualquier momento para volver al menú principal._`;
+        
+        await this.sendMessage(phoneNumber, menuText);
+        console.log(`[WhatsApp Bot] Menú enviado a ${phoneNumber} con ${menuOptions.length} opciones`);
       }
       // Si no hay opciones, enviar solo el mensaje de bienvenida
       else {
-        await this.sendMessage(phoneNumber, `${headerText}\n\nNo hay opciones disponibles en este momento.\n\nEscribe "asistencia" para volver al menú principal.`);
+        await this.sendMessage(phoneNumber, `${headerText}\n\nNo hay opciones disponibles en este momento.\n\n_Escribe "asistencia" para volver al menú principal._`);
       }
 
       // Guardar el mensaje del bot en el historial
