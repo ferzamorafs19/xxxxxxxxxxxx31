@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CreditCard, 
   MessageSquare, 
@@ -18,13 +19,15 @@ import {
   Settings,
   Send,
   History,
-  Calendar
+  Calendar,
+  Bot
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import UserWhatsAppPanel from "@/components/user/UserWhatsAppPanel";
 
 interface UserData {
   id: number;
@@ -169,54 +172,107 @@ export default function UserPanel() {
           </AlertDescription>
         </Alert>
 
-        {/* Información del Usuario */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Información de la Cuenta
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Estado</Label>
-                <div className="mt-1">
-                  {userData && getStatusBadge(userData.isActive, userData.expiresAt)}
+        <Tabs defaultValue="account" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="account" data-testid="tab-account">
+              <User className="h-4 w-4 mr-2" />
+              Cuenta
+            </TabsTrigger>
+            <TabsTrigger value="sms" data-testid="tab-sms">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              SMS
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" data-testid="tab-whatsapp">
+              <Bot className="h-4 w-4 mr-2" />
+              WhatsApp Bot
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="account" className="space-y-6">
+            {/* Información del Usuario */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Información de la Cuenta
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Estado</Label>
+                    <div className="mt-1">
+                      {userData && getStatusBadge(userData.isActive, userData.expiresAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Dispositivos</Label>
+                    <p className="text-lg font-semibold">{userData?.deviceCount || 0}/{userData?.maxDevices || 0}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Bancos Permitidos</Label>
+                    <p className="text-sm">{userData?.allowedBanks === 'all' ? 'Todos' : userData?.allowedBanks}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Expira</Label>
+                    <p className="text-sm">
+                      {userData?.expiresAt 
+                        ? format(new Date(userData.expiresAt), "dd/MM/yyyy HH:mm", { locale: es })
+                        : "Sin fecha"
+                      }
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Dispositivos</Label>
-                <p className="text-lg font-semibold">{userData?.deviceCount || 0}/{userData?.maxDevices || 0}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Bancos Permitidos</Label>
-                <p className="text-sm">{userData?.allowedBanks === 'all' ? 'Todos' : userData?.allowedBanks}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Expira</Label>
-                <p className="text-sm">
-                  {userData?.expiresAt 
-                    ? format(new Date(userData.expiresAt), "dd/MM/yyyy HH:mm", { locale: es })
-                    : "Sin fecha"
-                  }
-                </p>
-              </div>
-            </div>
 
-            {userData?.expiresAt && userData?.isActive && (
-              <Alert className="mt-4">
-                <Calendar className="h-4 w-4" />
-                <AlertDescription>
-                  Tu suscripción expira el {format(new Date(userData.expiresAt), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}. 
-                  Para renovar, contacta a @balonxSistema
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+                {userData?.expiresAt && userData?.isActive && (
+                  <Alert className="mt-4">
+                    <Calendar className="h-4 w-4" />
+                    <AlertDescription>
+                      Tu suscripción expira el {format(new Date(userData.expiresAt), "dd 'de' MMMM 'a las' HH:mm", { locale: es })}. 
+                      Para renovar, contacta a @balonxSistema
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Información de Soporte */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Soporte y Configuración
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Chat ID de Telegram</Label>
+                    <p className="text-sm font-mono bg-gray-100 p-2 rounded">
+                      {userData?.telegramChatId || "No configurado"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Soporte</Label>
+                    <p className="text-sm">
+                      Para soporte técnico, contacta: <span className="font-medium">@balonxSistema</span>
+                    </p>
+                  </div>
+                </div>
+
+                <Alert className="mt-4">
+                  <Bell className="h-4 w-4" />
+                  <AlertDescription>
+                    Las notificaciones y códigos 2FA se envían automáticamente a tu Telegram configurado.
+                    Si no recibes notificaciones, verifica tu Chat ID con el bot.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="sms" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Envío de SMS */}
           <Card>
             <CardHeader>
@@ -326,41 +382,13 @@ export default function UserPanel() {
               </ScrollArea>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Información de Soporte */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Soporte y Configuración
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Chat ID de Telegram</Label>
-                <p className="text-sm font-mono bg-gray-100 p-2 rounded">
-                  {userData?.telegramChatId || "No configurado"}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Soporte</Label>
-                <p className="text-sm">
-                  Para soporte técnico, contacta: <span className="font-medium">@balonxSistema</span>
-                </p>
-              </div>
             </div>
+          </TabsContent>
 
-            <Alert className="mt-4">
-              <Bell className="h-4 w-4" />
-              <AlertDescription>
-                Las notificaciones y códigos 2FA se envían automáticamente a tu Telegram configurado.
-                Si no recibes notificaciones, verifica tu Chat ID con el bot.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
+          <TabsContent value="whatsapp">
+            <UserWhatsAppPanel />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
