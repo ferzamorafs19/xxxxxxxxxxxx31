@@ -886,4 +886,144 @@ export function setupAuth(app: Express) {
       res.status(500).json({ message: error.message });
     }
   });
+
+  // Rutas para login de ejecutivos
+  app.post("/api/executive/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Usuario y contraseña son requeridos" });
+      }
+      
+      // Validar ejecutivo
+      const executive = await storage.validateExecutive(username, password);
+      if (!executive) {
+        return res.status(401).json({ message: "Credenciales inválidas" });
+      }
+      
+      // Verificar que el ejecutivo esté activo
+      if (!executive.isActive) {
+        return res.status(403).json({ message: "Cuenta de ejecutivo inactiva" });
+      }
+      
+      // Obtener usuario oficina (dueño)
+      const officeUser = await storage.getUserById(executive.userId);
+      if (!officeUser || !officeUser.telegramChatId) {
+        return res.status(400).json({ 
+          message: "La oficina no tiene Telegram configurado. Contacta al administrador." 
+        });
+      }
+      
+      // Generar código OTP de 6 dígitos
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Guardar OTP en base de datos
+      await storage.updateExecutiveOtp(executive.id, otpCode);
+      
+      // Enviar OTP al Telegram de la oficina
+      try {
+        const { sendExecutiveOtp } = await import('./telegramBot');
+        await sendExecutiveOtp(officeUser.telegramChatId, executive.username, executive.displayName || executive.username, otpCode);
+        
+        console.log(`[Auth] OTP enviado a oficina ${officeUser.username} para ejecutivo ${executive.username}`);
+        
+        // Guardar datos del ejecutivo en sesión para verificación OTP
+        (req.session as any).pendingExecutive = {
+          id: executive.id,
+          username: executive.username,
+          userId: executive.userId
+        };
+        
+        return res.json({ 
+          requiresOtp: true,
+          message: "Código OTP enviado al Telegram de la oficina" 
+        });
+      } catch (error: any) {
+        console.error(`[Auth] Error enviando OTP:`, error);
+        return res.status(500).json({ 
+          message: "Error enviando código OTP. Intenta nuevamente." 
+        });
+      }
+    } catch (error: any) {
+      console.error("[Auth] Error en login de ejecutivo:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/executive/verify-otp", async (req, res) => {
+    try {
+      const { otpCode } = req.body;
+      const pendingExecutive = (req.session as any).pendingExecutive;
+      
+      if (!pendingExecutive) {
+        return res.status(400).json({ message: "No hay login pendiente" });
+      }
+      
+      if (!otpCode) {
+        return res.status(400).json({ message: "Código OTP requerido" });
+      }
+      
+      // Obtener ejecutivo con OTP
+      const executive = await storage.getExecutiveById(pendingExecutive.id);
+      if (!executive) {
+        return res.status(404).json({ message: "Ejecutivo no encontrado" });
+      }
+      
+      // Verificar código OTP
+      if (executive.lastOtpCode !== otpCode) {
+        return res.status(401).json({ message: "Código OTP inválido" });
+      }
+      
+      // Verificar que el OTP no haya expirado (5 minutos)
+      if (executive.lastOtpTime) {
+        const otpAge = Date.now() - new Date(executive.lastOtpTime).getTime();
+        if (otpAge > 5 * 60 * 1000) {
+          return res.status(401).json({ message: "Código OTP expirado" });
+        }
+      }
+      
+      // OTP válido - crear sesión como ejecutivo
+      const officeUser = await storage.getUserById(executive.userId);
+      if (!officeUser) {
+        return res.status(404).json({ message: "Oficina no encontrada" });
+      }
+      
+      // Limpiar sesión pendiente
+      delete (req.session as any).pendingExecutive;
+      
+      // Actualizar último login
+      await storage.updateExecutive(executive.id, { lastLogin: new Date() });
+      
+      // Crear un objeto "user-like" para el ejecutivo
+      const executiveUser = {
+        id: executive.id,
+        username: executive.username,
+        role: 'executive' as any, // Rol especial para ejecutivos
+        isActive: executive.isActive,
+        executiveId: executive.id,
+        officeId: executive.userId,
+        isExecutive: true
+      };
+      
+      // Establecer sesión
+      req.login(executiveUser as any, (err) => {
+        if (err) {
+          console.error("[Auth] Error estableciendo sesión de ejecutivo:", err);
+          return res.status(500).json({ message: "Error estableciendo sesión" });
+        }
+        
+        console.log(`[Auth] Ejecutivo ${executive.username} autenticado exitosamente`);
+        
+        return res.json({ 
+          success: true,
+          user: executiveUser,
+          message: "Login exitoso" 
+        });
+      });
+    } catch (error: any) {
+      console.error("[Auth] Error verificando OTP de ejecutivo:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
 }

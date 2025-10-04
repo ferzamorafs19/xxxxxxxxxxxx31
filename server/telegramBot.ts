@@ -176,6 +176,32 @@ Expira: ${expiresAt.toLocaleString('es-MX')}`;
   }
 }
 
+// Función para enviar OTP de ejecutivo a la oficina
+export async function sendExecutiveOtp(officeChatId: string, executiveUsername: string, executiveDisplayName: string, otpCode: string): Promise<void> {
+  try {
+    const message = `👔 *Login de Ejecutivo - Código OTP*
+
+El ejecutivo *${executiveDisplayName}* (${executiveUsername}) está intentando iniciar sesión.
+
+Código OTP:
+\`${otpCode}\`
+
+⏰ Este código expira en 5 minutos.
+🔒 Comparte este código solo con tu ejecutivo.`;
+
+    await bot.sendMessage(officeChatId, message, { 
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true 
+    });
+
+    console.log(`✅ OTP de ejecutivo enviado a oficina (ChatID: ${officeChatId}): ${otpCode}`);
+
+  } catch (error: any) {
+    console.error('❌ Error enviando OTP de ejecutivo:', error);
+    throw error;
+  }
+}
+
 // Función para verificar código 2FA
 export async function verifyCode(userId: number, inputCode: string): Promise<{ success: boolean; error?: string }> {
   try {
