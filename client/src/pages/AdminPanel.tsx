@@ -743,6 +743,7 @@ export default function AdminPanel() {
         isAdmin={isAdmin}
         isSuperAdmin={isSuperAdmin}
         accountType={user?.accountType as 'individual' | 'office' | undefined}
+        isExecutive={(user as any)?.isExecutive}
       />
 
       {/* Main Content */}

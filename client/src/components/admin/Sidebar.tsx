@@ -8,9 +8,10 @@ interface SidebarProps {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   accountType?: 'individual' | 'office';
+  isExecutive?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSuperAdmin, accountType }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSuperAdmin, accountType, isExecutive }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -70,8 +71,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
             Accesos Guardados
           </button>
           
-          {/* Gestión de ejecutivos para cuentas de oficina */}
-          {accountType === 'office' && (
+          {/* Gestión de ejecutivos para cuentas de oficina (solo dueño, no ejecutivos) */}
+          {accountType === 'office' && !isExecutive && (
             <button 
               onClick={() => handleTabChange('executives')}
               className={`block w-full text-left ${activeTab === 'executives' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
