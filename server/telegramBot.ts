@@ -395,9 +395,11 @@ Por favor, registra tu cuenta primero en Balonx.pro/balonx`, {
         return;
       }
 
-      // Obtener el precio que debe pagar el usuario
+      // Obtener el precio que debe pagar el usuario según tipo de cuenta
       const systemConfig = await storage.getSystemConfig();
-      const expectedAmount = user.customPrice || systemConfig?.subscriptionPrice || '0.00';
+      const isOffice = user.accountType === 'office';
+      const basePrice = isOffice ? '6000' : (systemConfig?.subscriptionPrice || '3000');
+      const expectedAmount = user.customPrice || basePrice;
       
       // Verificar si ya existe un pago reciente en Bitso
       const { verifyPayment } = await import('./bitsoService');
@@ -426,11 +428,18 @@ Tu cuenta está activa. Si necesitas renovar, contacta con @BalonxSistema`, {
         expectedAmount
       });
 
+      const accountTypeInfo = isOffice 
+        ? `\n\n🏢 *Cuenta de Oficina:*
+• Gestiona hasta 8 ejecutivos
+• Cada ejecutivo con acceso independiente
+• Visibilidad completa de todas las sesiones` 
+        : '';
+
       const message = `💳 *Instrucciones de Pago*
 
 Hola *${user.username}*,
 
-Para activar o renovar tu cuenta por 7 días:
+Para activar o renovar tu cuenta por 7 días:${accountTypeInfo}
 
 💰 *Monto a depositar:* $${expectedAmount} MXN
 
@@ -797,9 +806,11 @@ export async function sendPaymentInstructions(user: any, context: 'registration'
       return;
     }
 
-    // Obtener el precio que debe pagar el usuario
+    // Obtener el precio que debe pagar el usuario según tipo de cuenta
     const systemConfig = await storage.getSystemConfig();
-    const expectedAmount = user.customPrice || systemConfig?.subscriptionPrice || '0.00';
+    const isOffice = user.accountType === 'office';
+    const basePrice = isOffice ? '6000' : (systemConfig?.subscriptionPrice || '3000');
+    const expectedAmount = user.customPrice || basePrice;
     
     // Obtener cuenta de depósito
     const BITSO_RECEIVING_ACCOUNT = process.env.BITSO_RECEIVING_ACCOUNT || '';
@@ -826,12 +837,19 @@ export async function sendPaymentInstructions(user: any, context: 'registration'
     const contextMessage = context === 'registration' 
       ? `¡Bienvenido al sistema! Para activar tu cuenta por 7 días:`
       : `🚨 *Realiza tu pago*\n\nTu suscripción vence pronto. Para renovar tu cuenta por 7 días:`;
+    
+    const accountTypeInfo = isOffice 
+      ? `\n\n🏢 *Cuenta de Oficina:*
+• Gestiona hasta 8 ejecutivos
+• Cada ejecutivo con acceso independiente
+• Visibilidad completa de todas las sesiones` 
+      : '';
 
     const message = `💳 *Instrucciones de Pago*
 
 Hola *${user.username?.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')}*,
 
-${contextMessage}
+${contextMessage}${accountTypeInfo}
 
 💰 *Monto a depositar:* $${expectedAmount} MXN
 
