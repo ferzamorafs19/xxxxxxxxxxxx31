@@ -99,34 +99,49 @@ The platform includes a WhatsApp bot that uses Baileys library for direct WhatsA
 ### Phone Number Format (Mexico)
 The bot automatically formats Mexican phone numbers:
 - **Input**: 10-digit number (e.g., `5531781885`)
-- **Auto-format**: Adds country code 52 → `525531781885@s.whatsapp.net`
+- **Auto-format**: Adds country code 521 → `5215531781885@s.whatsapp.net`
 - **Supported formats**: 
-  - Raw 10 digits: `5531781885` → `525531781885@s.whatsapp.net`
-  - With country code: `525531781885` → `525531781885@s.whatsapp.net`
-  - International: `+525531781885` → `525531781885@s.whatsapp.net`
+  - Raw 10 digits: `5531781885` → `5215531781885@s.whatsapp.net`
+  - With country code: `5215531781885` → `5215531781885@s.whatsapp.net`
+  - International: `+5215531781885` → `5215531781885@s.whatsapp.net`
+- All numbers are stored consistently with `521` prefix in the database
 
 ### Features
 1. **QR Authentication**: Admin scans QR code from WhatsApp panel to connect
 2. **Configurable Welcome Message**: Customizable greeting sent to new contacts
-3. **Menu System**: Up to 9 numbered options with customizable responses
+3. **Hierarchical Menu System**: Support for main menu and unlimited sub-menus
 4. **Action Types**:
    - `message`: Send automated response
    - `transfer`: Notify executive for human intervention
    - `info`: Provide information and re-display menu
-5. **Conversation History**: All messages stored in database with timestamps
-6. **Auto-reconnect**: Automatically reconnects if connection drops
+   - `submenu`: Create nested sub-menus for better organization
+   - `command`: Execute special commands (e.g., send panel link)
+5. **Navigation**: Users can type "0" or "volver" to return to previous menu
+6. **Command Types**:
+   - `liga`: Sends the latest generated panel access link to the user
+7. **Conversation History**: All messages stored in database with timestamps
+8. **Auto-reconnect**: Automatically reconnects if connection drops
 
 ### Admin Panel Access
 Located at `/admin` → WhatsApp Bot tab:
 - **Connection Status**: Real-time display of WhatsApp connection state
 - **QR Code Display**: Shows QR when bot is starting (auto-refresh every 3 seconds)
 - **Configuration**: Set welcome message and bot phone number
-- **Menu Management**: Create/edit/delete menu options with live preview
-- **Test Messaging**: Send test messages to verify bot functionality
+- **Menu Management**: 
+  - Tree-view display with expandable sub-menus
+  - In-line editing of all menu options
+  - Batch save with "Guardar Cambios" button
+  - Add sub-menus to any menu option
+  - Visual hierarchy with indentation
+  - Live preview of menu structure
+- **Test Messaging**: Send test messages (10 digits automatically formatted to 521 prefix)
 
 ### Message Flow
 1. **User sends message** → Bot receives via Baileys event listener
-2. **First contact** → Bot sends welcome message + menu
+2. **First contact** → Bot sends welcome message + main menu
 3. **User selects option (1-9)** → Bot processes and responds based on action type
-4. **5-minute timeout** → If no interaction, re-send menu on next message
-5. **All messages logged** → Stored in `whatsapp_conversations` table
+4. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
+5. **User types "0" or "volver"** → Bot returns to previous menu level
+6. **Command execution** → Special commands like `(liga)` send dynamic content
+7. **5-minute timeout** → If no interaction, re-send current menu on next message
+8. **All messages logged** → Stored in `whatsapp_conversations` table
