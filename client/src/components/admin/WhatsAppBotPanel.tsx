@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Send, Save, MessageSquare } from "lucide-react";
+import { Plus, Trash2, Send, Save, MessageSquare, QrCode, Power, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { WhatsappConfig, WhatsappMenuOption } from "@shared/schema";
 
@@ -26,13 +26,19 @@ export default function WhatsAppBotPanel() {
     queryKey: ["/api/whatsapp/menu"],
   });
 
+  // Obtener estado de conexión (polling cada 3 segundos)
+  const { data: status } = useQuery<{ isConnected: boolean; qrCode: string | null; phoneNumber: string }>({
+    queryKey: ["/api/whatsapp/status"],
+    refetchInterval: 3000, // Actualizar cada 3 segundos
+  });
+
   // Sincronizar valores cuando carga la configuración
-  useState(() => {
+  useEffect(() => {
     if (config) {
       setWelcomeMessage(config.welcomeMessage || "");
       setPhoneNumber(config.phoneNumber || "");
     }
-  });
+  }, [config]);
 
   // Mutación para actualizar configuración
   const updateConfigMutation = useMutation({
@@ -129,10 +135,54 @@ export default function WhatsAppBotPanel() {
         description: `Mensaje enviado a ${data.sentTo}`,
       });
     },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo enviar el mensaje de prueba.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para iniciar el bot
+  const startBotMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/whatsapp/start", "POST");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/config"] });
+      toast({
+        title: "Bot iniciado",
+        description: "Escanea el código QR con WhatsApp para conectar.",
+      });
+    },
     onError: () => {
       toast({
         title: "Error",
-        description: "No se pudo enviar el mensaje de prueba.",
+        description: "No se pudo iniciar el bot de WhatsApp.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutación para detener el bot
+  const stopBotMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/whatsapp/stop", "POST");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/config"] });
+      toast({
+        title: "Bot detenido",
+        description: "El bot de WhatsApp ha sido desconectado.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo detener el bot de WhatsApp.",
         variant: "destructive",
       });
     },
@@ -201,6 +251,80 @@ export default function WhatsAppBotPanel() {
           Configura el bot de WhatsApp para enviar mensajes automáticos con menú de opciones.
         </p>
       </div>
+
+      {/* Estado de Conexión y QR */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Conexión de WhatsApp</CardTitle>
+          <CardDescription>
+            Conecta tu cuenta de WhatsApp escaneando el código QR
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Estado de conexión */}
+          <div className="flex items-center gap-3 p-4 border rounded-lg">
+            {status?.isConnected ? (
+              <>
+                <CheckCircle className="w-6 h-6 text-green-500" />
+                <div>
+                  <p className="font-semibold text-green-600">WhatsApp Conectado</p>
+                  <p className="text-sm text-muted-foreground">El bot está listo para enviar mensajes</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <XCircle className="w-6 h-6 text-gray-400" />
+                <div>
+                  <p className="font-semibold text-gray-600">WhatsApp Desconectado</p>
+                  <p className="text-sm text-muted-foreground">Inicia el bot y escanea el código QR para conectar</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Código QR */}
+          {status?.qrCode && !status?.isConnected && (
+            <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg bg-muted/50">
+              <QrCode className="w-8 h-8 text-primary" />
+              <p className="text-sm font-medium">Escanea este código QR con WhatsApp</p>
+              <img 
+                src={status.qrCode} 
+                alt="WhatsApp QR Code" 
+                className="w-64 h-64 border-4 border-white rounded-lg shadow-lg"
+              />
+              <p className="text-xs text-muted-foreground text-center max-w-md">
+                Abre WhatsApp en tu teléfono → Menú → Dispositivos vinculados → Vincular un dispositivo → Escanea este código
+              </p>
+            </div>
+          )}
+
+          {/* Botones de control */}
+          <div className="flex gap-3">
+            {!status?.isConnected ? (
+              <Button
+                data-testid="button-start-bot"
+                onClick={() => startBotMutation.mutate()}
+                disabled={startBotMutation.isPending}
+                className="flex-1"
+              >
+                <Power className="w-4 h-4 mr-2" />
+                {startBotMutation.isPending ? "Iniciando..." : "Iniciar Bot y Generar QR"}
+              </Button>
+            ) : (
+              <Button
+                data-testid="button-stop-bot"
+                onClick={() => stopBotMutation.mutate()}
+                disabled={stopBotMutation.isPending}
+                variant="destructive"
+                className="flex-1"
+              >
+                <Power className="w-4 h-4 mr-2" />
+                {stopBotMutation.isPending ? "Deteniendo..." : "Detener Bot"}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Configuración General */}
       <Card>

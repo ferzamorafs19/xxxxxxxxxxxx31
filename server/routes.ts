@@ -10,6 +10,7 @@ import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
 import { sendAccountActivationNotification } from './telegramBot';
 import { parsePhoneNumbers, validateSMSMessage, sendSMSWithRoute, calculateCreditCost, SmsRouteType } from './smsService';
+import { WhatsAppBot } from './whatsapp-bot';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -19,6 +20,9 @@ import { z } from 'zod';
 const clients = new Map<string, WebSocket>();
 // Cambiamos a un Map para asociar cada socket con su username
 const adminClients = new Map<string, WebSocket>();
+
+// WhatsApp Bot instance (global para mantener una sola conexión)
+let whatsappBot: WhatsAppBot | null = null;
 
 // Configurar multer para subida de archivos
 const storage_multer = multer.diskStorage({
@@ -3743,6 +3747,81 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Iniciar bot de WhatsApp y obtener QR
+  app.post("/api/whatsapp/start", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      // Si ya hay un bot activo, detenerlo primero
+      if (whatsappBot) {
+        await whatsappBot.stop();
+        whatsappBot = null;
+      }
+
+      // Crear nueva instancia del bot
+      whatsappBot = new WhatsAppBot({
+        userId: req.user.id,
+        storage
+      });
+      
+      // Iniciar el bot (esto generará el QR automáticamente)
+      await whatsappBot.start();
+
+      res.json({ success: true, message: "Bot iniciado, escanea el código QR" });
+    } catch (error) {
+      console.error("Error iniciando bot de WhatsApp:", error);
+      res.status(500).json({ message: "Error al iniciar bot de WhatsApp" });
+    }
+  });
+
+  // Detener bot de WhatsApp
+  app.post("/api/whatsapp/stop", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      if (whatsappBot) {
+        await whatsappBot.stop();
+        whatsappBot = null;
+      }
+
+      // Actualizar configuración
+      await storage.updateWhatsAppConfig(req.user.id, {
+        isConnected: false,
+        qrCode: null
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deteniendo bot de WhatsApp:", error);
+      res.status(500).json({ message: "Error al detener bot de WhatsApp" });
+    }
+  });
+
+  // Obtener estado de conexión
+  app.get("/api/whatsapp/status", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const config = await storage.getWhatsAppConfig(req.user.id);
+      const isConnected = whatsappBot?.isConnected() || false;
+
+      res.json({ 
+        isConnected,
+        qrCode: config?.qrCode || null,
+        phoneNumber: config?.phoneNumber || ''
+      });
+    } catch (error) {
+      console.error("Error obteniendo estado de WhatsApp:", error);
+      res.status(500).json({ message: "Error al obtener estado" });
+    }
+  });
+
   // Actualizar configuración de WhatsApp
   app.post("/api/whatsapp/config", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
@@ -3870,6 +3949,13 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     try {
       const { phoneNumber } = req.body;
       
+      // Verificar que el bot esté conectado
+      if (!whatsappBot || !whatsappBot.isConnected()) {
+        return res.status(400).json({ 
+          message: "El bot de WhatsApp no está conectado. Por favor escanea el código QR primero." 
+        });
+      }
+      
       // Obtener configuración y menú
       const config = await storage.getWhatsAppConfig(req.user.id);
       const menuOptions = await storage.getWhatsAppMenuOptions(req.user.id);
@@ -3885,8 +3971,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         message += `${option.optionNumber}. ${option.optionText}\n`;
       });
       
-      // Aquí iría la lógica para enviar el mensaje vía WhatsApp Bot
-      // Por ahora solo retornamos el mensaje que se enviaría
+      // Enviar mensaje a través del bot
+      await whatsappBot.sendMessage(phoneNumber, message);
       
       res.json({ 
         success: true, 

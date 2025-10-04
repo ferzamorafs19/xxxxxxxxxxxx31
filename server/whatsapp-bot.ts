@@ -233,29 +233,65 @@ export class WhatsAppBot {
     }
   }
 
+  public isConnected(): boolean {
+    return this.sock !== null && this.sock.user !== undefined;
+  }
+
   private async updateQRCode(qrCode: string) {
-    // Implementar actualización de QR en la base de datos
-    console.log(`[WhatsApp Bot] QR actualizado para usuario ${this.config.userId}`);
+    try {
+      await this.config.storage.updateWhatsAppConfig(this.config.userId, {
+        qrCode,
+        isConnected: false
+      });
+      console.log(`[WhatsApp Bot] QR actualizado para usuario ${this.config.userId}`);
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error actualizando QR:`, error);
+    }
   }
 
   private async updateConnectionStatus(isConnected: boolean, phoneNumber?: string) {
-    // Implementar actualización de estado de conexión en la base de datos
-    console.log(`[WhatsApp Bot] Estado de conexión para usuario ${this.config.userId}: ${isConnected ? 'conectado' : 'desconectado'}`);
+    try {
+      await this.config.storage.updateWhatsAppConfig(this.config.userId, {
+        isConnected,
+        phoneNumber: phoneNumber || '',
+        qrCode: isConnected ? null : undefined
+      });
+      console.log(`[WhatsApp Bot] Estado de conexión para usuario ${this.config.userId}: ${isConnected ? 'conectado' : 'desconectado'}`);
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error actualizando estado de conexión:`, error);
+    }
   }
 
   private async saveConversation(phoneNumber: string, message: string, isFromBot: boolean) {
-    // Implementar guardado de conversación en la base de datos
-    console.log(`[WhatsApp Bot] Guardando mensaje: ${isFromBot ? 'Bot' : phoneNumber} -> ${message}`);
+    try {
+      await this.config.storage.saveWhatsAppConversation({
+        userId: this.config.userId,
+        phoneNumber,
+        message,
+        isFromBot
+      });
+      console.log(`[WhatsApp Bot] Guardando mensaje: ${isFromBot ? 'Bot' : phoneNumber} -> ${message}`);
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error guardando conversación:`, error);
+    }
   }
 
   private async getWhatsAppConfig() {
-    // Implementar obtención de configuración desde la base de datos
-    return null;
+    try {
+      return await this.config.storage.getWhatsAppConfig(this.config.userId);
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error obteniendo configuración:`, error);
+      return null;
+    }
   }
 
   private async getMenuOptions() {
-    // Implementar obtención de opciones de menú desde la base de datos
-    return [];
+    try {
+      return await this.config.storage.getWhatsAppMenuOptions(this.config.userId);
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error obteniendo opciones de menú:`, error);
+      return [];
+    }
   }
 }
 
@@ -298,7 +334,8 @@ class WhatsAppBotManager {
   }
 
   async stopAllBots() {
-    for (const [userId, bot] of this.bots.entries()) {
+    const entries = Array.from(this.bots.entries());
+    for (const [userId, bot] of entries) {
       await bot.stop();
     }
     this.bots.clear();
