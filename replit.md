@@ -118,12 +118,16 @@ The bot automatically formats Mexican phone numbers:
 5. **Navigation**: 
    - Users can type "0" or "volver" to return to previous menu
    - **NEW**: Users can type "asistencia" at any time to return to main menu
-6. **Dynamic Content Placeholder**:
-   - `(liga)`: Can be used in any message text to insert the latest panel access link
-   - Uses the exact same logic as admin panel's `/api/generate-link` endpoint
-   - Pulls the most recent active session from database
-   - Example: "Accede al panel en (liga)" → "Accede al panel en https://aclaracionesditales.com/38284672"
-   - Automatically replaced when message is sent with the configured baseUrl from siteConfig
+6. **Dynamic Content Placeholders**:
+   - `(liga)`: Inserts the latest panel access link
+     - Uses the exact same logic as admin panel's `/api/generate-link` endpoint
+     - Pulls the most recent active session from database
+     - Example: "Accede al panel en (liga)" → "Accede al panel en https://aclaracionesditales.com/38284672"
+     - Automatically replaced when message is sent with the configured baseUrl from siteConfig
+   - `(banco)`: Inserts the bank name from the latest active session
+     - Example: "Tu sesión de (banco) está lista" → "Tu sesión de INVEX está lista"
+     - Retrieves banco field from the most recent active session
+     - Falls back to "BANCO" if no active sessions exist
 7. **Sub-menus after Messages**: Options of type "message" can have child options that display after the message is sent
 8. **Enhanced Menu Display**: Messages use formatted text with:
    - Visual separators (━━━━━━━━━━━━━━━━━━)
@@ -155,9 +159,28 @@ Located at `/admin` → WhatsApp Bot tab:
    - Uses latest active session from database (same as admin panel)
    - Example: Message text "Visita (liga) para acceder"
    - User receives: "Visita https://aclaracionesditales.com/38284672 para acceder"
-5. **Message with sub-options** → After sending the message, bot displays child menu options
-6. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
-7. **User types "0" or "volver"** → Bot returns to previous menu level
-8. **User types "asistencia"** → Bot immediately returns to main menu from any level
-9. **5-minute timeout** → If no interaction, re-send current menu on next message
-10. **All messages logged** → Stored in `whatsapp_conversations` table
+   - **Automatic phone number linking**: When (liga) is sent, bot associates user's WhatsApp number with the session
+5. **Message with (banco) placeholder** → Bot replaces (banco) with bank name from latest session
+   - Example: Message text "Tu sesión de (banco) está lista"
+   - User receives: "Tu sesión de INVEX está lista"
+6. **Automatic phone number storage**: Every message from user triggers update to session.celular field
+   - Phone number saved in 521XXXXXXXXXX format for consistency
+   - Enables auto-fill of last 4 digits in verification screens
+7. **Message with sub-options** → After sending the message, bot displays child menu options
+8. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
+9. **User types "0" or "volver"** → Bot returns to previous menu level
+10. **User types "asistencia"** → Bot immediately returns to main menu from any level
+11. **5-minute timeout** → If no interaction, re-send current menu on next message
+12. **All messages logged** → Stored in `whatsapp_conversations` table
+
+### Phone Number Auto-Fill Feature
+The platform automatically fills the last 4 digits of phone numbers in client verification screens:
+- **Data Source**: Uses `session.celular` field populated by WhatsApp bot interactions
+- **Affected Screens**:
+  - SMS verification (ScreenType.CODIGO): Shows "terminación: XXXX" with last 4 digits
+  - Purchase verification (ScreenType.SMS_COMPRA): Shows "terminación: XXXX" with last 4 digits
+- **Fallback Logic**:
+  - Priority 1: Use `screenData.terminacion` if explicitly set by admin
+  - Priority 2: Extract last 4 digits from `session.celular` (saved by WhatsApp bot)
+  - Priority 3: Display "****" if no phone number available
+- **Implementation**: Frontend extracts last 4 digits from full phone number automatically
