@@ -43,7 +43,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para actualizar configuración
   const updateConfigMutation = useMutation({
     mutationFn: async (data: { welcomeMessage: string; phoneNumber: string }) => {
-      return await apiRequest("/api/whatsapp/config", "POST", data);
+      return await apiRequest("POST", "/api/whatsapp/config", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/config"] });
@@ -64,7 +64,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para crear opción de menú
   const createMenuOptionMutation = useMutation({
     mutationFn: async (data: Partial<WhatsappMenuOption>) => {
-      return await apiRequest("/api/whatsapp/menu", "POST", data);
+      return await apiRequest("POST", "/api/whatsapp/menu", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
@@ -85,7 +85,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para actualizar opción de menú
   const updateMenuOptionMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<WhatsappMenuOption> }) => {
-      return await apiRequest(`/api/whatsapp/menu/${id}`, "PUT", data);
+      return await apiRequest("PUT", `/api/whatsapp/menu/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
@@ -106,7 +106,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para eliminar opción de menú
   const deleteMenuOptionMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/whatsapp/menu/${id}`, "DELETE");
+      return await apiRequest("DELETE", `/api/whatsapp/menu/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/menu"] });
@@ -127,7 +127,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para enviar mensaje de prueba
   const sendTestMessageMutation = useMutation({
     mutationFn: async (phoneNumber: string) => {
-      return await apiRequest("/api/whatsapp/send-test", "POST", { phoneNumber });
+      return await apiRequest("POST", "/api/whatsapp/send-test", { phoneNumber });
     },
     onSuccess: (data: any) => {
       toast({
@@ -147,7 +147,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para iniciar el bot
   const startBotMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/whatsapp/start", "POST");
+      return await apiRequest("POST", "/api/whatsapp/start");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
@@ -169,7 +169,7 @@ export default function WhatsAppBotPanel() {
   // Mutación para detener el bot
   const stopBotMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/whatsapp/stop", "POST");
+      return await apiRequest("POST", "/api/whatsapp/stop");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp/status"] });
