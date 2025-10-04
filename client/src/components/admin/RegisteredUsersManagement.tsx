@@ -703,14 +703,15 @@ const RegisteredUsersManagement: React.FC = () => {
                                 )}
                               </TableCell>
                               <TableCell>
-                                {user.customPrice ? (
-                                  <div className="flex items-center gap-1">
-                                    <DollarSign className="w-3 h-3 text-green-600" />
-                                    <span className="font-medium">${user.customPrice}</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">Sin precio</span>
-                                )}
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3 text-green-600" />
+                                  <span className="font-medium">
+                                    ${user.customPrice || (user.accountType === 'office' ? '6000' : '3000')}
+                                  </span>
+                                  {user.customPrice && (
+                                    <span className="text-xs text-muted-foreground ml-1">(personalizado)</span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {user.expiresAt ? (
@@ -946,7 +947,9 @@ const RegisteredUsersManagement: React.FC = () => {
                               disabled={updateCustomPriceMutation.isPending}
                             >
                               <DollarSign className="w-4 h-4 mr-1" /> 
-                              {user.customPrice ? `Precio: $${user.customPrice}` : 'Precio Personalizado'}
+                              {user.customPrice 
+                                ? `Precio: $${user.customPrice} (pers.)` 
+                                : `Precio: $${user.accountType === 'office' ? '6000' : '3000'}`}
                             </Button>
                           </div>
                           <div className="mt-2 pt-2 border-t">
