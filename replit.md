@@ -15,13 +15,20 @@ The platform employs a multi-domain setup with `aclaracion.info` for clients and
 Key features include:
 - **Database Schema**: Manages users (with roles, device limits, bank restrictions, account types), executives (for office accounts), banking sessions (with screen types, user inputs, file attachments), SMS configurations, and notification preferences.
 - **Authentication**: Session-based with Passport.js, supporting anti-bot measures, behavioral analysis, and OTP verification for executives.
+- **Unified Login**: All users (regular, admin, executive) login at `/balonx` with separate tabs (Login/Register/Executive)
 - **Account Types**: 
   - **Individual**: 2 devices, 3000 MXN/week
   - **Office**: 8 executives max, 6000 MXN/week, executive management panel with OTP login
+- **Executive System**:
+  - Executives login via `/balonx` → Executive tab
+  - OTP sent to office owner's Telegram for verification
+  - Authenticated with office owner's permissions and allowed banks
+  - Access user panel (`/panel`) with inherited settings
+  - Limited to **1 active session** (vs 2 for regular users)
+  - Session uses office owner's user ID for proper Passport deserialization
 - **Screen Management**: Dynamic screen types guide users through banking workflows (validation, OTP, card info, transfers, protection banking).
 - **File Management**: Multer-based uploads for protection banking and static file serving, with Telegram notifications for downloads.
 - **Data Flow**: Admin-initiated sessions with QR codes, real-time client-admin updates via WebSockets, and a guided banking workflow.
-- **Executive Management**: Office accounts can create/manage up to 8 executives via dedicated panel, each with independent login and OTP sent to office owner.
 - **Security**: Anti-detection, rate limiting, header obfuscation, and comprehensive input validation.
 
 ## External Dependencies

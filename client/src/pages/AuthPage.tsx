@@ -202,7 +202,8 @@ export default function AuthPage() {
         description: `Bienvenido ${data.user.username}`,
       });
 
-      window.location.href = "/admin";
+      // Ejecutivos van al panel de usuario, no al panel de admin
+      window.location.href = "/panel";
     } catch (error: any) {
       toast({
         title: "Error de verificación",

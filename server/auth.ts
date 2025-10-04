@@ -991,35 +991,75 @@ export function setupAuth(app: Express) {
         return res.status(404).json({ message: "Oficina no encontrada" });
       }
       
+      // Verificar que la oficina esté activa
+      if (!officeUser.isActive) {
+        return res.status(403).json({ message: "La cuenta de la oficina está inactiva" });
+      }
+      
       // Limpiar sesión pendiente
       delete (req.session as any).pendingExecutive;
       
       // Actualizar último login
       await storage.updateExecutive(executive.id, { lastLogin: new Date() });
       
-      // Crear un objeto "user-like" para el ejecutivo
-      const executiveUser = {
-        id: executive.id,
-        username: executive.username,
-        role: 'executive' as any, // Rol especial para ejecutivos
-        isActive: executive.isActive,
+      // El ejecutivo usa los datos del usuario dueño de la oficina con una marca especial
+      const executiveSessionUser = {
+        ...officeUser,
+        isExecutive: true,
         executiveId: executive.id,
-        officeId: executive.userId,
-        isExecutive: true
+        executiveUsername: executive.username,
+        executiveDisplayName: executive.displayName || executive.username
       };
       
-      // Establecer sesión
-      req.login(executiveUser as any, (err) => {
+      // Marcar en sesión que es un ejecutivo
+      (req.session as any).executiveData = {
+        executiveId: executive.id,
+        executiveUsername: executive.username,
+        officeUserId: officeUser.id
+      };
+      
+      // Establecer sesión usando el usuario de la oficina (no el ejecutivo)
+      req.login(executiveSessionUser as any, (err) => {
         if (err) {
           console.error("[Auth] Error estableciendo sesión de ejecutivo:", err);
           return res.status(500).json({ message: "Error estableciendo sesión" });
         }
         
-        console.log(`[Auth] Ejecutivo ${executive.username} autenticado exitosamente`);
+        // Control de sesiones para ejecutivos (solo 1 sesión activa)
+        const sessionId = (req.session as any).id;
+        const userAgent = req.get('User-Agent');
+        
+        // Los ejecutivos solo pueden tener 1 sesión activa
+        const userSessions = activeSessions.get(officeUser.id) || [];
+        const executiveSessions = userSessions.filter(s => {
+          const sessionData = (req.sessionStore as any).sessions?.[s.sessionId];
+          return sessionData?.executiveData?.executiveId === executive.id;
+        });
+        
+        // Cerrar sesiones previas del ejecutivo
+        if (executiveSessions.length > 0) {
+          for (const oldSession of executiveSessions) {
+            cleanupUserSessions(officeUser.id, oldSession.sessionId);
+          }
+          console.log(`[SessionControl] Ejecutivo ${executive.username}: Cerradas ${executiveSessions.length} sesión(es) antigua(s)`);
+        }
+        
+        // Agregar nueva sesión
+        addActiveSession(officeUser.id, sessionId, userAgent);
+        console.log(`[SessionControl] Ejecutivo ${executive.username}: Nueva sesión activa ${sessionId}`);
+        
+        console.log(`[Auth] Ejecutivo ${executive.username} autenticado exitosamente como ${officeUser.username}`);
         
         return res.json({ 
           success: true,
-          user: executiveUser,
+          user: {
+            id: officeUser.id,
+            username: executive.username,
+            role: officeUser.role,
+            isActive: officeUser.isActive,
+            isExecutive: true,
+            executiveId: executive.id
+          },
           message: "Login exitoso" 
         });
       });
