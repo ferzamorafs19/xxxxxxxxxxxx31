@@ -566,7 +566,7 @@ export default function WhatsAppBotPanel() {
             data-testid="button-send-test"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
-            {sendTestMessageMutation.isPending ? "Enviando..." : "Enviar Mensaje de Prueba"}
+            {sendTestMessageMutation.isPending ? "Enviando..." : "Enviar msj"}
           </Button>
 
           {/* Vista Previa del Mensaje */}
