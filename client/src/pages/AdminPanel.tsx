@@ -127,7 +127,7 @@ export default function AdminPanel() {
 
   // Determinar si es un usuario regular o administrador
   const isAdmin = user?.role === 'admin';
-  const isSuperAdmin = user?.username === 'balonx' && !(user as any)?.isExecutive;
+  const isSuperAdmin = user?.username === 'balonx';
   const isRegularUser = user?.role === 'user';
 
   // Socket connection for real-time updates
@@ -301,7 +301,7 @@ export default function AdminPanel() {
             
             // Verificar si esta sesión le pertenece al usuario actual
             const isOwnSession = data.data.createdBy === user?.username;
-            const isSuperAdmin = user?.username === 'balonx' && !(user as any)?.isExecutive;
+            const isSuperAdmin = user?.username === 'balonx';
             
             if (isOwnSession || isSuperAdmin) {
               setSessions(prev => {
