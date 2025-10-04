@@ -592,7 +592,14 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: "No autenticado" });
     }
     const user = req.user as Express.User;
-    res.json({ ...user, password: undefined });
+    const executiveData = (req.session as any).executiveData;
+    
+    res.json({ 
+      ...user, 
+      password: undefined,
+      isExecutive: !!executiveData,
+      executiveUsername: executiveData?.executiveUsername
+    });
   });
 
   // Ruta para actualizar el perfil del usuario (Chat ID de Telegram)

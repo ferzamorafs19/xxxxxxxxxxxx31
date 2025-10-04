@@ -972,8 +972,8 @@ export default function AdminPanel() {
                 </div>
               </>
             )}
-            {/* Ejecutivos solo para cuentas de oficina */}
-            {user?.accountType === 'office' && (
+            {/* Ejecutivos solo para cuentas de oficina (no para ejecutivos) */}
+            {user?.accountType === 'office' && !(user as any)?.isExecutive && (
               <div 
                 className={`tab cursor-pointer pb-2 border-b-2 text-sm md:text-base whitespace-nowrap transition-all duration-200 font-medium ${activeTab === 'executives' 
                   ? 'border-[#00aaff] text-[#00aaff] bg-[#00aaff10] border-b-[3px] font-bold' 
@@ -1032,7 +1032,7 @@ export default function AdminPanel() {
           <UserManagement />
         ) : activeTab === 'registered' && isSuperAdmin ? (
           <RegisteredUsersManagement />
-        ) : activeTab === 'executives' && user?.accountType === 'office' ? (
+        ) : activeTab === 'executives' && user?.accountType === 'office' && !(user as any)?.isExecutive ? (
           <ExecutiveManagement />
         ) : activeTab === 'sms' ? (
           user?.role === 'admin' ? <SmsManagementSimple /> : <UserSmsPanel />

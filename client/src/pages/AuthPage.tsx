@@ -202,8 +202,8 @@ export default function AuthPage() {
         description: "Acceso concedido exitosamente",
       });
 
-      // Ejecutivos van al panel de usuario, no al panel de admin
-      window.location.href = "/panel";
+      // Ejecutivos van al mismo panel que el dueño de la oficina
+      window.location.href = "/admin";
     } catch (error: any) {
       toast({
         title: "Error de verificación",
