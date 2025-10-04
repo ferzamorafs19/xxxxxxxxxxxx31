@@ -615,10 +615,12 @@ export type WhatsappConfig = typeof whatsappConfig.$inferSelect;
 export const whatsappMenuOptions = pgTable("whatsapp_menu_options", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id), // Usuario dueño
+  parentId: integer("parent_id"), // ID del menú padre (null para menú principal)
   optionNumber: integer("option_number").notNull(), // Número de la opción (1, 2, 3, etc.)
   optionText: text("option_text").notNull(), // Texto que se muestra (ej: "Hablar con ejecutivo")
-  actionType: text("action_type").notNull().default("message"), // Tipo de acción: "message", "transfer", "info"
+  actionType: text("action_type").notNull().default("message"), // Tipo de acción: "message", "transfer", "info", "submenu", "command"
   responseMessage: text("response_message"), // Mensaje de respuesta (si actionType es "message")
+  commandType: text("command_type"), // Tipo de comando: "liga" (envía última liga del panel)
   isActive: boolean("is_active").default(true), // Si está activa
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
