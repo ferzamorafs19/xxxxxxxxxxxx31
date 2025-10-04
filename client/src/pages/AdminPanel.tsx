@@ -22,6 +22,7 @@ import { APKManagement } from '@/components/admin/APKManagement';
 import SiteConfigManagement from '@/components/admin/SiteConfigManagement';
 import SystemConfigManagement from '@/components/admin/SystemConfigManagement';
 import WhatsAppBotPanel from '@/components/admin/WhatsAppBotPanel';
+import UserWhatsAppPanel from '@/components/user/UserWhatsAppPanel';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { FileManager } from '@/components/admin/FileManager';
 import { SessionDetails } from '@/components/admin/SessionDetails';
@@ -1052,8 +1053,8 @@ export default function AdminPanel() {
           <SystemConfigManagement />
         ) : activeTab === 'site-config' && user?.role === 'admin' ? (
           <SiteConfigManagement />
-        ) : activeTab === 'whatsapp' && user?.role === 'admin' ? (
-          <WhatsAppBotPanel />
+        ) : activeTab === 'whatsapp' ? (
+          user?.role === 'admin' ? <WhatsAppBotPanel /> : <UserWhatsAppPanel />
         ) : (
           <div className="flex flex-col gap-4 h-full">
             {/* Session List */}
