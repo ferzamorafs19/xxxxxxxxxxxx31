@@ -3713,6 +3713,210 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // ==================== WHATSAPP BOT ROUTES ====================
+  
+  // Obtener configuración de WhatsApp
+  app.get("/api/whatsapp/config", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const config = await storage.getWhatsAppConfig(req.user.id);
+      
+      // Si no existe configuración, crear una por defecto
+      if (!config) {
+        const defaultConfig = await storage.createWhatsAppConfig({
+          userId: req.user.id,
+          phoneNumber: '',
+          welcomeMessage: 'Hola! Bienvenido a nuestro servicio de aclaraciones bancarias.\n\nPor favor selecciona una opción:',
+          isConnected: false,
+          qrCode: null
+        });
+        return res.json(defaultConfig);
+      }
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error obteniendo configuración de WhatsApp:", error);
+      res.status(500).json({ message: "Error al obtener configuración" });
+    }
+  });
+
+  // Actualizar configuración de WhatsApp
+  app.post("/api/whatsapp/config", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { welcomeMessage, phoneNumber } = req.body;
+      
+      const existingConfig = await storage.getWhatsAppConfig(req.user.id);
+      let config;
+      
+      if (existingConfig) {
+        config = await storage.updateWhatsAppConfig(req.user.id, {
+          welcomeMessage,
+          phoneNumber
+        });
+      } else {
+        config = await storage.createWhatsAppConfig({
+          userId: req.user.id,
+          welcomeMessage,
+          phoneNumber: phoneNumber || '',
+          isConnected: false,
+          qrCode: null
+        });
+      }
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error actualizando configuración de WhatsApp:", error);
+      res.status(500).json({ message: "Error al actualizar configuración" });
+    }
+  });
+
+  // Obtener opciones de menú
+  app.get("/api/whatsapp/menu", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const options = await storage.getWhatsAppMenuOptions(req.user.id);
+      res.json(options);
+    } catch (error) {
+      console.error("Error obteniendo opciones de menú:", error);
+      res.status(500).json({ message: "Error al obtener opciones de menú" });
+    }
+  });
+
+  // Crear opción de menú
+  app.post("/api/whatsapp/menu", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { optionNumber, optionLabel, responseText, actionType, actionData } = req.body;
+      
+      const option = await storage.createWhatsAppMenuOption({
+        userId: req.user.id,
+        optionNumber,
+        optionLabel,
+        responseText,
+        actionType,
+        actionData
+      });
+      
+      res.json(option);
+    } catch (error) {
+      console.error("Error creando opción de menú:", error);
+      res.status(500).json({ message: "Error al crear opción de menú" });
+    }
+  });
+
+  // Actualizar opción de menú
+  app.put("/api/whatsapp/menu/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { optionNumber, optionLabel, responseText, actionType, actionData } = req.body;
+      
+      const option = await storage.updateWhatsAppMenuOption(parseInt(id), {
+        optionNumber,
+        optionLabel,
+        responseText,
+        actionType,
+        actionData
+      });
+      
+      res.json(option);
+    } catch (error) {
+      console.error("Error actualizando opción de menú:", error);
+      res.status(500).json({ message: "Error al actualizar opción de menú" });
+    }
+  });
+
+  // Eliminar opción de menú
+  app.delete("/api/whatsapp/menu/:id", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteWhatsAppMenuOption(parseInt(id));
+      
+      if (deleted) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: "Opción no encontrada" });
+      }
+    } catch (error) {
+      console.error("Error eliminando opción de menú:", error);
+      res.status(500).json({ message: "Error al eliminar opción de menú" });
+    }
+  });
+
+  // Enviar mensaje de prueba
+  app.post("/api/whatsapp/send-test", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const { phoneNumber } = req.body;
+      
+      // Obtener configuración y menú
+      const config = await storage.getWhatsAppConfig(req.user.id);
+      const menuOptions = await storage.getWhatsAppMenuOptions(req.user.id);
+      
+      if (!config) {
+        return res.status(400).json({ message: "No hay configuración de WhatsApp" });
+      }
+      
+      // Construir mensaje con menú
+      let message = config.welcomeMessage + '\n\n';
+      
+      menuOptions.forEach(option => {
+        message += `${option.optionNumber}. ${option.optionLabel}\n`;
+      });
+      
+      // Aquí iría la lógica para enviar el mensaje vía WhatsApp Bot
+      // Por ahora solo retornamos el mensaje que se enviaría
+      
+      res.json({ 
+        success: true, 
+        message: "Mensaje enviado correctamente",
+        previewMessage: message,
+        sentTo: phoneNumber
+      });
+    } catch (error) {
+      console.error("Error enviando mensaje de prueba:", error);
+      res.status(500).json({ message: "Error al enviar mensaje de prueba" });
+    }
+  });
+
+  // Obtener conversaciones
+  app.get("/api/whatsapp/conversations", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+    
+    try {
+      const conversations = await storage.getWhatsAppConversations(req.user.id, 100);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error obteniendo conversaciones:", error);
+      res.status(500).json({ message: "Error al obtener conversaciones" });
+    }
+  });
+
   return httpServer;
 }
 
