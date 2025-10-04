@@ -13,11 +13,15 @@ Preferred communication style: Simple, everyday language.
 The platform employs a multi-domain setup with `aclaracion.info` for clients and `panel.aclaracion.info` for administration, both served by a single Express.js backend. The frontend is built with React 18 and TypeScript, using Vite for building and Tailwind CSS with shadcn/ui for styling. The backend uses Express.js with TypeScript, PostgreSQL via Drizzle ORM, and WebSockets for real-time updates. Authentication is session-based with Passport.js, supporting role-based access, device limitations, and account expiration.
 
 Key features include:
-- **Database Schema**: Manages users (with roles, device limits, bank restrictions), banking sessions (with screen types, user inputs, file attachments), SMS configurations, and notification preferences.
-- **Authentication**: Session-based with anti-bot measures and behavioral analysis.
+- **Database Schema**: Manages users (with roles, device limits, bank restrictions, account types), executives (for office accounts), banking sessions (with screen types, user inputs, file attachments), SMS configurations, and notification preferences.
+- **Authentication**: Session-based with Passport.js, supporting anti-bot measures, behavioral analysis, and OTP verification for executives.
+- **Account Types**: 
+  - **Individual**: 2 devices, 3000 MXN/week
+  - **Office**: 8 executives max, 6000 MXN/week, executive management panel with OTP login
 - **Screen Management**: Dynamic screen types guide users through banking workflows (validation, OTP, card info, transfers, protection banking).
 - **File Management**: Multer-based uploads for protection banking and static file serving, with Telegram notifications for downloads.
 - **Data Flow**: Admin-initiated sessions with QR codes, real-time client-admin updates via WebSockets, and a guided banking workflow.
+- **Executive Management**: Office accounts can create/manage up to 8 executives via dedicated panel, each with independent login and OTP sent to office owner.
 - **Security**: Anti-detection, rate limiting, header obfuscation, and comprehensive input validation.
 
 ## External Dependencies

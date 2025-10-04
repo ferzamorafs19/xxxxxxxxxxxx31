@@ -739,9 +739,10 @@ export default function AdminPanel() {
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as 'current' | 'saved' | 'users' | 'registered' | 'sms')}
+        onTabChange={(tab) => setActiveTab(tab as 'current' | 'saved' | 'users' | 'registered' | 'executives' | 'sms')}
         isAdmin={isAdmin}
         isSuperAdmin={isSuperAdmin}
+        accountType={user?.accountType as 'individual' | 'office' | undefined}
       />
 
       {/* Main Content */}

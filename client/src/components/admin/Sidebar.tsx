@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Menu, X, QrCode, Bot, Send, Package, Globe, DollarSign } from 'lucide-react';
+import { MessageSquare, Menu, X, QrCode, Bot, Send, Package, Globe, DollarSign, Users } from 'lucide-react';
 import balonxLogo from '@assets/balonx_1756163316921.jpg';
 
 interface SidebarProps {
@@ -7,9 +7,10 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  accountType?: 'individual' | 'office';
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSuperAdmin }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSuperAdmin, accountType }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -68,6 +69,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
           >
             Accesos Guardados
           </button>
+          
+          {/* Gestión de ejecutivos para cuentas de oficina */}
+          {accountType === 'office' && (
+            <button 
+              onClick={() => handleTabChange('executives')}
+              className={`block w-full text-left ${activeTab === 'executives' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Ejecutivos
+            </button>
+          )}
           
           {isSuperAdmin && (
             <>
