@@ -12,13 +12,40 @@ if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
   throw new Error('TELEGRAM_TOKEN y ADMIN_CHAT_ID deben estar configurados en las variables de entorno');
 }
 
+// Variable global para controlar instancia única del bot
+let botInstance: TelegramBot | null = null;
+let isShuttingDown = false;
+
+// Función para detener el bot de forma segura
+async function stopBot() {
+  if (botInstance && !isShuttingDown) {
+    isShuttingDown = true;
+    try {
+      console.log('🛑 Deteniendo bot de Telegram...');
+      await botInstance.stopPolling();
+      botInstance.removeAllListeners();
+      botInstance = null;
+      console.log('✅ Bot detenido correctamente');
+    } catch (error) {
+      console.log('⚠️ Error al detener bot (continuando)');
+    } finally {
+      isShuttingDown = false;
+    }
+  }
+}
+
 // Función para limpiar instancias previas del bot
 async function cleanupPreviousBotInstances() {
   try {
-    // Eliminar webhook si existe (para limpiar configuraciones previas)
+    // Detener instancia actual si existe
+    await stopBot();
+    
+    // Eliminar webhook y cancelar polling previo
     await axios.get(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/deleteWebhook?drop_pending_updates=true`);
     console.log('🧹 Limpieza de webhooks previos completada');
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+    
+    // Esperar más tiempo para asegurar que polling anterior termine
+    await new Promise(resolve => setTimeout(resolve, 3000));
   } catch (error) {
     console.log('⚠️ Error al limpiar configuraciones previas (continuando)');
   }
@@ -40,11 +67,25 @@ try {
       }
     }
   });
+  botInstance = bot;
   console.log('🤖 Bot de Telegram iniciado correctamente (modo polling limpio)');
 } catch (error) {
   console.error('❌ Error iniciando bot de Telegram:', error);
   throw error;
 }
+
+// Handlers para shutdown graceful
+process.on('SIGINT', async () => {
+  console.log('\n🔄 SIGINT recibido, cerrando bot...');
+  await stopBot();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🔄 SIGTERM recibido, cerrando bot...');
+  await stopBot();
+  process.exit(0);
+});
 
 // Sistema de estados de conversación para el flujo de pagos
 interface PaymentSession {
