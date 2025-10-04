@@ -127,8 +127,11 @@ export class WhatsAppBot {
 
     // Formatear número para WhatsApp
     let jid: string;
+    let formattedNumber: string;
+    
     if (phoneNumber.includes('@')) {
       jid = phoneNumber;
+      formattedNumber = phoneNumber.split('@')[0];
     } else {
       // Limpiar el número (eliminar espacios, guiones, paréntesis, +)
       let cleanNumber = phoneNumber.replace(/[\s\-\(\)\+]/g, '');
@@ -139,25 +142,26 @@ export class WhatsAppBot {
         cleanNumber = '521' + cleanNumber;
         console.log(`[WhatsApp Bot] 🟢 Formato México celular: "${cleanNumber}"`);
       }
-      // Si ya tiene 521 al inicio (12 dígitos), dejarlo como está
-      else if (cleanNumber.length === 12 && cleanNumber.startsWith('521')) {
+      // Si ya tiene 521 al inicio (13 dígitos), dejarlo como está
+      else if (cleanNumber.length === 13 && cleanNumber.startsWith('521')) {
         console.log(`[WhatsApp Bot] ✅ Número ya tiene formato correcto: "${cleanNumber}"`);
       }
-      // Si tiene 52 al inicio pero no 521 (11 dígitos), agregar el 1
+      // Si tiene 52 al inicio pero no 521 (12 dígitos), agregar el 1
       else if (cleanNumber.length === 12 && cleanNumber.startsWith('52') && !cleanNumber.startsWith('521')) {
         cleanNumber = '521' + cleanNumber.substring(2);
         console.log(`[WhatsApp Bot] 🔧 Corrigiendo a formato celular: "${cleanNumber}"`);
       }
       
+      formattedNumber = cleanNumber;
       jid = `${cleanNumber}@s.whatsapp.net`;
     }
     
     console.log(`[WhatsApp Bot] ✅ JID final: "${jid}"`);
     await this.sock.sendMessage(jid, { text: message });
-    console.log(`[WhatsApp Bot] ✅ Mensaje enviado a ${jid}`);
+    console.log(`[WhatsApp Bot] ✅ Mensaje enviado exitosamente`);
     
-    // Guardar en historial
-    await this.saveConversation(phoneNumber, message, true);
+    // Guardar en historial con número formateado (siempre con 521)
+    await this.saveConversation(formattedNumber, message, true);
   }
 
   private async handleIncomingMessage(msg: WAMessage) {
