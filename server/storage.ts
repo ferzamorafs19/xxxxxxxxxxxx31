@@ -619,7 +619,7 @@ export class DatabaseStorage implements IStorage {
       
       // 1. Eliminar ejecutivos y perfil de oficina si existen (sin importar accountType)
       // Eliminar todos los ejecutivos de esta oficina
-      await db.delete(executives).where(eq(executives.officeId, user.id));
+      await db.delete(executives).where(eq(executives.userId, user.id));
       console.log(`[Storage] Ejecutivos eliminados (si existían)`);
       
       // Eliminar perfil de oficina si existe
