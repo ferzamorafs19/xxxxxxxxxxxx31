@@ -898,9 +898,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         executiveId: user.isExecutive ? user.id : null, // Incluir executiveId si es ejecutivo
       });
       
-      // Guardar la sesión automáticamente para que aparezca en el historial
-      await storage.saveSession(sessionId);
-      console.log(`Sesión guardada automáticamente: ${sessionId}, creador: ${user.username}`);
+      console.log(`Sesión creada: ${sessionId}, creador: ${user.username}, executiveId: ${user.isExecutive ? user.id : null}`);
 
       // Notificar a los clientes de admin sobre la actualización
       broadcastToAdmins(JSON.stringify({
@@ -1331,15 +1329,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         executiveId: (user as any).isExecutive ? (user as any).id : null, // Incluir executiveId si es ejecutivo
       });
 
-      // Guardar la sesión automáticamente para que aparezca en el historial
-      const savedSession = await storage.saveSession(sessionId);
-      console.log(`Sesión guardada automáticamente: ${sessionId}`);
-      
-      // Verificar si el campo createdBy está correctamente establecido
-      if (!savedSession.createdBy) {
-        console.log(`ADVERTENCIA: Creador no establecido en la sesión guardada ${sessionId}. Forzando creador: ${user.username}`);
-        await storage.updateSession(sessionId, { createdBy: user.username });
-      }
+      console.log(`Sesión creada: ${sessionId}, creador: ${user.username}, executiveId: ${(user as any).isExecutive ? (user as any).id : null}`);
 
       // Configuración de dominios
       const clientDomain = process.env.CLIENT_DOMAIN || 'aclaraciones.info';
