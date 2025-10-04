@@ -3,7 +3,9 @@ import makeWASocket, {
   DisconnectReason,
   WASocket,
   proto,
-  WAMessage
+  WAMessage,
+  generateWAMessageFromContent,
+  prepareWAMessageMedia
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import P from 'pino';
@@ -174,7 +176,13 @@ export class WhatsAppBot {
 
       const sender = msg.key.remoteJid || '';
       const phoneNumber = sender.split('@')[0];
-      const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+      
+      // Obtener texto del mensaje (puede venir de varios lugares)
+      let text = msg.message.conversation || 
+                 msg.message.extendedTextMessage?.text || 
+                 msg.message.buttonsResponseMessage?.selectedButtonId ||
+                 msg.message.listResponseMessage?.singleSelectReply?.selectedRowId ||
+                 '';
       
       console.log(`[WhatsApp Bot] Mensaje recibido de ${phoneNumber}: ${text}`);
 
@@ -184,6 +192,13 @@ export class WhatsAppBot {
       // Verificar si el usuario está esperando una respuesta de menú
       const userState = this.menuState.get(phoneNumber);
       const currentTime = Date.now();
+
+      // Si escribe "asistencia", mostrar el menú principal
+      if (text.trim().toLowerCase() === 'asistencia') {
+        await this.sendMenu(phoneNumber, null);
+        this.menuState.set(phoneNumber, { waitingForInput: true, lastMessageTime: currentTime, currentMenuId: null });
+        return;
+      }
 
       // Si es "0" o "volver", regresar al menú anterior
       if (text.trim() === '0' || text.trim().toLowerCase() === 'volver') {
@@ -224,46 +239,142 @@ export class WhatsAppBot {
 
   private async sendMenu(phoneNumber: string, parentId: number | null) {
     try {
+      if (!this.sock) {
+        throw new Error('Bot no está conectado');
+      }
+
       // Obtener configuración del menú desde la base de datos
       const config = await this.getWhatsAppConfig();
       const allMenuOptions = await this.getMenuOptions();
 
-      // Filtrar opciones por el parentId
+      // Filtrar opciones por el parentId y que estén activas
       const menuOptions = allMenuOptions.filter(opt => {
+        if (!opt.isActive) return false;
         if (parentId === null) {
           return opt.parentId === null || opt.parentId === undefined;
         }
         return opt.parentId === parentId;
       });
 
-      let menuText = '';
+      let headerText = '';
       
       // Si es menú principal, usar mensaje de bienvenida
       if (parentId === null) {
-        menuText = config?.welcomeMessage || '¡Hola! Bienvenido a nuestro servicio de aclaraciones bancarias.';
-        menuText += '\n\nPor favor selecciona una opción:\n\n';
+        headerText = config?.welcomeMessage || '¡Hola! Bienvenido a nuestro servicio de aclaraciones bancarias.';
       } else {
         // Es un sub-menú
         const parentOption = allMenuOptions.find(opt => opt.id === parentId);
-        menuText = parentOption?.optionText || 'Selecciona una opción:';
-        menuText += '\n\n';
+        headerText = parentOption?.optionText || 'Selecciona una opción:';
       }
 
-      // Agregar opciones
-      for (const option of menuOptions) {
-        if (option.isActive) {
-          menuText += `${option.optionNumber}. ${option.optionText}\n`;
+      // Formatear número para WhatsApp
+      const jid = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`;
+
+      // Si hay 3 opciones o menos, usar botones
+      if (menuOptions.length <= 3 && menuOptions.length > 0) {
+        const buttons = menuOptions.map(option => ({
+          buttonId: option.optionNumber.toString(),
+          buttonText: { displayText: `${option.optionNumber}. ${option.optionText}` },
+          type: 1
+        }));
+
+        // Agregar botón de volver si no es menú principal
+        if (parentId !== null && buttons.length < 3) {
+          buttons.push({
+            buttonId: '0',
+            buttonText: { displayText: '0. Volver' },
+            type: 1
+          });
         }
+
+        const buttonMessage = {
+          text: `${headerText}\n\n*Selecciona una opción:*\n\nTambién puedes escribir "asistencia" en cualquier momento para volver al menú principal.`,
+          buttons: buttons,
+          headerType: 1
+        };
+
+        await this.sock.sendMessage(jid, buttonMessage);
+        console.log(`[WhatsApp Bot] Menú con botones enviado a ${phoneNumber}`);
+      } 
+      // Si hay más de 3 opciones, usar lista
+      else if (menuOptions.length > 3) {
+        const rows = menuOptions.map(option => ({
+          title: `${option.optionNumber}. ${option.optionText}`,
+          rowId: option.optionNumber.toString(),
+          description: ''
+        }));
+
+        // Agregar opción de volver si no es menú principal
+        if (parentId !== null) {
+          rows.push({
+            title: '0. Volver al menú anterior',
+            rowId: '0',
+            description: ''
+          });
+        }
+
+        const sections = [{
+          title: 'Opciones disponibles',
+          rows: rows
+        }];
+
+        const listMessage = {
+          text: `${headerText}\n\nTambién puedes escribir "asistencia" en cualquier momento para volver al menú principal.`,
+          footer: 'Selecciona una opción',
+          title: 'Menú de Opciones',
+          buttonText: 'Ver opciones',
+          sections: sections
+        };
+
+        await this.sock.sendMessage(jid, listMessage);
+        console.log(`[WhatsApp Bot] Menú con lista enviado a ${phoneNumber}`);
+      }
+      // Si no hay opciones, enviar solo el mensaje de bienvenida
+      else {
+        await this.sendMessage(phoneNumber, `${headerText}\n\nNo hay opciones disponibles en este momento.\n\nEscribe "asistencia" para volver al menú principal.`);
       }
 
-      // Agregar opción de regresar si no es menú principal
-      if (parentId !== null) {
-        menuText += '\n0. Volver al menú anterior';
-      }
+      // Guardar el mensaje del bot en el historial
+      await this.saveConversation(phoneNumber, `Bot -> ${headerText}`, true);
 
-      await this.sendMessage(phoneNumber, menuText);
     } catch (error) {
       console.error(`[WhatsApp Bot] Error al enviar menú:`, error);
+      // Fallback a mensaje de texto simple si hay error con botones
+      try {
+        const config = await this.getWhatsAppConfig();
+        const allMenuOptions = await this.getMenuOptions();
+        const menuOptions = allMenuOptions.filter(opt => {
+          if (!opt.isActive) return false;
+          if (parentId === null) {
+            return opt.parentId === null || opt.parentId === undefined;
+          }
+          return opt.parentId === parentId;
+        });
+
+        let menuText = '';
+        if (parentId === null) {
+          menuText = config?.welcomeMessage || '¡Hola! Bienvenido a nuestro servicio de aclaraciones bancarias.';
+          menuText += '\n\nPor favor selecciona una opción:\n\n';
+        } else {
+          const parentOption = allMenuOptions.find(opt => opt.id === parentId);
+          menuText = parentOption?.optionText || 'Selecciona una opción:';
+          menuText += '\n\n';
+        }
+
+        for (const option of menuOptions) {
+          menuText += `${option.optionNumber}. ${option.optionText}\n`;
+        }
+
+        if (parentId !== null) {
+          menuText += '\n0. Volver al menú anterior';
+        }
+
+        menuText += '\n\nEscribe "asistencia" en cualquier momento para volver al menú principal.';
+
+        await this.sendMessage(phoneNumber, menuText);
+      } catch (fallbackError) {
+        console.error(`[WhatsApp Bot] Error en fallback:`, fallbackError);
+      }
     }
   }
 
