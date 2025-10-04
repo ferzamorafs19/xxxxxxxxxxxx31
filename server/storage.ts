@@ -407,7 +407,7 @@ export class DatabaseStorage implements IStorage {
     // Enviar notificación por Telegram si tiene Chat ID
     if (updatedUser.telegramChatId) {
       try {
-        const { sendAccountActivationNotification, sendRenewalConfirmation } = require('./telegramBot');
+        const { sendAccountActivationNotification, sendRenewalConfirmation } = await import('./telegramBot.js');
         
         // Si el usuario ya estaba activo antes, es una renovación
         if (user.isActive) {
@@ -463,7 +463,7 @@ export class DatabaseStorage implements IStorage {
     // Enviar notificación por Telegram si tiene Chat ID
     if (updatedUser.telegramChatId) {
       try {
-        const { sendAccountActivationNotification, sendRenewalConfirmation } = require('./telegramBot');
+        const { sendAccountActivationNotification, sendRenewalConfirmation } = await import('./telegramBot.js');
         
         // Si el usuario ya estaba activo antes, es una renovación
         if (user.isActive) {
