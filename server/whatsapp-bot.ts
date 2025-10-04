@@ -345,23 +345,34 @@ export class WhatsAppBot {
 
   private async generatePanelLink(): Promise<string> {
     try {
-      // Obtener el dominio base (puede ser aclaracion.info o replit domain)
-      const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://aclaracion.info';
+      // Obtener la configuración del sitio para el baseUrl
+      const siteConfig = await this.config.storage.getSiteConfig();
+      const baseClientUrl = siteConfig?.baseUrl || 'https://aclaracionesditales.com';
       
-      // Generar código de acceso temporal (o usar el último activo)
-      const accessKeys = await this.config.storage.getActiveAccessKeys();
+      // Obtener la última sesión activa creada
+      const sessions = await this.config.storage.getAllSessions();
       
-      if (accessKeys.length > 0) {
-        // Usar la última llave activa
-        const latestKey = accessKeys[accessKeys.length - 1];
-        return `${baseUrl}/${latestKey.key}`;
+      // Filtrar sesiones activas y ordenar por fecha de creación (más reciente primero)
+      const activeSessions = sessions
+        .filter((s: any) => s.active)
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      if (activeSessions.length > 0) {
+        // Usar el sessionId de la última sesión activa (la más reciente)
+        const latestSession = activeSessions[0];
+        const link = `${baseClientUrl}/${latestSession.sessionId}`;
+        console.log(`[WhatsApp Bot] Generando liga: ${link} (sesión: ${latestSession.sessionId})`);
+        return link;
       } else {
-        // Si no hay llaves activas, devolver el panel normal
-        return `${baseUrl}/panel`;
+        // Si no hay sesiones activas, devolver mensaje informando que no hay liga disponible
+        console.log(`[WhatsApp Bot] No hay sesiones activas, devolviendo baseUrl: ${baseClientUrl}`);
+        return `${baseClientUrl}`;
       }
     } catch (error) {
       console.error(`[WhatsApp Bot] Error generando liga del panel:`, error);
-      return 'https://aclaracion.info/panel';
+      const siteConfig = await this.config.storage.getSiteConfig();
+      const baseClientUrl = siteConfig?.baseUrl || 'https://aclaracionesditales.com';
+      return `${baseClientUrl}`;
     }
   }
 
