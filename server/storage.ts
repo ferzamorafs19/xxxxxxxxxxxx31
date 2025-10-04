@@ -230,6 +230,7 @@ export class DatabaseStorage implements IStorage {
       allowedBanks: data.allowedBanks || 'all',
       telegramChatId: data.telegramChatId || null,
       customPrice: data.customPrice || null,
+      accountType: data.accountType || 'individual',
       createdAt: new Date()
     };
     
