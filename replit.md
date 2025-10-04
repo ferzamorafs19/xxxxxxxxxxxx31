@@ -109,20 +109,29 @@ The bot automatically formats Mexican phone numbers:
 ### Features
 1. **QR Authentication**: Admin scans QR code from WhatsApp panel to connect
 2. **Configurable Welcome Message**: Customizable greeting sent to new contacts
-3. **Hierarchical Menu System**: Support for main menu and unlimited sub-menus
+3. **Hierarchical Menu System**: Support for main menu and unlimited sub-menus with enhanced formatting (emojis and visual separators)
 4. **Action Types**:
    - `message`: Send automated response (can include sub-menu options after message)
    - `transfer`: Notify executive for human intervention
    - `info`: Provide information and re-display menu
    - `submenu`: Create nested sub-menus for better organization
-5. **Navigation**: Users can type "0" or "volver" to return to previous menu
+5. **Navigation**: 
+   - Users can type "0" or "volver" to return to previous menu
+   - **NEW**: Users can type "asistencia" at any time to return to main menu
 6. **Dynamic Content Placeholder**:
    - `(liga)`: Can be used in any message text to insert the latest panel access link
-   - Example: "Accede al panel en (liga)" → "Accede al panel en https://aclaracion.info/abc123"
-   - Automatically replaced when message is sent
+   - Uses the exact same logic as admin panel's `/api/generate-link` endpoint
+   - Pulls the most recent active session from database
+   - Example: "Accede al panel en (liga)" → "Accede al panel en https://aclaracionesditales.com/38284672"
+   - Automatically replaced when message is sent with the configured baseUrl from siteConfig
 7. **Sub-menus after Messages**: Options of type "message" can have child options that display after the message is sent
-8. **Conversation History**: All messages stored in database with timestamps
-9. **Auto-reconnect**: Automatically reconnects if connection drops
+8. **Enhanced Menu Display**: Messages use formatted text with:
+   - Visual separators (━━━━━━━━━━━━━━━━━━)
+   - Emojis for better readability (📋, ▪️, 💡)
+   - Bold formatting for option numbers
+   - Clear instructions for navigation
+9. **Conversation History**: All messages stored in database with timestamps
+10. **Auto-reconnect**: Automatically reconnects if connection drops
 
 ### Admin Panel Access
 Located at `/admin` → WhatsApp Bot tab:
@@ -140,13 +149,15 @@ Located at `/admin` → WhatsApp Bot tab:
 
 ### Message Flow
 1. **User sends message** → Bot receives via Baileys event listener
-2. **First contact** → Bot sends welcome message + main menu
+2. **First contact** → Bot sends welcome message + formatted main menu with visual enhancements
 3. **User selects option (1-9)** → Bot processes and responds based on action type
 4. **Message with (liga) placeholder** → Bot replaces (liga) with actual panel link before sending
+   - Uses latest active session from database (same as admin panel)
    - Example: Message text "Visita (liga) para acceder"
-   - User receives: "Visita https://aclaracion.info/xyz123 para acceder"
+   - User receives: "Visita https://aclaracionesditales.com/38284672 para acceder"
 5. **Message with sub-options** → After sending the message, bot displays child menu options
 6. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
 7. **User types "0" or "volver"** → Bot returns to previous menu level
-8. **5-minute timeout** → If no interaction, re-send current menu on next message
-9. **All messages logged** → Stored in `whatsapp_conversations` table
+8. **User types "asistencia"** → Bot immediately returns to main menu from any level
+9. **5-minute timeout** → If no interaction, re-send current menu on next message
+10. **All messages logged** → Stored in `whatsapp_conversations` table
