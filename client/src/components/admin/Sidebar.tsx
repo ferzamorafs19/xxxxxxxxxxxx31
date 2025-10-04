@@ -26,6 +26,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
     }
   };
 
+  // Verificar si la función "Bot WhatsApp" es nueva (mostrar badge por 7 días)
+  const isWhatsAppFeatureNew = () => {
+    const featureReleaseDate = new Date('2025-10-04'); // Fecha de lanzamiento
+    const currentDate = new Date();
+    const daysDifference = Math.floor((currentDate.getTime() - featureReleaseDate.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDifference <= 7;
+  };
+
   return (
     <>
       {/* Botón de hamburguesa móvil */}
@@ -123,10 +131,28 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
           {/* Bot WhatsApp para todos los usuarios */}
           <button 
             onClick={() => handleTabChange('whatsapp')}
-            className={`block w-full text-left ${activeTab === 'whatsapp' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+            className={`block w-full text-left ${activeTab === 'whatsapp' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center relative`}
           >
             <Smartphone className="mr-2 h-4 w-4" />
             Bot WhatsApp
+            {isWhatsAppFeatureNew() && (
+              <span className="ml-auto flex items-center">
+                <span 
+                  className="bg-gradient-to-r from-green-400 to-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse"
+                  style={{
+                    animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                  }}
+                >
+                  NUEVO
+                </span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span className="flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                  </span>
+                </span>
+              </span>
+            )}
           </button>
           
           {isAdmin && (
