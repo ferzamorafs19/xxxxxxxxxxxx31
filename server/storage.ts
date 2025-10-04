@@ -888,53 +888,57 @@ export class DatabaseStorage implements IStorage {
       return savedSessions;
     }
     
-    let allowedCreators: string[] = [];
-    
     if (isExecutive) {
-      // Ejecutivo: userId es el ID del executive en tabla executives
-      const executive = await this.getExecutiveById(userId);
-      if (executive) {
-        allowedCreators = [executive.username];
-      }
+      // Ejecutivo: solo ver sesiones donde executiveId coincide
+      const savedSessions = await db
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.saved, true),
+            eq(sessions.executiveId, userId)
+          )
+        );
+      
+      console.log(`[Storage] getSavedSessions (ejecutivo ${userId}): Encontradas ${savedSessions.length} sesiones`);
+      return savedSessions;
     } else {
-      // Usuario normal u oficina: userId es el ID en tabla users
+      // Usuario/Oficina
       const user = await this.getUserById(userId);
       if (!user) {
         return [];
       }
       
       if (user.accountType === 'office') {
-        // Oficina: sesiones de todos sus ejecutivos + propias
-        const executives = await this.getExecutivesByOfficeId(userId);
-        allowedCreators = executives.map(e => e.username);
-        allowedCreators.push(user.username); // Agregar oficina misma
+        // Oficina: sesiones del dueño (executiveId=null) + todas de sus ejecutivos
+        const savedSessions = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              eq(sessions.saved, true),
+              eq(sessions.createdBy, user.username)
+            )
+          );
+        
+        console.log(`[Storage] getSavedSessions (oficina ${user.username}): Encontradas ${savedSessions.length} sesiones`);
+        return savedSessions;
       } else {
         // Usuario individual: solo sus propias sesiones
-        allowedCreators = [user.username];
+        const savedSessions = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              eq(sessions.saved, true),
+              eq(sessions.createdBy, user.username)
+            )
+          );
+        
+        console.log(`[Storage] getSavedSessions (usuario ${user.username}): Encontradas ${savedSessions.length} sesiones`);
+        return savedSessions;
       }
     }
-    
-    if (allowedCreators.length === 0) {
-      return [];
-    }
-    
-    const savedSessions = await db
-      .select()
-      .from(sessions)
-      .where(
-        and(
-          eq(sessions.saved, true),
-          inArray(sessions.createdBy, allowedCreators as any)
-        )
-      );
-    
-    const username = isExecutive ? 
-      (await this.getExecutiveById(userId))?.username : 
-      (await this.getUserById(userId))?.username;
-    
-    console.log(`[Storage] getSavedSessions (filtrado): Encontradas ${savedSessions.length} sesiones guardadas para ${username}`);
-    
-    return savedSessions;
   }
 
   async getCurrentSessions(userId?: number, isExecutive?: boolean): Promise<Session[]> {
@@ -951,46 +955,60 @@ export class DatabaseStorage implements IStorage {
         );
     }
     
-    let allowedCreators: string[] = [];
-    
     if (isExecutive) {
-      // Ejecutivo: userId es el ID del executive en tabla executives
-      const executive = await this.getExecutiveById(userId);
-      if (executive) {
-        allowedCreators = [executive.username];
-      }
+      // Ejecutivo: solo ver sesiones donde executiveId coincide
+      const currentSessions = await db
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.active, true),
+            eq(sessions.saved, false),
+            eq(sessions.executiveId, userId)
+          )
+        );
+      
+      console.log(`[Storage] getCurrentSessions (ejecutivo ${userId}): Encontradas ${currentSessions.length} sesiones`);
+      return currentSessions;
     } else {
-      // Usuario normal u oficina: userId es el ID en tabla users
+      // Usuario/Oficina
       const user = await this.getUserById(userId);
       if (!user) {
         return [];
       }
       
       if (user.accountType === 'office') {
-        // Oficina: sesiones de todos sus ejecutivos + propias
-        const executives = await this.getExecutivesByOfficeId(userId);
-        allowedCreators = executives.map(e => e.username);
-        allowedCreators.push(user.username); // Agregar oficina misma
+        // Oficina: sesiones del dueño (executiveId=null) + todas de sus ejecutivos
+        const currentSessions = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              eq(sessions.active, true),
+              eq(sessions.saved, false),
+              eq(sessions.createdBy, user.username)
+            )
+          );
+        
+        console.log(`[Storage] getCurrentSessions (oficina ${user.username}): Encontradas ${currentSessions.length} sesiones`);
+        return currentSessions;
       } else {
         // Usuario individual: solo sus propias sesiones
-        allowedCreators = [user.username];
+        const currentSessions = await db
+          .select()
+          .from(sessions)
+          .where(
+            and(
+              eq(sessions.active, true),
+              eq(sessions.saved, false),
+              eq(sessions.createdBy, user.username)
+            )
+          );
+        
+        console.log(`[Storage] getCurrentSessions (usuario ${user.username}): Encontradas ${currentSessions.length} sesiones`);
+        return currentSessions;
       }
     }
-    
-    if (allowedCreators.length === 0) {
-      return [];
-    }
-    
-    return await db
-      .select()
-      .from(sessions)
-      .where(
-        and(
-          eq(sessions.active, true),
-          eq(sessions.saved, false),
-          inArray(sessions.createdBy, allowedCreators as any)
-        )
-      );
   }
 
   async getSessionById(sessionId: string): Promise<Session | undefined> {
@@ -1032,6 +1050,7 @@ export class DatabaseStorage implements IStorage {
         active,
         saved,
         createdBy: data.createdBy || null,
+        executiveId: data.executiveId || null, // Incluir executiveId
         qrData: data.qrData || null,
         qrImageData: data.qrImageData || null,
         codigoRetiro: null,
