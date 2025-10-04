@@ -209,6 +209,17 @@ export default function ExecutiveManagement() {
               <CardDescription>
                 Administra los ejecutivos de tu oficina (máximo 8)
               </CardDescription>
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-1">
+                  🔗 Enlace de acceso para ejecutivos:
+                </p>
+                <code className="text-xs bg-white dark:bg-slate-900 px-2 py-1 rounded border select-all">
+                  {window.location.origin}/executive-login
+                </code>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  Comparte este enlace con tus ejecutivos para que puedan acceder
+                </p>
+              </div>
             </div>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)}
