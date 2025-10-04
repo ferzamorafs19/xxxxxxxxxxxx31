@@ -263,14 +263,50 @@ export function setupAuth(app: Express) {
   );
 
   // Serialización y deserialización de usuario
-  passport.serializeUser((user, done) => {
-    done(null, user.id);
+  passport.serializeUser((user: any, done) => {
+    // Guardar tipo de usuario (ejecutivo o normal) junto con el ID
+    const serializedData = {
+      id: user.id,
+      isExecutive: user.isExecutive || false,
+      officeUserId: user.officeUserId
+    };
+    done(null, serializedData);
   });
 
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (serializedData: any, done) => {
     try {
-      const user = await storage.getUserById(id);
-      done(null, user as Express.User);
+      // Si es un ejecutivo, reconstruir el usuario virtual
+      if (serializedData.isExecutive) {
+        const executive = await storage.getExecutiveById(serializedData.id);
+        if (!executive) {
+          return done(null, false);
+        }
+        
+        const officeUser = await storage.getUserById(serializedData.officeUserId || executive.userId);
+        if (!officeUser) {
+          return done(null, false);
+        }
+        
+        // Reconstruir el usuario virtual del ejecutivo
+        const executiveUser = {
+          id: executive.id,
+          username: executive.username,
+          displayName: executive.displayName,
+          role: officeUser.role,
+          isActive: executive.isActive,
+          allowedBanks: officeUser.allowedBanks,
+          accountType: officeUser.accountType,
+          isExecutive: true,
+          officeUserId: officeUser.id,
+          officeUsername: officeUser.username
+        };
+        
+        return done(null, executiveUser as Express.User);
+      } else {
+        // Usuario normal
+        const user = await storage.getUserById(serializedData.id || serializedData);
+        done(null, user as Express.User);
+      }
     } catch (error) {
       done(error);
     }
@@ -591,14 +627,11 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "No autenticado" });
     }
-    const user = req.user as Express.User;
-    const executiveData = (req.session as any).executiveData;
+    const user = req.user as any;
     
     res.json({ 
       ...user, 
-      password: undefined,
-      isExecutive: !!executiveData,
-      executiveUsername: executiveData?.executiveUsername
+      password: undefined
     });
   });
 
@@ -1009,15 +1042,22 @@ export function setupAuth(app: Express) {
       // Actualizar último login
       await storage.updateExecutive(executive.id, { lastLogin: new Date() });
       
-      // Marcar en sesión que es un ejecutivo (solo en session, NO en user object)
-      (req.session as any).executiveData = {
-        executiveId: executive.id,
-        executiveUsername: executive.username,
-        officeUserId: officeUser.id
+      // Crear un usuario virtual para el ejecutivo con permisos heredados del dueño
+      const executiveUser = {
+        id: executive.id, // ID del ejecutivo (no del dueño)
+        username: executive.username, // Username del ejecutivo
+        displayName: executive.displayName,
+        role: officeUser.role, // Heredar rol del dueño
+        isActive: executive.isActive,
+        allowedBanks: officeUser.allowedBanks, // Heredar bancos del dueño
+        accountType: officeUser.accountType,
+        isExecutive: true, // Marcar como ejecutivo
+        officeUserId: officeUser.id, // Referencia al dueño
+        officeUsername: officeUser.username
       };
       
-      // Establecer sesión usando EXACTAMENTE el usuario de la oficina (sin modificaciones)
-      req.login(officeUser as any, (err) => {
+      // Establecer sesión con el usuario ejecutivo virtual
+      req.login(executiveUser as any, (err) => {
         if (err) {
           console.error("[Auth] Error estableciendo sesión de ejecutivo:", err);
           return res.status(500).json({ message: "Error estableciendo sesión" });
@@ -1027,35 +1067,34 @@ export function setupAuth(app: Express) {
         const sessionId = (req.session as any).id;
         const userAgent = req.get('User-Agent');
         
-        // Los ejecutivos solo pueden tener 1 sesión activa
-        const userSessions = activeSessions.get(officeUser.id) || [];
-        const executiveSessions = userSessions.filter(s => {
-          const sessionData = (req.sessionStore as any).sessions?.[s.sessionId];
-          return sessionData?.executiveData?.executiveId === executive.id;
-        });
+        // Los ejecutivos solo pueden tener 1 sesión activa (usar su propio ID)
+        const userSessions = activeSessions.get(executive.id) || [];
         
         // Cerrar sesiones previas del ejecutivo
-        if (executiveSessions.length > 0) {
-          for (const oldSession of executiveSessions) {
-            cleanupUserSessions(officeUser.id, oldSession.sessionId);
+        if (userSessions.length > 0) {
+          for (const oldSession of userSessions) {
+            cleanupUserSessions(executive.id, oldSession.sessionId);
           }
-          console.log(`[SessionControl] Ejecutivo ${executive.username}: Cerradas ${executiveSessions.length} sesión(es) antigua(s)`);
+          console.log(`[SessionControl] Ejecutivo ${executive.username}: Cerradas ${userSessions.length} sesión(es) antigua(s)`);
         }
         
-        // Agregar nueva sesión
-        addActiveSession(officeUser.id, sessionId, userAgent);
+        // Agregar nueva sesión usando el ID del ejecutivo
+        addActiveSession(executive.id, sessionId, userAgent);
         console.log(`[SessionControl] Ejecutivo ${executive.username}: Nueva sesión activa ${sessionId}`);
         
-        console.log(`[Auth] Ejecutivo ${executive.username} autenticado exitosamente como ${officeUser.username}`);
+        console.log(`[Auth] Ejecutivo ${executive.username} autenticado exitosamente con su propio perfil`);
         
-        // Devolver exactamente los mismos datos que se devuelven para el dueño
+        // Devolver datos del ejecutivo
         return res.json({ 
           success: true,
           user: {
-            id: officeUser.id,
-            username: officeUser.username,
+            id: executive.id,
+            username: executive.username,
+            displayName: executive.displayName,
             role: officeUser.role,
-            isActive: officeUser.isActive
+            isActive: executive.isActive,
+            isExecutive: true,
+            officeUsername: officeUser.username
           },
           message: "Login exitoso" 
         });

