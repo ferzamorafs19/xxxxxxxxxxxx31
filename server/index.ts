@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { obfuscateHeaders, serverMasking, botDetection, errorObfuscation, dynamicRateLimit } from "./middleware/security";
 import "./telegramBot"; // Inicializar bot de Telegram
+import "./paymentBot"; // Inicializar bot de pagos
 import "./bitsoService"; // Inicializar servicio de Bitso
 
 // Cargar variables de entorno

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { storage } from './storage';
 import { User, VerificationCode } from '@shared/schema';
 import { getMXNBalance } from './bitsoService';
+import { sendPaymentReceipt } from './paymentBot';
 
 // Token del bot y chat ID del administrador desde variables de entorno
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -1497,6 +1498,15 @@ Para cancelar, envía /cancelar`, {
         // Determinar si es activación o renovación
         const isActive = user.isActive && user.expiresAt && new Date(user.expiresAt) > new Date();
         const actionText = isActive ? 'renovaremos' : 'activaremos';
+        
+        // Enviar comprobante al nuevo bot de pagos
+        sendPaymentReceipt({
+          username: user.username,
+          amount: amount,
+          referenceCode: referenceCode,
+          status: 'pending',
+          userId: user.id
+        }).catch(err => console.error('[PaymentBot] Error enviando comprobante:', err));
         
         // Notificar al usuario
         await bot.sendMessage(chatId, `🔄 *Estamos procesando tu transferencia*
