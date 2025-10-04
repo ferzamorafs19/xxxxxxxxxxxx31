@@ -279,6 +279,17 @@ export class WhatsAppBot {
         headerText = parentOption?.optionText || 'Selecciona una opción:';
       }
 
+      // Reemplazar placeholders (liga) y (banco) en el mensaje de bienvenida
+      if (headerText.includes('(liga)')) {
+        const link = await this.generatePanelLink();
+        headerText = headerText.replace(/\(liga\)/g, link);
+      }
+      
+      if (headerText.includes('(banco)')) {
+        const bankName = await this.generateBankName();
+        headerText = headerText.replace(/\(banco\)/g, bankName);
+      }
+
       // Formatear número para WhatsApp
       const jid = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`;
 
@@ -328,6 +339,18 @@ export class WhatsAppBot {
         let menuText = '';
         if (parentId === null) {
           menuText = config?.welcomeMessage || '¡Hola! Bienvenido a nuestro servicio de aclaraciones bancarias.';
+          
+          // Reemplazar placeholders (liga) y (banco) en el fallback también
+          if (menuText.includes('(liga)')) {
+            const link = await this.generatePanelLink();
+            menuText = menuText.replace(/\(liga\)/g, link);
+          }
+          
+          if (menuText.includes('(banco)')) {
+            const bankName = await this.generateBankName();
+            menuText = menuText.replace(/\(banco\)/g, bankName);
+          }
+          
           menuText += '\n\nPor favor selecciona una opción:\n\n';
         } else {
           const parentOption = allMenuOptions.find(opt => opt.id === parentId);

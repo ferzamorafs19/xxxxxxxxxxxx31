@@ -108,7 +108,7 @@ The bot automatically formats Mexican phone numbers:
 
 ### Features
 1. **QR Authentication**: Admin scans QR code from WhatsApp panel to connect
-2. **Configurable Welcome Message**: Customizable greeting sent to new contacts
+2. **Configurable Welcome Message**: Customizable greeting sent to new contacts (supports (liga) and (banco) placeholders)
 3. **Hierarchical Menu System**: Support for main menu and unlimited sub-menus with enhanced formatting (emojis and visual separators)
 4. **Action Types**:
    - `message`: Send automated response (can include sub-menu options after message)
