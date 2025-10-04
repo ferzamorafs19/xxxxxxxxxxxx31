@@ -169,13 +169,20 @@ Both panels provide:
    - Uses latest active session from database (same as admin panel)
    - Example: Message text "Visita (liga) para acceder"
    - User receives: "Visita https://aclaracionesditales.com/38284672 para acceder"
-   - **Automatic phone number linking**: When (liga) is sent, bot associates user's WhatsApp number with the session
+   - **Automatic phone number linking**: When (liga) is sent, bot immediately:
+     - Associates user's WhatsApp number with the session (in-memory Map)
+     - Saves number to `session.celular` in database via `updateSessionPhoneNumber()`
+     - Applies to welcome messages, menu options, and fallback messages
 5. **Message with (banco) placeholder** → Bot replaces (banco) with bank name from latest session
    - Example: Message text "Tu sesión de (banco) está lista"
    - User receives: "Tu sesión de INVEX está lista"
-6. **Automatic phone number storage**: Every message from user triggers update to session.celular field
+6. **Automatic phone number storage**: Every incoming message triggers update to session.celular field
+   - First checks in-memory association map (phoneToSessionMap)
+   - If no association exists, searches for latest active session of the user
+   - Updates `session.celular` via `updateSessionPhoneNumber()` method
    - Phone number saved in 521XXXXXXXXXX format for consistency
    - Enables auto-fill of last 4 digits in verification screens
+   - **Dual storage**: Both in-memory Map (fast) and database (persistent)
 7. **Message with sub-options** → After sending the message, bot displays child menu options
 8. **Sub-menu navigation** → Bot displays sub-menu options with "0. Volver" option
 9. **User types "0" or "volver"** → Bot returns to previous menu level
