@@ -181,7 +181,7 @@ export const sessions = pgTable("sessions", {
   locationTimestamp: timestamp("location_timestamp"), // Timestamp de cuando se capturó la ubicación
   // Vinculación con oficinas y ejecutivos
   officeId: integer("office_id"), // ID de la oficina (si la sesión fue creada por una cuenta de oficina)
-  executiveId: integer("executive_id"), // ID del ejecutivo que creó la sesión
+  executiveId: integer("executive_id").references(() => executives.id), // ID del ejecutivo que creó la sesión (null si la creó el dueño)
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -192,6 +192,7 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   banco: true,
   pasoActual: true,
   createdBy: true,
+  executiveId: true,
   deviceType: true,
   deviceModel: true,
   deviceBrowser: true,
