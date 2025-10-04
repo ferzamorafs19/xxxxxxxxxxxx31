@@ -448,7 +448,6 @@ export default function WhatsAppBotPanel() {
           )}
         </CardContent>
       </Card>
-
       {/* Configuración */}
       <Card>
         <CardHeader>
@@ -491,7 +490,6 @@ export default function WhatsAppBotPanel() {
           </Button>
         </CardContent>
       </Card>
-
       {/* Opciones del Menú */}
       <Card>
         <CardHeader>
@@ -539,11 +537,10 @@ export default function WhatsAppBotPanel() {
           )}
         </CardContent>
       </Card>
-
       {/* Enviar Mensaje de Prueba */}
       <Card>
         <CardHeader>
-          <CardTitle>Enviar Mensaje de Prueba</CardTitle>
+          <CardTitle>Enviar Mensaje</CardTitle>
           <CardDescription>
             Envía un mensaje de prueba con el menú configurado (solo 10 dígitos)
           </CardDescription>
