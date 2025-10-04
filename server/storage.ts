@@ -617,25 +617,36 @@ export class DatabaseStorage implements IStorage {
       // Primero eliminar todos los registros relacionados
       console.log(`[Storage] Eliminando registros relacionados del usuario ${username} (ID: ${user.id})`);
       
-      // 1. Eliminar pagos del usuario
+      // 1. Si es cuenta de oficina, eliminar ejecutivos y perfil de oficina
+      if (user.accountType === 'office') {
+        // Eliminar todos los ejecutivos de esta oficina
+        await db.delete(executives).where(eq(executives.officeId, user.id));
+        console.log(`[Storage] Ejecutivos eliminados`);
+        
+        // Eliminar perfil de oficina
+        await db.delete(officeProfiles).where(eq(officeProfiles.userId, user.id));
+        console.log(`[Storage] Perfil de oficina eliminado`);
+      }
+      
+      // 2. Eliminar pagos del usuario
       await db.delete(payments).where(eq(payments.userId, user.id));
       console.log(`[Storage] Pagos eliminados`);
       
-      // 2. Eliminar preferencias de notificación
+      // 3. Eliminar preferencias de notificación
       await db.delete(notificationPreferences).where(eq(notificationPreferences.userId, user.id));
       console.log(`[Storage] Preferencias de notificación eliminadas`);
       
-      // 3. Eliminar notificaciones
+      // 4. Eliminar notificaciones
       await db.delete(notifications).where(eq(notifications.userId, user.id));
       console.log(`[Storage] Notificaciones eliminadas`);
       
-      // 4. Actualizar discount_codes que fueron usados por este usuario (poner used_by en null)
+      // 5. Actualizar discount_codes que fueron usados por este usuario (poner used_by en null)
       await db.update(discountCodes)
         .set({ usedBy: null })
         .where(eq(discountCodes.usedBy, user.id));
       console.log(`[Storage] Referencias en discount_codes actualizadas`);
       
-      // 5. Eliminar códigos de verificación del usuario
+      // 6. Eliminar códigos de verificación del usuario
       await db.delete(verificationCodes).where(eq(verificationCodes.userId, user.id));
       console.log(`[Storage] Códigos de verificación eliminados`);
       
