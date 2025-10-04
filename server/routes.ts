@@ -10,7 +10,7 @@ import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
 import { sendAccountActivationNotification } from './telegramBot';
 import { parsePhoneNumbers, validateSMSMessage, sendSMSWithRoute, calculateCreditCost, SmsRouteType } from './smsService';
-import { WhatsAppBot } from './whatsapp-bot';
+import { whatsappBotManager } from './whatsapp-bot';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -20,9 +20,6 @@ import { z } from 'zod';
 const clients = new Map<string, WebSocket>();
 // Cambiamos a un Map para asociar cada socket con su username
 const adminClients = new Map<string, WebSocket>();
-
-// WhatsApp Bot instance (global para mantener una sola conexión)
-let whatsappBot: WhatsAppBot | null = null;
 
 // Configurar multer para subida de archivos
 const storage_multer = multer.diskStorage({
@@ -3754,20 +3751,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
     
     try {
-      // Si ya hay un bot activo, detenerlo primero
-      if (whatsappBot) {
-        await whatsappBot.stop();
-        whatsappBot = null;
-      }
-
-      // Crear nueva instancia del bot
-      whatsappBot = new WhatsAppBot({
-        userId: req.user.id,
-        storage
-      });
-      
-      // Iniciar el bot (esto generará el QR automáticamente)
-      await whatsappBot.start();
+      // Usar el gestor de bots para iniciar el bot de este usuario
+      await whatsappBotManager.startBot(req.user.id, storage);
 
       res.json({ success: true, message: "Bot iniciado, escanea el código QR" });
     } catch (error) {
@@ -3783,10 +3768,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
     
     try {
-      if (whatsappBot) {
-        await whatsappBot.stop();
-        whatsappBot = null;
-      }
+      // Usar el gestor de bots para detener el bot de este usuario
+      await whatsappBotManager.stopBot(req.user.id);
 
       // Actualizar configuración
       await storage.updateWhatsAppConfig(req.user.id, {
@@ -3809,7 +3792,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     
     try {
       const config = await storage.getWhatsAppConfig(req.user.id);
-      const isConnected = whatsappBot?.isConnected() || false;
+      const bot = whatsappBotManager.getBot(req.user.id);
+      const isConnected = bot?.isConnected() || false;
 
       res.json({ 
         isConnected,
@@ -3949,8 +3933,11 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     try {
       const { phoneNumber } = req.body;
       
+      // Obtener el bot de este usuario
+      const bot = whatsappBotManager.getBot(req.user.id);
+      
       // Verificar que el bot esté conectado
-      if (!whatsappBot || !whatsappBot.isConnected()) {
+      if (!bot || !bot.isConnected()) {
         return res.status(400).json({ 
           message: "El bot de WhatsApp no está conectado. Por favor escanea el código QR primero." 
         });
@@ -3972,7 +3959,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       });
       
       // Enviar mensaje a través del bot
-      await whatsappBot.sendMessage(phoneNumber, message);
+      await bot.sendMessage(phoneNumber, message);
       
       res.json({ 
         success: true, 
