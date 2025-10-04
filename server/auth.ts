@@ -279,7 +279,7 @@ export function setupAuth(app: Express) {
   // Ruta para registro de usuarios
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, telegramChatId, role = UserRole.USER, allowedBanks = 'all', discountCode } = req.body;
+      const { username, password, telegramChatId, role = UserRole.USER, allowedBanks = 'all', discountCode, accountType = 'individual' } = req.body;
       
       // Validar datos
       if (!username || !password) {
@@ -294,6 +294,12 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
       
+      // Determinar precio base y límite de dispositivos según tipo de cuenta
+      const isOffice = accountType === 'office';
+      const basePrice = isOffice ? 6000 : 3000; // Oficina: 6000 MXN, Individual: 3000 MXN
+      const maxDevices = 2; // Ambos tipos tienen 2 dispositivos
+      const maxExecutives = isOffice ? 8 : 0; // Solo oficinas tienen ejecutivos
+      
       // Validar y aplicar código de descuento si se proporcionó
       let customPrice: string | undefined = undefined;
       let discountApplied = 0;
@@ -306,10 +312,6 @@ export function setupAuth(app: Express) {
         if (!claimedDiscount) {
           return res.status(400).json({ message: "Código de descuento no válido o ya fue utilizado" });
         }
-        
-        // Obtener precio base del sistema
-        const systemConfig = await storage.getSystemConfig();
-        const basePrice = parseFloat(systemConfig?.subscriptionPrice || '3000');
         
         // Calcular precio con descuento
         const discountAmount = parseFloat(claimedDiscount.discountAmount);
@@ -327,7 +329,7 @@ export function setupAuth(app: Express) {
           ? 'all' 
           : allowedBanks;
       
-      console.log(`[Auth] Creando usuario ${username} con bancos permitidos: ${normalizedAllowedBanks}`);
+      console.log(`[Auth] Creando usuario ${accountType === 'office' ? 'OFICINA' : 'INDIVIDUAL'} ${username} con bancos permitidos: ${normalizedAllowedBanks}`);
       
       // Crear nuevo usuario con contraseña hasheada y estado inactivo por defecto
       const hashedPassword = await hashPassword(password);
@@ -339,7 +341,27 @@ export function setupAuth(app: Express) {
         telegramChatId,
         customPrice,
         isActive: false, // Los usuarios nuevos requieren aprobación del administrador
+        accountType,
+        weeklyPrice: basePrice,
+        maxExecutives,
+        maxDevices,
       });
+      
+      // Si es una cuenta de oficina, crear perfil de oficina
+      if (isOffice) {
+        try {
+          await storage.createOfficeProfile({
+            userId: user.id,
+            weeklyPrice: basePrice,
+            maxExecutives: 8,
+            isActive: true,
+          });
+          console.log(`[Auth] Perfil de oficina creado para usuario ${username} (ID: ${user.id})`);
+        } catch (error: any) {
+          console.error(`[Auth] Error creando perfil de oficina para ${username}:`, error);
+          // No falla el registro si falla la creación del perfil
+        }
+      }
       
       // Si se usó un código de descuento, actualizar el usedBy con el ID real del usuario
       if (discountCode && claimedDiscount) {

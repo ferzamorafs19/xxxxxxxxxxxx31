@@ -72,6 +72,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   apkFileName: true,
   apkFileUrl: true,
   customPrice: true,
+  accountType: true,
+  weeklyPrice: true,
+  maxExecutives: true,
+  maxDevices: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
