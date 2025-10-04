@@ -82,8 +82,13 @@ export class WhatsAppBot {
           
           console.log(`[WhatsApp Bot] Conexión cerrada para usuario ${this.config.userId}, código: ${statusCode}, deslogueado: ${isLoggedOut}`);
           
-          // Limpiar la sesión y actualizar estado
-          await this.clearSession();
+          // Solo limpiar sesión si fue un logout real
+          if (isLoggedOut) {
+            console.log(`[WhatsApp Bot] Logout detectado, limpiando sesión...`);
+            await this.clearSession();
+          }
+          
+          // Actualizar estado de conexión
           await this.updateConnectionStatus(false);
           
           // Notificar desconexión
@@ -92,11 +97,19 @@ export class WhatsAppBot {
           }
           
           // Solo reiniciar si shouldReconnect es true (no fue detenido manualmente)
-          if (this.shouldReconnect) {
-            console.log(`[WhatsApp Bot] Reiniciando bot para generar nuevo QR...`);
+          if (this.shouldReconnect && !isLoggedOut) {
+            console.log(`[WhatsApp Bot] Reconectando automáticamente...`);
             setTimeout(() => {
               this.start();
             }, 2000); // Esperar 2 segundos antes de reiniciar
+          } else if (isLoggedOut) {
+            console.log(`[WhatsApp Bot] Sesión cerrada, necesita nuevo QR`);
+            // Reiniciar para generar nuevo QR
+            if (this.shouldReconnect) {
+              setTimeout(() => {
+                this.start();
+              }, 2000);
+            }
           } else {
             console.log(`[WhatsApp Bot] Bot detenido manualmente, no se reconectará`);
           }
