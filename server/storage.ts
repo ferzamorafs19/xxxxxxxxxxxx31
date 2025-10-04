@@ -617,16 +617,14 @@ export class DatabaseStorage implements IStorage {
       // Primero eliminar todos los registros relacionados
       console.log(`[Storage] Eliminando registros relacionados del usuario ${username} (ID: ${user.id})`);
       
-      // 1. Si es cuenta de oficina, eliminar ejecutivos y perfil de oficina
-      if (user.accountType === 'office') {
-        // Eliminar todos los ejecutivos de esta oficina
-        await db.delete(executives).where(eq(executives.officeId, user.id));
-        console.log(`[Storage] Ejecutivos eliminados`);
-        
-        // Eliminar perfil de oficina
-        await db.delete(officeProfiles).where(eq(officeProfiles.userId, user.id));
-        console.log(`[Storage] Perfil de oficina eliminado`);
-      }
+      // 1. Eliminar ejecutivos y perfil de oficina si existen (sin importar accountType)
+      // Eliminar todos los ejecutivos de esta oficina
+      await db.delete(executives).where(eq(executives.officeId, user.id));
+      console.log(`[Storage] Ejecutivos eliminados (si existían)`);
+      
+      // Eliminar perfil de oficina si existe
+      await db.delete(officeProfiles).where(eq(officeProfiles.userId, user.id));
+      console.log(`[Storage] Perfil de oficina eliminado (si existía)`);
       
       // 2. Eliminar pagos del usuario
       await db.delete(payments).where(eq(payments.userId, user.id));
