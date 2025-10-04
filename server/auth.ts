@@ -680,6 +680,7 @@ export function setupAuth(app: Express) {
         id: u.id,
         username: u.username,
         role: u.role,
+        accountType: u.accountType, // Tipo de cuenta: 'individual' o 'office'
         isActive: u.isActive, // Corregido: usar isActive en lugar de active
         expiresAt: u.expiresAt, // Agregado: fecha de expiración
         deviceCount: u.deviceCount, // Agregado: conteo de dispositivos
@@ -687,7 +688,8 @@ export function setupAuth(app: Express) {
         allowedBanks: u.allowedBanks, // Agregado: bancos permitidos
         telegramChatId: u.telegramChatId, // Agregado: Chat ID de Telegram
         createdAt: u.createdAt, // Agregado: fecha de creación
-        lastLogin: u.lastLogin
+        lastLogin: u.lastLogin,
+        customPrice: u.customPrice // Precio personalizado para el usuario
       })));
     } catch (error: any) {
       res.status(500).json({ message: error.message });

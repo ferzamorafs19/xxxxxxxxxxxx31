@@ -19,6 +19,7 @@ interface User {
   id: number;
   username: string;
   role: string;
+  accountType?: 'individual' | 'office';
   isActive: boolean;
   expiresAt: string | null;
   deviceCount: number;
@@ -656,6 +657,7 @@ const RegisteredUsersManagement: React.FC = () => {
                         <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow>
                             <TableHead>Usuario</TableHead>
+                            <TableHead>Tipo</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead>Precio</TableHead>
                             <TableHead>Caduca</TableHead>
@@ -677,6 +679,17 @@ const RegisteredUsersManagement: React.FC = () => {
                                     </Badge>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                {user.accountType === 'office' ? (
+                                  <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">
+                                    <Building className="w-3 h-3 mr-1" /> Oficina
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary">
+                                    <User className="w-3 h-3 mr-1" /> Individual
+                                  </Badge>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {user.isActive ? (
@@ -821,6 +834,25 @@ const RegisteredUsersManagement: React.FC = () => {
                           </div>
                           
                           <div className="space-y-2 text-sm mb-4">
+                            <div className="flex items-center">
+                              {user.accountType === 'office' ? (
+                                <>
+                                  <Building className="h-4 w-4 text-blue-500 mr-2" />
+                                  <span className="text-muted-foreground mr-1">Tipo:</span>
+                                  <Badge variant="default" className="bg-blue-500 hover:bg-blue-600 h-5">
+                                    Oficina
+                                  </Badge>
+                                </>
+                              ) : (
+                                <>
+                                  <User className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground mr-1">Tipo:</span>
+                                  <Badge variant="secondary" className="h-5">
+                                    Individual
+                                  </Badge>
+                                </>
+                              )}
+                            </div>
                             <div className="flex items-start">
                               <Calendar className="h-4 w-4 text-muted-foreground mr-2 mt-0.5" />
                               <div className="flex flex-col">
