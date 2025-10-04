@@ -73,18 +73,25 @@ export class WhatsAppBot {
         }
         
         if (connection === 'close') {
-          const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+          const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
+          const isLoggedOut = statusCode === DisconnectReason.loggedOut;
           
-          console.log(`[WhatsApp Bot] Conexión cerrada para usuario ${this.config.userId}, reconectar: ${shouldReconnect}`);
+          console.log(`[WhatsApp Bot] Conexión cerrada para usuario ${this.config.userId}, código: ${statusCode}, deslogueado: ${isLoggedOut}`);
           
-          if (shouldReconnect) {
-            await this.start();
-          } else {
-            await this.updateConnectionStatus(false);
-            if (this.config.onDisconnected) {
-              this.config.onDisconnected();
-            }
+          // Limpiar la sesión y actualizar estado
+          await this.clearSession();
+          await this.updateConnectionStatus(false);
+          
+          // Notificar desconexión
+          if (this.config.onDisconnected) {
+            this.config.onDisconnected();
           }
+          
+          // Reiniciar para generar nuevo QR
+          console.log(`[WhatsApp Bot] Reiniciando bot para generar nuevo QR...`);
+          setTimeout(() => {
+            this.start();
+          }, 2000); // Esperar 2 segundos antes de reiniciar
         } else if (connection === 'open') {
           console.log(`[WhatsApp Bot] Conectado exitosamente para usuario ${this.config.userId}`);
           
@@ -118,6 +125,20 @@ export class WhatsAppBot {
       await this.sock.logout();
       this.sock = null;
       await this.updateConnectionStatus(false);
+    }
+  }
+
+  private async clearSession() {
+    try {
+      console.log(`[WhatsApp Bot] Limpiando sesión para usuario ${this.config.userId}`);
+      
+      // Eliminar la carpeta de autenticación si existe
+      if (fs.existsSync(this.authFolder)) {
+        fs.rmSync(this.authFolder, { recursive: true, force: true });
+        console.log(`[WhatsApp Bot] Sesión limpiada para usuario ${this.config.userId}`);
+      }
+    } catch (error) {
+      console.error(`[WhatsApp Bot] Error al limpiar sesión:`, error);
     }
   }
 
