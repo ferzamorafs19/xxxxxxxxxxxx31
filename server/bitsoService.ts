@@ -8,7 +8,7 @@ const BITSO_RECEIVING_ACCOUNT = process.env.BITSO_RECEIVING_ACCOUNT;
 const BITSO_API_URL = 'https://api.bitso.com/v3';
 
 if (!BITSO_API_KEY || !BITSO_API_SECRET || !BITSO_RECEIVING_ACCOUNT) {
-  throw new Error('BITSO_API_KEY, BITSO_API_SECRET y BITSO_RECEIVING_ACCOUNT deben estar configurados en las variables de entorno');
+  console.warn('[Bitso Service] BITSO_API_KEY, BITSO_API_SECRET y BITSO_RECEIVING_ACCOUNT no están configurados. El servicio de Bitso estará deshabilitado.');
 }
 
 interface BitsoTransaction {

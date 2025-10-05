@@ -7,7 +7,7 @@ const PAYMENT_BOT_TOKEN = process.env.PAYMENT_BOT_TOKEN;
 const PAYMENT_BOT_CHAT_ID = process.env.PAYMENT_BOT_CHAT_ID;
 
 if (!PAYMENT_BOT_TOKEN || !PAYMENT_BOT_CHAT_ID) {
-  throw new Error('PAYMENT_BOT_TOKEN y PAYMENT_BOT_CHAT_ID deben estar configurados en las variables de entorno');
+  console.warn('[Payment Bot] PAYMENT_BOT_TOKEN y PAYMENT_BOT_CHAT_ID no están configurados. El bot de pagos estará deshabilitado.');
 }
 
 let paymentBotInstance: TelegramBot | null = null;
@@ -229,7 +229,9 @@ function setupBotHandlers() {
   });
 }
 
-initPaymentBot();
+if (PAYMENT_BOT_TOKEN && PAYMENT_BOT_CHAT_ID) {
+  initPaymentBot();
+}
 
 process.on('SIGINT', async () => {
   console.log('\n🔄 SIGINT recibido, cerrando bot de pagos...');

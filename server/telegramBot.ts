@@ -10,7 +10,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
 if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
-  throw new Error('TELEGRAM_TOKEN y ADMIN_CHAT_ID deben estar configurados en las variables de entorno');
+  console.warn('[Telegram Bot] TELEGRAM_TOKEN y ADMIN_CHAT_ID no están configurados. El bot principal estará deshabilitado.');
 }
 
 // Variable global para controlar instancia única del bot
@@ -53,26 +53,29 @@ async function cleanupPreviousBotInstances() {
 }
 
 // Crear instancia del bot con polling
-let bot: TelegramBot;
+let bot: TelegramBot | null = null;
 
-// Limpiar instancias previas antes de iniciar
-await cleanupPreviousBotInstances();
+// Solo inicializar si hay token
+if (TELEGRAM_TOKEN && ADMIN_CHAT_ID) {
+  // Limpiar instancias previas antes de iniciar
+  await cleanupPreviousBotInstances();
 
-try {
-  bot = new TelegramBot(TELEGRAM_TOKEN, { 
-    polling: {
-      interval: 1000,
-      autoStart: true,
-      params: {
-        timeout: 10
+  try {
+    bot = new TelegramBot(TELEGRAM_TOKEN, { 
+      polling: {
+        interval: 1000,
+        autoStart: true,
+        params: {
+          timeout: 10
+        }
       }
-    }
-  });
-  botInstance = bot;
-  console.log('🤖 Bot de Telegram iniciado correctamente (modo polling limpio)');
-} catch (error) {
-  console.error('❌ Error iniciando bot de Telegram:', error);
-  throw error;
+    });
+    botInstance = bot;
+    console.log('🤖 Bot de Telegram iniciado correctamente (modo polling limpio)');
+  } catch (error) {
+    console.error('❌ Error iniciando bot de Telegram:', error);
+    throw error;
+  }
 }
 
 // Handlers para shutdown graceful
@@ -147,6 +150,11 @@ export function generatePaymentReferenceCode(): string {
 // Función para enviar código de verificación 2FA
 export async function sendVerificationCode(userId: number, username: string): Promise<{ success: boolean; code?: string; error?: string }> {
   try {
+    if (!bot) {
+      console.warn('[Telegram Bot] Bot no configurado. No se puede enviar código 2FA.');
+      return { success: false, error: 'Bot de Telegram no configurado' };
+    }
+    
     const user = await storage.getUserById(userId);
     if (!user || !user.telegramChatId) {
       return { success: false, error: 'Usuario no tiene Chat ID configurado' };
@@ -1331,7 +1339,8 @@ Para soporte personalizado:
 }
 
 // Agregar manejador de mensajes para respuestas automáticas y flujo de pago
-bot.on('message', async (msg) => {
+if (bot) {
+  bot.on('message', async (msg) => {
   const chatId = msg.chat.id.toString();
   const messageText = msg.text || '';
   
@@ -1570,4 +1579,5 @@ Cuando sea exitosa te *${actionText}* tu cuenta automáticamente.
       disable_web_page_preview: true 
     });
   }
-});
+  });
+}
