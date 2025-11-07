@@ -871,24 +871,24 @@ export default function AdminPanel() {
             {user?.allowedBanks === 'all' || user?.role === 'admin' ? (
               <>
                 <option value="todos">Todos los bancos</option>
-                <option value="LIVERPOOL">LIVERPOOL</option>
-                <option value="CITIBANAMEX">CITIBANAMEX</option>
+                <option value="AFIRME">AFIRME</option>
+                <option value="AMEX">AMEX</option>
                 <option value="BANBAJIO">BANBAJIO</option>
+                <option value="BANCO_AZTECA">BANCO AZTECA</option>
                 <option value="BANCOPPEL">BANCOPPEL</option>
                 <option value="BANORTE">BANORTE</option>
+                <option value="BANREGIO">BANREGIO</option>
                 <option value="BBVA">BBVA</option>
+                <option value="BIENESTAR">BANCO BIENESTAR</option>
+                <option value="CITIBANAMEX">CITIBANAMEX</option>
                 <option value="HSBC">HSBC</option>
-                <option value="AMEX">AMEX</option>
+                <option value="INBURSA">INBURSA</option>
+                <option value="INVEX">INVEX</option>
+                <option value="LIVERPOOL">LIVERPOOL</option>
+                <option value="PLATACARD">PLATACARD</option>
                 <option value="SANTANDER">SANTANDER</option>
                 <option value="SCOTIABANK">SCOTIABANK</option>
-                <option value="INVEX">INVEX</option>
-                <option value="BANREGIO">BANREGIO</option>
                 <option value="SPIN">SPIN</option>
-                <option value="PLATACARD">PLATACARD</option>
-                <option value="BANCO_AZTECA">BANCO AZTECA</option>
-                <option value="BIENESTAR">BANCO BIENESTAR</option>
-                <option value="INBURSA">INBURSA</option>
-                <option value="AFIRME">AFIRME</option>
               </>
             ) : (
               <>
