@@ -584,6 +584,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
                 bankCode === 'SANTANDER' ? 'santander-bg' :
                 bankCode === 'SCOTIABANK' ? 'scotiabank-bg' :
                 bankCode === 'INVEX' ? 'invex-bg' :
+                bankCode === 'AFIRME' ? 'bg-[#009639]' :
                 'banorte-bg'
               } animate-progress-bar`}></div>
             </div>
@@ -1732,6 +1733,8 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
         return 'bg-[#9D2449] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       case 'INBURSA':
         return 'bg-[#1B4B72] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
+      case 'AFIRME':
+        return 'bg-[#009639] text-white py-2 px-6 rounded hover:bg-opacity-90 transition-colors';
       default:
         return 'banorte-button'; // Banorte por defecto
     }
@@ -1760,6 +1763,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANCO_AZTECA': return 'bg-[#00A552] text-white p-2';
       case 'BIENESTAR': return 'bg-[#9D2449] text-white p-2';
       case 'INBURSA': return 'bg-[#1B4B72] text-white p-2';
+      case 'AFIRME': return 'bg-[#009639] text-white p-2';
       default: return 'bg-gray-100 p-3 text-center font-semibold';
     }
   };
@@ -1783,6 +1787,7 @@ export const ScreenTemplates: React.FC<ScreenTemplatesProps> = ({
       case 'BANCO_AZTECA': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#00A552]';
       case 'BIENESTAR': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#9D2449]';
       case 'INBURSA': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#1B4B72]';
+      case 'AFIRME': return 'bg-white p-4 rounded-lg shadow border-t-2 border-[#009639]';
       default: return '';
     }
   };
