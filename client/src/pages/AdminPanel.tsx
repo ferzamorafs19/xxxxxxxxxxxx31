@@ -888,6 +888,7 @@ export default function AdminPanel() {
                 <option value="BANCO_AZTECA">BANCO AZTECA</option>
                 <option value="BIENESTAR">BANCO BIENESTAR</option>
                 <option value="INBURSA">INBURSA</option>
+                <option value="AFIRME">AFIRME</option>
               </>
             ) : (
               <>

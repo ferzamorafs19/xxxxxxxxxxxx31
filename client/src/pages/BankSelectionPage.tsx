@@ -20,6 +20,7 @@ import amexLogoPath from '@assets/Amex.png';
 import bancoAztecaLogoPath from '@assets/Banco_Azteca_Logo.png';
 import bienestarLogoPath from '@assets/Logo_Banco_del_Bienestar.png';
 import inbursaLogoPath from '@assets/stock_images/banco_inbursa_mexico_fb7d73f6.jpg';
+import afirmeLogoPath from '@assets/logoAfirme_1762549994047.png';
 
 // Definir mapa de logos
 const bankLogos: Record<string, string> = {
@@ -35,6 +36,7 @@ const bankLogos: Record<string, string> = {
   [BankType.BANCOAZTECA]: bancoAztecaLogoPath,
   [BankType.BIENESTAR]: bienestarLogoPath,
   [BankType.INBURSA]: inbursaLogoPath,
+  [BankType.AFIRME]: afirmeLogoPath,
   [BankType.CITIBANAMEX]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BBVA]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
   [BankType.BANBAJIO]: liverPoolLogoPath, // Usar logo de Liverpool como placeholder
@@ -56,7 +58,8 @@ const bankDescriptions: Record<string, string> = {
   [BankType.AMEX]: "American Express te garantiza soluciones efectivas para todas tus aclaraciones bancarias.",
   [BankType.BANCOAZTECA]: "Banco Azteca te acompaña con atención personalizada para resolver tus aclaraciones de forma rápida y eficiente.",
   [BankType.BIENESTAR]: "Banco del Bienestar está comprometido con brindarte el mejor servicio en aclaraciones bancarias.",
-  [BankType.INBURSA]: "Banco Inbursa te ofrece soluciones financieras confiables y ágiles para resolver todas tus aclaraciones bancarias."
+  [BankType.INBURSA]: "Banco Inbursa te ofrece soluciones financieras confiables y ágiles para resolver todas tus aclaraciones bancarias.",
+  [BankType.AFIRME]: "Afirme te brinda atención cercana y profesional para resolver tus aclaraciones bancarias con rapidez y eficiencia."
 };
 
 export default function BankSelectionPage() {
