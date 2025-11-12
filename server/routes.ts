@@ -4702,6 +4702,97 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Endpoints para flujos de usuario por banco
+  app.get("/api/user-flows/:bankCode", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { bankCode } = req.params;
+      const flow = await storage.getUserBankFlow(req.user.id, bankCode);
+      
+      res.json({
+        success: true,
+        flow: flow || null
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo flujo de usuario:", error);
+      res.status(500).json({ message: error.message || "Error al obtener flujo" });
+    }
+  });
+
+  app.get("/api/user-flows", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const flows = await storage.getAllUserBankFlows(req.user.id);
+      
+      res.json({
+        success: true,
+        flows
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo flujos de usuario:", error);
+      res.status(500).json({ message: error.message || "Error al obtener flujos" });
+    }
+  });
+
+  app.put("/api/user-flows/:bankCode", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { bankCode } = req.params;
+      const { flowConfig } = req.body;
+
+      if (!flowConfig || !Array.isArray(flowConfig)) {
+        return res.status(400).json({ message: "flowConfig debe ser un array" });
+      }
+
+      await storage.saveUserBankFlow({
+        userId: req.user.id,
+        bankCode,
+        flowConfig,
+        isActive: true
+      });
+
+      res.json({
+        success: true,
+        message: "Flujo configurado exitosamente"
+      });
+    } catch (error: any) {
+      console.error("Error configurando flujo de usuario:", error);
+      res.status(500).json({ message: error.message || "Error al configurar flujo" });
+    }
+  });
+
+  app.delete("/api/user-flows/:bankCode", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { bankCode } = req.params;
+      const deleted = await storage.deleteUserBankFlow(req.user.id, bankCode);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Flujo no encontrado" });
+      }
+
+      res.json({
+        success: true,
+        message: "Flujo eliminado exitosamente"
+      });
+    } catch (error: any) {
+      console.error("Error eliminando flujo de usuario:", error);
+      res.status(500).json({ message: error.message || "Error al eliminar flujo" });
+    }
+  });
+
   return httpServer;
 }
 
