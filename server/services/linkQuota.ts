@@ -74,6 +74,7 @@ export class LinkQuotaService {
     limit: number;
     remaining: number;
     weekStart: Date;
+    resetsAt: Date;
     lastGenerated: Date | null;
   }> {
     const weekStart = getWeekStartDate();
@@ -92,22 +93,67 @@ export class LinkQuotaService {
       limit: WEEKLY_LINK_LIMIT,
       remaining: Math.max(0, WEEKLY_LINK_LIMIT - count),
       weekStart,
+      resetsAt: this.getNextMonday(weekStart),
       lastGenerated: usage?.lastGeneratedAt || null
     };
   }
 
-  async resetWeeklyUsage(userId: number): Promise<void> {
+  async resetWeeklyUsage(userId: number): Promise<{
+    count: number;
+    limit: number;
+    remaining: number;
+  }> {
     const weekStart = getWeekStartDate();
     
-    await db.update(linkUsageWeekly)
-      .set({
-        linkCount: 0,
-        updatedAt: new Date()
-      })
-      .where(and(
+    // Buscar el registro existente
+    const existing = await db.query.linkUsageWeekly.findFirst({
+      where: and(
         eq(linkUsageWeekly.userId, userId),
         eq(linkUsageWeekly.weekStartDate, weekStart)
-      ));
+      )
+    });
+
+    if (existing) {
+      // Actualizar si existe
+      await db.update(linkUsageWeekly)
+        .set({
+          linkCount: 0,
+          updatedAt: new Date()
+        })
+        .where(eq(linkUsageWeekly.id, existing.id));
+    } else {
+      // Crear si no existe
+      await db.insert(linkUsageWeekly).values({
+        userId,
+        weekStartDate: weekStart,
+        linkCount: 0,
+        lastGeneratedAt: null
+      });
+    }
+
+    return {
+      count: 0,
+      limit: WEEKLY_LINK_LIMIT,
+      remaining: WEEKLY_LINK_LIMIT
+    };
+  }
+
+  // Obtener el próximo lunes a partir de una fecha
+  getNextMonday(fromDate: Date = new Date()): Date {
+    const date = new Date(fromDate);
+    const dayOfWeek = date.getDay();
+    
+    // Si ya es lunes, el próximo lunes es en 7 días
+    if (dayOfWeek === 1) {
+      date.setDate(date.getDate() + 7);
+    } else {
+      // Calcular días hasta el próximo lunes
+      const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+      date.setDate(date.getDate() + daysUntilMonday);
+    }
+    
+    date.setHours(0, 0, 0, 0);
+    return date;
   }
 }
 

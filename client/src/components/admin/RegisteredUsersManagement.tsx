@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle, DollarSign, Search, Filter } from 'lucide-react';
+import { Loader2, Check, X, Clock, User, Calendar, Smartphone, ToggleLeft, ToggleRight, Trash, Settings, Building, Link as LinkIcon, MessageCircle, DollarSign, Search, Filter, Plus } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceInfo } from '@/hooks/use-device-orientation';
@@ -31,6 +31,13 @@ interface User {
   telegramChatId?: string | null;
 }
 
+interface LinkQuota {
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsAt: string;
+}
+
 const RegisteredUsersManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -48,6 +55,7 @@ const RegisteredUsersManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const { isMobile, isLandscape } = useDeviceInfo();
+  const [userQuotas, setUserQuotas] = useState<Map<number, LinkQuota>>(new Map());
 
   // Consultar los usuarios (solo el usuario balonx puede ver esto)
   const { 

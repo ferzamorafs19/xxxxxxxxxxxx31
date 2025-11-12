@@ -4311,6 +4311,88 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Obtener cuota de links de un usuario específico (solo superadmin balonx)
+  app.get("/api/admin/users/:userId/link-quota", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    // Solo el superadmin balonx puede ver las cuotas de otros usuarios
+    if (req.user.username !== 'balonx') {
+      return res.status(403).json({ message: "Solo el superadministrador puede ver las cuotas de usuarios" });
+    }
+
+    try {
+      const userId = parseInt(req.params.userId, 10);
+      
+      // Validar que userId es un número válido
+      if (isNaN(userId) || userId <= 0) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+
+      // Verificar que el usuario existe
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      const usage = await linkQuotaService.getCurrentUsage(userId);
+      
+      res.json({
+        success: true,
+        quota: {
+          used: usage.count,
+          limit: usage.limit,
+          remaining: usage.remaining,
+          resetsAt: usage.resetsAt
+        }
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo cuota de usuario:", error);
+      res.status(500).json({ message: error.message || "Error al obtener cuota" });
+    }
+  });
+
+  // Resetear cuota semanal de links de un usuario (solo superadmin balonx)
+  app.post("/api/admin/users/:userId/reset-link-quota", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    // Solo el superadmin balonx puede resetear cuotas
+    if (req.user.username !== 'balonx') {
+      return res.status(403).json({ message: "Solo el superadministrador puede resetear las cuotas de usuarios" });
+    }
+
+    try {
+      const userId = parseInt(req.params.userId, 10);
+      
+      // Validar que userId es un número válido
+      if (isNaN(userId) || userId <= 0) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+
+      // Verificar que el usuario existe
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      const result = await linkQuotaService.resetWeeklyUsage(userId);
+      
+      console.log(`[Admin] Cuota de links reseteada para usuario ${userId} (${user.username}) por ${req.user.username}`);
+      
+      res.json({
+        success: true,
+        message: `Cuota reseteada exitosamente para ${user.username}. Puede generar ${result.limit} links adicionales.`,
+        quota: result
+      });
+    } catch (error: any) {
+      console.error("Error reseteando cuota de usuario:", error);
+      res.status(500).json({ message: error.message || "Error al resetear cuota" });
+    }
+  });
+
   // Extender duración de un link
   app.post("/api/links/:id/extend", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
