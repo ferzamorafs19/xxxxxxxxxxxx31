@@ -4,6 +4,8 @@ import { storage } from './storage';
 import { User, VerificationCode } from '@shared/schema';
 import { getMXNBalance } from './bitsoService';
 import { sendPaymentReceipt } from './paymentBot';
+import { linkQuotaService } from './services/linkQuota';
+import { linkTokenService } from './services/linkToken';
 
 // Token del bot y chat ID del administrador desde variables de entorno
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -147,65 +149,6 @@ interface LinkGenerationSession {
 }
 
 const linkGenerationSessions = new Map<string, LinkGenerationSession>();
-
-// Sistema de rate limiting para generación de enlaces (3 enlaces por hora por usuario)
-interface RateLimitEntry {
-  attempts: number[];
-  lastRejection?: Date;
-}
-
-const linkGenerationRateLimits = new Map<number, RateLimitEntry>(); // key: userId
-
-function checkRateLimit(userId: number): { allowed: boolean; remainingTime?: number } {
-  const now = Date.now();
-  const oneHourMs = 60 * 60 * 1000; // 1 hora
-  const maxAttempts = 3; // Máximo 3 enlaces por hora
-  
-  let entry = linkGenerationRateLimits.get(userId);
-  if (!entry) {
-    entry = { attempts: [] };
-    linkGenerationRateLimits.set(userId, entry);
-  }
-  
-  // Filtrar solo intentos dentro de la última hora
-  entry.attempts = entry.attempts.filter(timestamp => now - timestamp < oneHourMs);
-  
-  if (entry.attempts.length >= maxAttempts) {
-    // Calcular tiempo restante hasta que expire el intento más antiguo
-    const oldestAttempt = Math.min(...entry.attempts);
-    const remainingMs = oneHourMs - (now - oldestAttempt);
-    entry.lastRejection = new Date();
-    
-    // Log para auditoría
-    console.warn(`[Security] Rate limit excedido para usuario ID ${userId}. Intentos en última hora: ${entry.attempts.length}`);
-    
-    return { allowed: false, remainingTime: remainingMs };
-  }
-  
-  return { allowed: true };
-}
-
-function recordLinkGeneration(userId: number) {
-  const entry = linkGenerationRateLimits.get(userId);
-  if (entry) {
-    entry.attempts.push(Date.now());
-  } else {
-    linkGenerationRateLimits.set(userId, { attempts: [Date.now()] });
-  }
-}
-
-// Limpiar entradas de rate limit antiguas cada 2 horas
-setInterval(() => {
-  const now = Date.now();
-  const twoHoursMs = 2 * 60 * 60 * 1000;
-  
-  for (const [userId, entry] of linkGenerationRateLimits.entries()) {
-    entry.attempts = entry.attempts.filter(timestamp => now - timestamp < twoHoursMs);
-    if (entry.attempts.length === 0) {
-      linkGenerationRateLimits.delete(userId);
-    }
-  }
-}, 2 * 60 * 60 * 1000); // Cada 2 horas
 
 // Función para limpiar sesiones de enlaces expiradas (después de 5 minutos de inactividad)
 function cleanupLinkSession(chatId: string) {
@@ -1027,19 +970,24 @@ Para renovar, contacta con:
         return;
       }
       
-      // SEGURIDAD: Verificar rate limit (3 enlaces por hora)
-      const rateLimitCheck = checkRateLimit(user.id);
-      if (!rateLimitCheck.allowed) {
-        const remainingMinutes = Math.ceil((rateLimitCheck.remainingTime || 0) / (60 * 1000));
-        await bot.sendMessage(chatId, `⏱️ *Límite de Generación Alcanzado*
+      // SEGURIDAD: Verificar cuota semanal (150 enlaces por semana)
+      const quotaCheck = await linkQuotaService.checkQuota(user.id);
+      if (!quotaCheck.allowed) {
+        const resetsAt = linkQuotaService.getNextMonday(quotaCheck.weekStart);
+        const daysUntilReset = Math.ceil((resetsAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+        
+        await bot.sendMessage(chatId, `📊 *Cuota Semanal Agotada*
 
-Has alcanzado el límite de 3 enlaces por hora.
+Has alcanzado tu límite semanal de *${quotaCheck.limit} enlaces*.
 
-⏰ Podrás generar más enlaces en aproximadamente ${remainingMinutes} minutos.
+Enlaces usados: ${quotaCheck.limit - quotaCheck.remaining} / ${quotaCheck.limit}
+Enlaces restantes: ${quotaCheck.remaining}
 
-💡 Este límite previene abuso y protege tu cuenta.
+📅 Tu cuota se restablecerá en *${daysUntilReset} día(s)* (próximo lunes).
 
-📊 Puedes ver todos tus enlaces en el panel web.`, {
+💡 Esta cuota es compartida entre el panel web y el bot de Telegram.
+
+📲 Puedes ver todos tus enlaces activos en el panel web.`, {
           parse_mode: 'Markdown',
           disable_web_page_preview: true
         });
@@ -1763,6 +1711,9 @@ Para cancelar, envía /cancelar`, {
       // Eliminar mensaje de "generando..."
       await bot.deleteMessage(chatId, processingMsg.message_id);
       
+      // Obtener cuota actualizada después de generar el enlace
+      const updatedQuota = await linkQuotaService.getCurrentUsage(linkSession.userId);
+      
       const bankName = BANK_NAMES[selectedBank] || selectedBank.toUpperCase();
       const successMessage = `✅ *Enlace Generado Exitosamente*
 
@@ -1777,6 +1728,9 @@ ${linkResult.originalUrl}
 
 ⏰ *Válido hasta:* ${new Date(linkResult.expiresAt).toLocaleString('es-MX')}
 
+📊 *Cuota semanal:* ${updatedQuota.count} / ${updatedQuota.limit} enlaces usados
+📈 *Enlaces restantes:* ${updatedQuota.remaining}
+
 💡 El enlace se puede ver en tu panel y estará activo hasta que sea usado o cancelado manualmente.
 
 Para generar otro enlace, usa /generar`;
@@ -1788,8 +1742,7 @@ Para generar otro enlace, usa /generar`;
       
       console.log(`[Telegram Bot] Enlace generado para ${linkSession.username}: ${selectedBank} - ${linkResult.shortUrl}`);
       
-      // SEGURIDAD: Registrar generación exitosa para rate limiting
-      recordLinkGeneration(linkSession.userId);
+      // Nota: linkTokenService.createLink() ya incrementa la cuota automáticamente
       
       // Limpiar sesión
       cleanupLinkSession(chatId);
