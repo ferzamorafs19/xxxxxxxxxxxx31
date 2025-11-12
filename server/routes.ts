@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware de validación de tokens de un solo uso (con banco en el path)
   app.get('/:bankCode/client/:token', async (req, res) => {
     try {
-      const { token } = req.params;
+      const { token, bankCode } = req.params;
       
       // Validar y consumir el token
       const tokenResult = await linkTokenService.validateAndConsumeToken(token, {
@@ -192,6 +192,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ 
           error: 'Link no encontrado',
           reason: 'El link proporcionado no existe'
+        });
+      }
+
+      // Validar que el bankCode del path coincida con el del token (seguridad adicional)
+      if (tokenResult.bankCode && tokenResult.bankCode.toLowerCase() !== bankCode.toLowerCase()) {
+        console.warn(`[Links] Bank code mismatch: path=${bankCode}, token=${tokenResult.bankCode}`);
+        return res.status(404).json({ 
+          error: 'Link no válido',
+          reason: 'El link proporcionado no es correcto'
         });
       }
 
