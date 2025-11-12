@@ -15,13 +15,14 @@ import {
   whatsappConversations, WhatsappConversation, InsertWhatsappConversation,
   bankSubdomains, BankSubdomain, InsertBankSubdomain,
   bankScreenFlows, BankScreenFlow, InsertBankScreenFlow,
+  linkTokens,
   AccountType
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
 import { db, pool } from './db';
-import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne, count, isNotNull } from 'drizzle-orm';
+import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne, count, isNotNull, inArray } from 'drizzle-orm';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 
@@ -1479,26 +1480,67 @@ export class DatabaseStorage implements IStorage {
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutos en ms
     const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000); // 10 minutos en ms
     
-    // Limpiar sesiones sin datos después de 10 minutos
-    const resultNoData = await db
-      .delete(sessions)
+    // Primero, identificar las sesiones que se van a eliminar
+    const sessionsToDeleteNoData = await db
+      .select()
+      .from(sessions)
       .where(
         and(
           eq(sessions.hasUserData, false), // Sesiones sin datos
           lt(sessions.createdAt, tenMinutesAgo), // Creadas hace más de 10 minutos
           eq(sessions.saved, false) // No guardadas
         )
+      );
+    
+    const sessionsToDeleteInactive = await db
+      .select()
+      .from(sessions)
+      .where(
+        and(
+          eq(sessions.saved, false),
+          lt(sessions.lastActivity, thirtyMinutesAgo),
+          eq(sessions.hasUserData, true) // Solo sesiones con datos pero sin actividad
+        )
+      );
+    
+    const allSessionsToDelete = [...sessionsToDeleteNoData, ...sessionsToDeleteInactive];
+    const sessionIdsToDelete = allSessionsToDelete.map(s => s.sessionId);
+    
+    // Si hay sesiones para eliminar, primero cancelar sus links asociados
+    if (sessionIdsToDelete.length > 0) {
+      // Cancelar todos los links asociados a estas sesiones
+      await db
+        .update(linkTokens)
+        .set({ status: 'CANCELLED' })
+        .where(
+          and(
+            inArray(linkTokens.sessionId, sessionIdsToDelete),
+            eq(linkTokens.status, 'ACTIVE')
+          )
+        );
+      
+      console.log(`[Storage] Links cancelados para ${sessionIdsToDelete.length} sesiones antes de eliminarlas`);
+    }
+    
+    // Ahora sí eliminar las sesiones
+    const resultNoData = await db
+      .delete(sessions)
+      .where(
+        and(
+          eq(sessions.hasUserData, false),
+          lt(sessions.createdAt, tenMinutesAgo),
+          eq(sessions.saved, false)
+        )
       )
       .returning();
     
-    // Limpiar sesiones no guardadas sin actividad reciente (30 minutos)
     const resultInactive = await db
       .delete(sessions)
       .where(
         and(
           eq(sessions.saved, false),
           lt(sessions.lastActivity, thirtyMinutesAgo),
-          eq(sessions.hasUserData, true) // Solo sesiones con datos pero sin actividad
+          eq(sessions.hasUserData, true)
         )
       )
       .returning();
