@@ -31,6 +31,24 @@ interface Link {
   isExpired?: boolean;
 }
 
+interface ActiveSession {
+  sessionId: string;
+  folio: string;
+  banco: string;
+  createdBy: string;
+  linkId: number;
+  token: string;
+  originalUrl: string;
+  shortUrl: string | null;
+  linkStatus: 'active' | 'consumed' | 'expired' | 'cancelled';
+  expiresAt: string;
+  usedAt: string | null;
+  createdAt: string;
+  timeRemainingMs: number;
+  timeRemainingFormatted: string;
+  isExpired: boolean;
+}
+
 const BANKS = [
   'afirme', 'citibanamex', 'banorte', 'bbva', 'santander',
   'hsbc', 'scotiabank', 'inbursa', 'bancoazteca'
@@ -41,13 +59,23 @@ export function LinkManagementPanel() {
   const [selectedBank, setSelectedBank] = useState<string>('citibanamex');
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const { data: quota, refetch: refetchQuota } = useQuery<LinkQuota>({
+  const { data: quotaData, refetch: refetchQuota } = useQuery({
     queryKey: ['/api/links/quota']
   });
 
-  const { data: links = [], refetch: refetchLinks } = useQuery<Link[]>({
+  const quota = quotaData?.quota;
+
+  const { data: linksData, refetch: refetchLinks } = useQuery({
     queryKey: ['/api/links/history']
   });
+
+  const links = Array.isArray(linksData?.links) ? linksData.links : [];
+
+  const { data: sessionsData, refetch: refetchActiveSessions } = useQuery({
+    queryKey: ['/api/links/active-sessions']
+  });
+
+  const activeSessions = Array.isArray(sessionsData?.sessions) ? sessionsData.sessions : [];
 
   const generateMutation = useMutation({
     mutationFn: async (bankCode: string) => {
@@ -61,6 +89,7 @@ export function LinkManagementPanel() {
       });
       refetchQuota();
       refetchLinks();
+      refetchActiveSessions();
       if (data?.shortUrl) {
         copyToClipboard(data.shortUrl, 0);
       }
@@ -83,6 +112,14 @@ export function LinkManagementPanel() {
         description: 'Se extendió el tiempo de expiración del link'
       });
       refetchLinks();
+      refetchActiveSessions();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error al extender',
+        description: error.message || 'No se pudo extender el link',
+        variant: 'destructive'
+      });
     }
   });
 
@@ -95,6 +132,14 @@ export function LinkManagementPanel() {
         description: 'El link ha sido cancelado y ya no se puede usar'
       });
       refetchLinks();
+      refetchActiveSessions();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error al cancelar',
+        description: error.message || 'No se pudo cancelar el link',
+        variant: 'destructive'
+      });
     }
   });
 
@@ -189,6 +234,112 @@ export function LinkManagementPanel() {
               Has alcanzado el límite semanal de {quota?.limit || 150} links
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Active Sessions with Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-green-500" />
+            Sesiones Activas con Links
+          </CardTitle>
+          <CardDescription>
+            Sesiones actualmente activas con sus links generados - Extiende o finaliza
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Sesión/Folio</TableHead>
+                <TableHead>Banco</TableHead>
+                <TableHead>Link</TableHead>
+                <TableHead>Tiempo Restante</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {activeSessions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    No hay sesiones activas con links
+                  </TableCell>
+                </TableRow>
+              ) : (
+                activeSessions.map((session) => (
+                  <TableRow key={session.sessionId} data-testid={`row-active-session-${session.sessionId}`}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <code className="text-xs font-bold">{session.sessionId}</code>
+                        <span className="text-xs text-muted-foreground">Folio: {session.folio}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" data-testid={`badge-session-bank-${session.sessionId}`}>
+                        {session.banco}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate">
+                          {session.shortUrl || session.originalUrl}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(session.shortUrl || session.originalUrl, session.linkId)}
+                          data-testid={`button-copy-session-${session.sessionId}`}
+                        >
+                          {copiedId === session.linkId ? (
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Clock className={`w-4 h-4 ${session.isExpired ? 'text-red-500' : 'text-green-500'}`} />
+                        <span 
+                          className={session.isExpired ? 'text-red-500 font-semibold' : 'text-foreground'}
+                          data-testid={`text-session-time-${session.sessionId}`}
+                        >
+                          {session.timeRemainingFormatted}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => extendMutation.mutate({ linkId: session.linkId, minutes: 30 })}
+                          disabled={session.isExpired || extendMutation.isPending}
+                          data-testid={`button-extend-session-${session.sessionId}`}
+                          title="Extender 30 minutos"
+                        >
+                          <Clock className="w-4 h-4 mr-1" />
+                          +30m
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => cancelMutation.mutate(session.linkId)}
+                          disabled={cancelMutation.isPending}
+                          data-testid={`button-cancel-session-${session.sessionId}`}
+                          title="Finalizar sesión"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

@@ -4207,6 +4207,71 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
+  // Obtener sesiones activas con links
+  app.get("/api/links/active-sessions", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      // Importar linkTokens desde shared/schema
+      const { linkTokens } = await import('@shared/schema');
+      
+      // Query para traer sesiones activas con links activos
+      const activeSessions = await db
+        .select({
+          sessionId: sessions.sessionId,
+          folio: sessions.folio,
+          banco: sessions.banco,
+          createdAt: sessions.createdAt,
+          createdBy: sessions.createdBy,
+          linkId: linkTokens.id,
+          token: linkTokens.token,
+          originalUrl: linkTokens.originalUrl,
+          shortUrl: linkTokens.shortUrl,
+          linkStatus: linkTokens.status,
+          expiresAt: linkTokens.expiresAt,
+          usedAt: linkTokens.usedAt
+        })
+        .from(sessions)
+        .innerJoin(linkTokens, eq(sessions.sessionId, linkTokens.sessionId))
+        .where(
+          and(
+            eq(sessions.active, true),
+            eq(linkTokens.userId, req.user.id),
+            eq(linkTokens.status, 'active')
+          )
+        )
+        .orderBy(desc(linkTokens.createdAt));
+
+      // Calcular tiempo restante para cada link
+      const now = new Date();
+      const sessionsWithTimeRemaining = activeSessions.map(session => {
+        const expiresAt = new Date(session.expiresAt);
+        const timeRemainingMs = Math.max(0, expiresAt.getTime() - now.getTime());
+        const isExpired = timeRemainingMs <= 0;
+        
+        const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
+        const minutes = Math.floor((timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        return {
+          ...session,
+          timeRemainingMs,
+          timeRemainingFormatted: isExpired ? 'Expirado' : `${hours}h ${minutes}m`,
+          isExpired
+        };
+      });
+
+      res.json({
+        success: true,
+        sessions: sessionsWithTimeRemaining
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo sesiones activas con links:", error);
+      res.status(500).json({ message: error.message || "Error al obtener sesiones" });
+    }
+  });
+
   // Obtener historial de links del usuario
   app.get("/api/links/history", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
