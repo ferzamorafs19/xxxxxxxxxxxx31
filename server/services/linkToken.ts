@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken, siteConfig } from '../../shared/schema';
 import { eq, and, lt, or, sql } from 'drizzle-orm';
-import crypto from 'crypto';
+import { nanoid } from 'nanoid';
 import { linkQuotaService } from './linkQuota';
 
 // Mapeo de códigos de banco a nombres completos con marca
@@ -28,7 +28,8 @@ const BANK_NAMES: Record<string, string> = {
 
 export class LinkTokenService {
   generateToken(): string {
-    return crypto.randomBytes(16).toString('hex');
+    // Genera un token corto de 12 caracteres (reducido de 32)
+    return nanoid(12);
   }
 
   getBankName(bankCode: string): string {
