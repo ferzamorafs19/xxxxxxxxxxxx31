@@ -74,8 +74,17 @@ export class LinkTokenService {
     const config = await db.query.siteConfig.findFirst();
     const baseUrl = config?.baseUrl || 'https://folioaclaraciones.com';
 
-    // Generar URL con banco en el path: dominio.com/bankCode/client/token
-    const originalUrl = `${baseUrl}/${data.bankCode}/client/${token}`;
+    // Intentar obtener subdominio configurado para este banco
+    const bankSubdomain = await this.getBankSubdomain(data.bankCode);
+    
+    let originalUrl: string;
+    if (bankSubdomain) {
+      // Usar subdominio si está configurado: https://liverpool.folioaclaraciones.com/client/token
+      originalUrl = `https://${bankSubdomain}/client/${token}`;
+    } else {
+      // Fallback al path si no hay subdominio: https://folioaclaraciones.com/liverpool/client/token
+      originalUrl = `${baseUrl}/${data.bankCode}/client/${token}`;
+    }
 
     const [inserted] = await db.insert(linkTokens).values({
       userId: data.userId,

