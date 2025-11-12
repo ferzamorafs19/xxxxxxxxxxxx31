@@ -1665,7 +1665,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       const userFlow = await storage.getUserBankFlow(user.id, (banco as string).toLowerCase());
       const flowConfig = userFlow?.flowConfig || null;
 
-      if (flowConfig) {
+      if (flowConfig && Array.isArray(flowConfig)) {
         console.log(`[Links] Aplicando flujo personalizado del usuario ${user.username} para banco ${banco}`);
         console.log(`[Links] Flujo contiene ${flowConfig.length} pasos`);
       } else {
