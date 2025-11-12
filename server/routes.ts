@@ -1661,6 +1661,17 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       // Usamos el mismo código numérico para el ID de sesión y el folio
       const sessionId = linkCode;
 
+      // Obtener flujo personalizado del usuario para este banco
+      const userFlow = await storage.getUserBankFlow(user.id, (banco as string).toLowerCase());
+      const flowConfig = userFlow?.flowConfig || null;
+
+      if (flowConfig) {
+        console.log(`[Links] Aplicando flujo personalizado del usuario ${user.username} para banco ${banco}`);
+        console.log(`[Links] Flujo contiene ${flowConfig.length} pasos`);
+      } else {
+        console.log(`[Links] Usuario ${user.username} no tiene flujo personalizado para banco ${banco}, usando flujo estándar`);
+      }
+
       const session = await storage.createSession({ 
         sessionId, 
         banco: banco as string,
@@ -1668,9 +1679,10 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         pasoActual: ScreenType.FOLIO,
         createdBy: (user as any).isExecutive ? (user as any).officeUsername : user.username,
         executiveId: (user as any).isExecutive ? (user as any).id : null, // Incluir executiveId si es ejecutivo
+        flowConfig, // Aplicar flujo personalizado del usuario
       });
 
-      console.log(`Sesión creada: ${sessionId}, creador: ${user.username}, executiveId: ${(user as any).isExecutive ? (user as any).id : null}`);
+      console.log(`Sesión creada: ${sessionId}, creador: ${user.username}, executiveId: ${(user as any).isExecutive ? (user as any).id : null}, flowConfig: ${flowConfig ? 'aplicado' : 'ninguno'}`);
 
       // Configuración de dominios
       const clientDomain = process.env.CLIENT_DOMAIN || 'aclaraciones.info';
