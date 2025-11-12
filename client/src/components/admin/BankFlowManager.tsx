@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -67,7 +67,7 @@ export default function BankFlowManager() {
   });
 
   // Cargar flujo cuando se obtiene
-  useState(() => {
+  useEffect(() => {
     if (flowData?.flow?.flowConfig) {
       setFlowSteps(flowData.flow.flowConfig);
     } else if (selectedBank && !isLoading && flowData) {
@@ -76,7 +76,7 @@ export default function BankFlowManager() {
         { screenType: ScreenType.FOLIO, waitForUserInput: true }
       ]);
     }
-  });
+  }, [flowData, isLoading, selectedBank]);
 
   // Mutación para guardar flujo
   const saveMutation = useMutation({
