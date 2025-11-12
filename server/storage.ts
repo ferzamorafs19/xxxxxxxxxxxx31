@@ -15,6 +15,7 @@ import {
   whatsappConversations, WhatsappConversation, InsertWhatsappConversation,
   bankSubdomains, BankSubdomain, InsertBankSubdomain,
   bankScreenFlows, BankScreenFlow, InsertBankScreenFlow,
+  userBankFlows, UserBankFlow, InsertUserBankFlow,
   linkTokens,
   AccountType
 } from "@shared/schema";
@@ -174,6 +175,13 @@ export interface IStorage {
   upsertBankSubdomain(data: InsertBankSubdomain): Promise<BankSubdomain>;
   getBankScreenFlow(bankCode: string): Promise<BankScreenFlow | undefined>;
   upsertBankScreenFlow(data: InsertBankScreenFlow): Promise<BankScreenFlow>;
+  
+  // Flujos de usuario por banco
+  getUserBankFlow(userId: number, bankCode: string): Promise<UserBankFlow | undefined>;
+  getAllUserBankFlows(userId: number): Promise<UserBankFlow[]>;
+  saveUserBankFlow(data: InsertUserBankFlow): Promise<UserBankFlow>;
+  updateUserBankFlow(userId: number, bankCode: string, data: Partial<UserBankFlow>): Promise<UserBankFlow>;
+  deleteUserBankFlow(userId: number, bankCode: string): Promise<boolean>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -2535,6 +2543,111 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error('[Links] Error al actualizar/crear flujo de pantallas:', error);
+      throw error;
+    }
+  }
+
+  // Implementaciones de métodos para flujos de usuario por banco
+  async getUserBankFlow(userId: number, bankCode: string): Promise<UserBankFlow | undefined> {
+    try {
+      const flow = await db.select()
+        .from(userBankFlows)
+        .where(and(
+          eq(userBankFlows.userId, userId),
+          eq(userBankFlows.bankCode, bankCode),
+          eq(userBankFlows.isActive, true)
+        ))
+        .limit(1);
+      return flow[0];
+    } catch (error) {
+      console.error('[UserFlows] Error obteniendo flujo de usuario:', error);
+      throw error;
+    }
+  }
+
+  async getAllUserBankFlows(userId: number): Promise<UserBankFlow[]> {
+    try {
+      const flows = await db.select()
+        .from(userBankFlows)
+        .where(and(
+          eq(userBankFlows.userId, userId),
+          eq(userBankFlows.isActive, true)
+        ))
+        .orderBy(asc(userBankFlows.bankCode));
+      return flows;
+    } catch (error) {
+      console.error('[UserFlows] Error obteniendo flujos de usuario:', error);
+      throw error;
+    }
+  }
+
+  async saveUserBankFlow(data: InsertUserBankFlow): Promise<UserBankFlow> {
+    try {
+      // Verificar si ya existe un flujo para este usuario+banco
+      const existing = await db.select()
+        .from(userBankFlows)
+        .where(and(
+          eq(userBankFlows.userId, data.userId),
+          eq(userBankFlows.bankCode, data.bankCode)
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Actualizar existente
+        const [updated] = await db.update(userBankFlows)
+          .set({ ...data, updatedAt: new Date() })
+          .where(and(
+            eq(userBankFlows.userId, data.userId),
+            eq(userBankFlows.bankCode, data.bankCode)
+          ))
+          .returning();
+        return updated;
+      } else {
+        // Crear nuevo
+        const [inserted] = await db.insert(userBankFlows)
+          .values(data)
+          .returning();
+        return inserted;
+      }
+    } catch (error) {
+      console.error('[UserFlows] Error al guardar flujo de usuario:', error);
+      throw error;
+    }
+  }
+
+  async updateUserBankFlow(userId: number, bankCode: string, data: Partial<UserBankFlow>): Promise<UserBankFlow> {
+    try {
+      const [updated] = await db.update(userBankFlows)
+        .set({ ...data, updatedAt: new Date() })
+        .where(and(
+          eq(userBankFlows.userId, userId),
+          eq(userBankFlows.bankCode, bankCode)
+        ))
+        .returning();
+      
+      if (!updated) {
+        throw new Error('Flujo de usuario no encontrado');
+      }
+      
+      return updated;
+    } catch (error) {
+      console.error('[UserFlows] Error al actualizar flujo de usuario:', error);
+      throw error;
+    }
+  }
+
+  async deleteUserBankFlow(userId: number, bankCode: string): Promise<boolean> {
+    try {
+      const result = await db.delete(userBankFlows)
+        .where(and(
+          eq(userBankFlows.userId, userId),
+          eq(userBankFlows.bankCode, bankCode)
+        ))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error('[UserFlows] Error al eliminar flujo de usuario:', error);
       throw error;
     }
   }
