@@ -78,7 +78,11 @@ export class LinkTokenService {
       metadata: data.metadata || {}
     }).returning();
 
-    await linkQuotaService.incrementUsage(data.userId);
+    try {
+      await linkQuotaService.incrementUsage(data.userId);
+    } catch (error) {
+      console.error('[Links] Error incrementando cuota, pero link creado:', error);
+    }
 
     return {
       id: inserted.id,

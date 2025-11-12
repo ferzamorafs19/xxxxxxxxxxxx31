@@ -32,13 +32,13 @@ interface Link {
 }
 
 const BANKS = [
-  'afirme', 'banamex', 'banorte', 'bbva', 'santander',
-  'hsbc', 'scotiabank', 'inbursa', 'azteca'
+  'afirme', 'citibanamex', 'banorte', 'bbva', 'santander',
+  'hsbc', 'scotiabank', 'inbursa', 'bancoazteca'
 ].sort();
 
 export function LinkManagementPanel() {
   const { toast } = useToast();
-  const [selectedBank, setSelectedBank] = useState<string>('banamex');
+  const [selectedBank, setSelectedBank] = useState<string>('citibanamex');
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data: quota, refetch: refetchQuota } = useQuery<LinkQuota>({
