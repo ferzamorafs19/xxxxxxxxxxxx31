@@ -122,6 +122,27 @@ export class BitlyService {
       throw new Error(`Error al obtener clics: ${error.response?.data?.message || error.message}`);
     }
   }
+
+  async delete(bitlinkId: string): Promise<void> {
+    this.ensureToken();
+    try {
+      // Bitly usa el formato completo del link para eliminar (ej: bit.ly/abc123)
+      await axios.delete(
+        `${BITLY_API_URL}/bitlinks/${bitlinkId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log(`[Bitly] Link ${bitlinkId} eliminado exitosamente de Bitly`);
+    } catch (error: any) {
+      console.error('[Bitly] Error al eliminar link:', error.response?.data || error.message);
+      // No lanzar error para que la cancelación del link continúe aunque falle Bitly
+    }
+  }
 }
 
 export const bitlyService = new BitlyService();

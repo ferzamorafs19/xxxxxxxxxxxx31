@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken, siteConfig } from '../../shared/schema';
-import { eq, and, lt, or } from 'drizzle-orm';
+import { eq, and, lt, or, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 import { bitlyService } from './bitly';
 import { linkQuotaService } from './linkQuota';
@@ -41,7 +41,8 @@ export class LinkTokenService {
 
     const token = this.generateToken();
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
+    // Expiración inicial de 24 horas - el timer de 1 hora comenzará cuando el usuario ingrese el folio
+    expiresAt.setHours(expiresAt.getHours() + 24);
 
     // Obtener el dominio base de la configuración
     const config = await db.query.siteConfig.findFirst();
@@ -169,6 +170,24 @@ export class LinkTokenService {
       .where(eq(linkTokens.token, token));
   }
 
+  async startLinkTimer(sessionId: string): Promise<void> {
+    // Cuando el usuario ingresa el folio, activar el timer de 1 hora
+    const now = new Date();
+    const newExpiresAt = new Date();
+    newExpiresAt.setHours(newExpiresAt.getHours() + 1);
+
+    await db.update(linkTokens)
+      .set({
+        expiresAt: newExpiresAt,
+        extendedUntil: newExpiresAt,
+        metadata: sql`jsonb_set(COALESCE(metadata, '{}'), '{timerStarted}', to_jsonb(${now.toISOString()}::text), true)`,
+        updatedAt: now
+      })
+      .where(eq(linkTokens.sessionId, sessionId));
+
+    console.log(`[Links] Timer de 1 hora iniciado para sesión ${sessionId}, expira: ${newExpiresAt.toISOString()}`);
+  }
+
   async extendLink(linkId: number, additionalMinutes: number): Promise<void> {
     const link = await db.query.linkTokens.findFirst({
       where: eq(linkTokens.id, linkId)
@@ -195,6 +214,21 @@ export class LinkTokenService {
   }
 
   async cancelLink(linkId: number): Promise<void> {
+    // Obtener información del link antes de cancelarlo
+    const link = await db.query.linkTokens.findFirst({
+      where: eq(linkTokens.id, linkId)
+    });
+
+    if (link && link.bitlyLinkId) {
+      // Eliminar el link de Bitly
+      try {
+        await bitlyService.delete(link.bitlyLinkId);
+        console.log(`[Links] Link de Bitly ${link.bitlyLinkId} eliminado exitosamente`);
+      } catch (error) {
+        console.error(`[Links] Error al eliminar link de Bitly ${link.bitlyLinkId}:`, error);
+      }
+    }
+
     await db.update(linkTokens)
       .set({
         status: LinkStatus.CANCELLED,

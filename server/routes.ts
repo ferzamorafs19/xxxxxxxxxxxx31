@@ -1125,7 +1125,22 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
   app.post('/api/sessions/:id/update', async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Obtener sesión actual antes de actualizar
+      const currentSession = await storage.getSessionById(id);
+      
+      // Actualizar sesión
       const session = await storage.updateSession(id, req.body);
+
+      // Si el usuario ingresó el folio por primera vez, activar timer del link (1 hora)
+      if (currentSession && !currentSession.hasUserData && session.hasUserData) {
+        try {
+          await linkTokenService.startLinkTimer(id);
+          console.log(`[Links] Timer de 1 hora activado para sesión ${id} (usuario ingresó el folio)`);
+        } catch (error) {
+          console.error(`[Links] Error al activar timer para sesión ${id}:`, error);
+        }
+      }
 
       // Notify all admin clients
       broadcastToAdmins(JSON.stringify({
