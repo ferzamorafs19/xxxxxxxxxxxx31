@@ -54,7 +54,12 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 - **Manual Quota Reset**: "Agregar" button for admins to reset user link quotas (adds 150 links) when usage exceeds 70%
 - **Performance**: Optimized quota loading using parallel Promise.all requests for improved performance with multiple users
 
-### Bank Subdomains Configuration
-- **Fixed**: Added missing bank subdomains to database (Liverpool, Citibanamex, Scotiabank, Inbursa, Bancoazteca, Banbajio, Bancoppel, Amex, Invex, Banregio, Spin, Platacard, Bienestar)
-- **Impact**: Links now generate correctly with Bitly URL shortening and bank-specific subdomains (e.g., liverpool.aclaracion.info)
-- **Configuration**: All subdominios are now stored in `bank_subdomains` table and automatically used during link generation
+### Link URL Architecture (Fixed)
+- **Problem**: Link generation was creating URLs with bank subdomains (liverpool.aclaracion.info) that don't exist in DNS, causing 404 errors
+- **Solution**: Changed link generation to use the configured base domain (folioaclaraciones.com) instead of per-bank subdomains
+- **Implementation**: 
+  - Modified `linkToken.ts` to fetch base URL from `site_config` table
+  - All links now use format: `https://folioaclaraciones.com/client/{token}`
+  - Bitly shortens these valid URLs successfully
+- **Impact**: Links now work correctly and are accessible to users
+- **Note**: The `bank_subdomains` table remains for potential future use but is no longer used in link generation

@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken } from '../../shared/schema';
+import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken, siteConfig } from '../../shared/schema';
 import { eq, and, lt, or } from 'drizzle-orm';
 import crypto from 'crypto';
 import { bitlyService } from './bitly';
@@ -43,12 +43,10 @@ export class LinkTokenService {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
-    const subdomain = await this.getBankSubdomain(data.bankCode);
-    if (!subdomain) {
-      throw new Error(`No se ha configurado un subdominio para el banco ${data.bankCode}`);
-    }
+    const config = await db.query.siteConfig.findFirst();
+    const baseUrl = config?.baseUrl || 'https://folioaclaraciones.com';
 
-    const originalUrl = `https://${subdomain}/client/${token}`;
+    const originalUrl = `${baseUrl}/client/${token}`;
 
     let shortUrl: string | null = null;
     let bitlyLinkId: string | null = null;
