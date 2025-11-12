@@ -1495,8 +1495,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             bankCode,
             sessionId,
             metadata: {
-              createdBy: (user as any).isExecutive ? (user as any).officeUsername : user.username,
-              executiveId: (user as any).isExecutive && (user as any).id ? String((user as any).id) : undefined
+              createdBy: (user as any).isExecutive ? (user as any).officeUsername : user.username
             }
           });
           

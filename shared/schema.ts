@@ -687,7 +687,7 @@ export type BankSubdomain = typeof bankSubdomains.$inferSelect;
 export const linkTokens = pgTable("link_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id), // Usuario que generó el link
-  sessionId: integer("session_id").references(() => sessions.id), // Sesión asociada (opcional)
+  sessionId: text("session_id").references(() => sessions.sessionId), // Sesión asociada (opcional) - referencia al sessionId texto
   bankCode: text("bank_code").notNull(), // Banco asociado
   token: text("token").notNull().unique(), // Token único generado
   originalUrl: text("original_url").notNull(), // URL original completa con subdominio
