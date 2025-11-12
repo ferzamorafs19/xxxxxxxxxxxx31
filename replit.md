@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a comprehensive banking clarification platform designed to streamline banking clarifications, enhance user experience, and provide administrators with powerful tools for managing sessions and users. It features a dual-domain architecture for client and admin interfaces, built with Express.js and React. The platform offers real-time communication, robust banking session management, user authentication, SMS integration, file management, and Telegram notifications. Key capabilities include automated payment verification via Bitso API and OpenAI GPT-4o Vision, and a sophisticated link management system with Bitly integration.
+This project is a comprehensive banking clarification platform designed to streamline banking clarifications, enhance user experience, and provide administrators with powerful tools for managing sessions and users. It features a dual-domain architecture for client and admin interfaces, built with Express.js and React. The platform offers real-time communication, robust banking session management, user authentication, SMS integration, file management, and Telegram notifications. Key capabilities include automated payment verification via Bitso API and OpenAI GPT-4o Vision, and a sophisticated link management system.
 
 ## User Preferences
 
@@ -24,7 +24,7 @@ The platform uses a multi-domain setup (`aclaracion.info` for clients and `panel
 *   **WhatsApp Bot Architecture**: Utilizes `@whiskeysockets/baileys` for multi-user WhatsApp Web connections, offering independent bot instances, QR code management, hierarchical menus, and dynamic content placeholders. Conversation history is stored in the database.
 *   **Payment Verification Flow**: Integrates Bitso API and OpenAI GPT-4o Vision for automated payment verification, with a fallback to manual review and a discount code system.
 *   **Payment Bot (Telegram)**: A dedicated Telegram bot for payment receipt notifications and manual user activation by administrators.
-*   **Link Management System**: Provides comprehensive link creation and management with single-use tokens (1-hour expiration), Bitly URL shortening, bank-specific URL paths, user quota management (150 links/week resetting on Mondays), active session monitoring, and admin controls for viewing/resetting user quotas. Links remain active indefinitely until manually cancelled, and Bitly links are automatically deleted upon cancellation. Bitly link titles include bank branding for better recognition.
+*   **Link Management System**: Provides comprehensive link creation and management with single-use tokens, bank-specific URL paths, user quota management (150 links/week resetting on Mondays shared between web panel and Telegram bot), active session monitoring, and admin controls for viewing/resetting user quotas. Links remain active indefinitely until manually cancelled. Once a user enters their folio, a 1-hour session timer begins for completion.
 *   **Bank-Specific Screen Flow Configuration System**: Allows both administrators and regular users to define custom sequences of screens for each bank. These configurations are stored in the database (`bank_screen_flows` for global admin flows, `user_bank_flows` for individual user flows) and are applied to sessions when links are created. The UI supports drag-and-drop step management with configurable screen types, durations, and user input requirements.
 *   **Personalized Telegram Notifications**: Each user receives Telegram notifications only for their own sessions via `telegramChatId` lookup. The system sends notifications to both the main admin (if configured) and the session creator (if they have a Telegram chat ID linked). Error handling is independent for each recipient to ensure delivery resilience.
 *   **Telegram Bot Link Generation**: The `/generar` command allows users to create banking links directly from Telegram with an interactive bank selection menu. The system enforces comprehensive security controls including role verification (user/admin only), weekly quota enforcement (150 links/week shared with panel), session timeout (5 minutes of inactivity), anti-concurrency checks, and account expiration validation. Generated links appear in the user's panel and follow the same quota and flow configuration as panel-generated links. The bot displays updated quota information after each successful generation, showing exactly how many links remain for the current week.
@@ -41,5 +41,4 @@ The platform uses a multi-domain setup (`aclaracion.info` for clients and `panel
 *   **WhatsApp Integration**: `@whiskeysockets/baileys`
 *   **Payment Gateway**: Bitso API
 *   **AI Integration**: OpenAI GPT-4o Vision
-*   **URL Shortening**: Bitly API
 *   **Environment Management**: Replit Secrets
