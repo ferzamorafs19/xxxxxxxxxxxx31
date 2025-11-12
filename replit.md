@@ -66,3 +66,14 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
   - Kept legacy `/client/:token` route for backward compatibility
 - **Impact**: Links now work correctly with bank identification in the URL path
 - **Note**: The `bank_subdomains` table remains for potential future use but is no longer used in link generation
+
+### Token Consumption Strategy (Fixed Critical Bug)
+- **Problem**: Tokens were being consumed on first access, causing "Este link ya fue utilizado" errors when bots/previews accessed links before real users
+- **Solution**: Changed token consumption strategy to only consume when session is actually created
+- **Implementation**:
+  - `validateAndConsumeToken` now only validates and tracks access (no consumption)
+  - New `consumeToken` method handles actual token consumption
+  - Token is consumed ONLY when a new session is created (not on subsequent accesses)
+  - If session already exists for a token, the link can be reused without error
+- **Impact**: Links are now resilient to bot/preview accesses and work reliably for end users
+- **Benefits**: Prevents false "already used" errors from Telegram/WhatsApp previews, Bitly verification, browser prefetch, etc.

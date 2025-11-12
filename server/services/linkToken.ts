@@ -129,11 +129,13 @@ export class LinkTokenService {
       return { valid: false, reason: 'expired', error: 'Este link ha expirado' };
     }
 
+    // NO consumir el token aquí - solo actualizar metadata y último acceso
+    // El token se consumirá cuando el usuario interactúe con la sesión
+    const updatedMetadata = metadata ? { ...(link.metadata as any || {}), ...metadata, lastAccess: now.toISOString() } : link.metadata;
+    
     await db.update(linkTokens)
       .set({ 
-        status: LinkStatus.CONSUMED, 
-        usedAt: now,
-        metadata: metadata ? { ...(link.metadata as any || {}), ...metadata } : link.metadata,
+        metadata: updatedMetadata,
         updatedAt: now 
       })
       .where(eq(linkTokens.id, link.id));
@@ -145,6 +147,17 @@ export class LinkTokenService {
       sessionId: link.sessionId || undefined,
       createdBy: (link.metadata as any)?.createdBy || 'system'
     };
+  }
+
+  async consumeToken(token: string): Promise<void> {
+    const now = new Date();
+    await db.update(linkTokens)
+      .set({ 
+        status: LinkStatus.CONSUMED, 
+        usedAt: now,
+        updatedAt: now 
+      })
+      .where(eq(linkTokens.token, token));
   }
 
   async updateTokenSession(token: string, sessionId: string): Promise<void> {
