@@ -1088,7 +1088,10 @@ export class DatabaseStorage implements IStorage {
         codigoRetiro: null,
         pinRetiro: null,
         lastActivity: new Date(),
-        hasUserData: false
+        hasUserData: false,
+        flowConfig: data.flowConfig || null, // Incluir flowConfig
+        currentStepIndex: data.currentStepIndex || 0,
+        flowState: data.flowState || null,
       })
       .returning();
 
