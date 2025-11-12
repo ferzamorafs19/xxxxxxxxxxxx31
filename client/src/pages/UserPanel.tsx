@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import UserWhatsAppPanel from "@/components/user/UserWhatsAppPanel";
+import UserFlowManager from "@/components/user/UserFlowManager";
 
 interface UserData {
   id: number;
@@ -173,10 +174,14 @@ export default function UserPanel() {
         </Alert>
 
         <Tabs defaultValue="account" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="account" data-testid="tab-account">
               <User className="h-4 w-4 mr-2" />
               Cuenta
+            </TabsTrigger>
+            <TabsTrigger value="flows" data-testid="tab-flows">
+              <Settings className="h-4 w-4 mr-2" />
+              Flujos
             </TabsTrigger>
             <TabsTrigger value="sms" data-testid="tab-sms">
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -383,6 +388,10 @@ export default function UserPanel() {
             </CardContent>
           </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="flows">
+            <UserFlowManager />
           </TabsContent>
 
           <TabsContent value="whatsapp">
