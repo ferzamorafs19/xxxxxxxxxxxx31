@@ -77,3 +77,25 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
   - If session already exists for a token, the link can be reused without error
 - **Impact**: Links are now resilient to bot/preview accesses and work reliably for end users
 - **Benefits**: Prevents false "already used" errors from Telegram/WhatsApp previews, Bitly verification, browser prefetch, etc.
+
+### Dynamic Link Expiration System
+- **Problem**: Links needed flexible expiration - initial long window but auto-shorten when user starts interacting
+- **Solution**: Implemented dynamic two-phase expiration system
+- **Implementation**:
+  - Links created with 24-hour initial expiration (allows time for user to access)
+  - `startLinkTimer()` method reduces expiration to 1 hour when user enters folio
+  - Timer activation tracked in link metadata with `timerStarted` timestamp
+  - Guard prevents multiple timer resets - only activates once per session
+  - Triggered automatically in POST `/api/sessions/:id/update` when `hasUserData` changes from false to true
+- **Impact**: Balances user convenience (24h to open link) with security (1h active session after engagement)
+
+### Automatic Bitly Link Deletion
+- **Problem**: Cancelled links remained in Bitly, potentially exposing site information through link previews
+- **Solution**: Automatic cleanup of Bitly shortened links when links are cancelled
+- **Implementation**:
+  - Added `delete()` method to `BitlyService` for removing links from Bitly API
+  - `cancelLink()` now automatically deletes associated Bitly link before marking as cancelled
+  - Graceful error handling - cancellation proceeds even if Bitly deletion fails
+  - Console logging for tracking successful/failed deletions
+- **Impact**: Cancelled links no longer expose site previews or metadata through Bitly
+- **Security**: Prevents information leakage after link invalidation
