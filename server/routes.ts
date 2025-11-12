@@ -1500,7 +1500,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             }
           });
           
-          shortUrl = linkResult.shortUrl;
+          shortUrl = linkResult.shortUrl || undefined;
           tokenizedUrl = linkResult.originalUrl; // Link con token (banco.aclaracion.info/client/TOKEN)
           expiresAt = linkResult.expiresAt;
           
@@ -4216,7 +4216,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
     try {
       // Query para traer sesiones activas con links activos
-      const activeSessions = await storage.db
+      const activeSessions = await db
         .select({
           sessionId: sessions.sessionId,
           folio: sessions.folio,

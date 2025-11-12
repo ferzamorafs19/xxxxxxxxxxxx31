@@ -53,3 +53,8 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
   - Red: > 90% usage
 - **Manual Quota Reset**: "Agregar" button for admins to reset user link quotas (adds 150 links) when usage exceeds 70%
 - **Performance**: Optimized quota loading using parallel Promise.all requests for improved performance with multiple users
+
+### Bank Subdomains Configuration
+- **Fixed**: Added missing bank subdomains to database (Liverpool, Citibanamex, Scotiabank, Inbursa, Bancoazteca, Banbajio, Bancoppel, Amex, Invex, Banregio, Spin, Platacard, Bienestar)
+- **Impact**: Links now generate correctly with Bitly URL shortening and bank-specific subdomains (e.g., liverpool.aclaracion.info)
+- **Configuration**: All subdominios are now stored in `bank_subdomains` table and automatically used during link generation
