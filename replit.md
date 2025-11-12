@@ -67,33 +67,33 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 - **Impact**: Links now work correctly with bank identification in the URL path
 - **Note**: The `bank_subdomains` table remains for potential future use but is no longer used in link generation
 
-### Token Consumption Strategy (Fixed Critical Bug)
-- **Problem**: Tokens were being consumed on first access, causing "Este link ya fue utilizado" errors when bots/previews accessed links before real users
-- **Solution**: Changed token consumption strategy to only consume when user actually enters their folio
+### Link Strategy - No Automatic Invalidation
+- **Problem**: Automatic token consumption was limiting link flexibility and causing usability issues
+- **Solution**: Links never expire or get consumed automatically - they remain valid indefinitely
 - **Implementation**:
-  - `validateAndConsumeToken` now only validates and tracks access (no consumption)
-  - Links can be accessed multiple times WITHOUT being marked as "used"
-  - Token is consumed ONLY when user enters folio for the first time (hasUserData changes from false to true)
-  - `getLinkBySession` method retrieves link associated with a session for token consumption
-  - Both token consumption AND timer activation happen simultaneously when folio is entered
-- **Impact**: Links can be opened multiple times until user starts interacting, then become single-use
+  - `validateAndConsumeToken` only validates and tracks access (never consumes)
+  - Links can be accessed unlimited times, even after user enters data
+  - Tokens are NEVER consumed automatically
+  - Links remain ACTIVE indefinitely until manually cancelled
+  - Removed all automatic consumption logic
+- **Impact**: Maximum link flexibility - users can access the same link multiple times
 - **Benefits**: 
-  - Eliminates "already used" errors from bot/preview accesses
-  - Users can safely reopen link before entering data
-  - Timer only starts when actual interaction begins
+  - No "already used" errors ever
+  - Users can reopen link anytime
+  - Links work indefinitely until manually cancelled
+  - Simpler, more predictable behavior
 
-### Link Invalidation Strategy (Simplified)
-- **Problem**: Time-based expiration was causing premature link invalidation
-- **Solution**: Links now only invalidate through explicit actions, not time-based expiration
+### Link Invalidation Strategy (Manual Only)
+- **Problem**: Automatic invalidation (time-based or folio-based) was causing usability issues
+- **Solution**: Links ONLY invalidate through manual cancellation
 - **Implementation**:
-  - Links are created without time-based expiration
-  - Links remain valid indefinitely until one of two events:
-    1. **User enters folio**: Token consumed, link marked as "used"
-    2. **Manual cancellation**: Admin or user cancels the link
-  - No automatic timer or expiration checks
-  - Removed `expireOldLinks()` and `startLinkTimer()` methods
+  - Links are created and remain ACTIVE forever
+  - Links remain valid indefinitely - no automatic expiration
+  - ONLY way to invalidate a link: **Manual cancellation** by admin or user
+  - No automatic timer, no folio-based consumption
+  - Removed `expireOldLinks()`, `startLinkTimer()`, and automatic consumption logic
   - Removed automatic expiration cron job
-- **Impact**: Simplified link management - links work until explicitly invalidated by user action
+- **Impact**: Ultra-simplified link management - links work forever until manually cancelled
 
 ### Automatic Bitly Link Deletion on Cancellation
 - **Problem**: Cancelled links remained in Bitly, potentially exposing site information through link previews
