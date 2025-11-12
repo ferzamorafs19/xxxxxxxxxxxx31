@@ -1,0 +1,227 @@
+import { db } from '../db';
+import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken } from '../../shared/schema';
+import { eq, and, lt, or } from 'drizzle-orm';
+import crypto from 'crypto';
+import { bitlyService } from './bitly';
+import { linkQuotaService } from './linkQuota';
+
+export class LinkTokenService {
+  generateToken(): string {
+    return crypto.randomBytes(16).toString('hex');
+  }
+
+  async getBankSubdomain(bankCode: string): Promise<string | null> {
+    const subdomain = await db.query.bankSubdomains.findFirst({
+      where: and(
+        eq(bankSubdomains.bankCode, bankCode),
+        eq(bankSubdomains.isActive, true)
+      )
+    });
+
+    return subdomain?.subdomain || null;
+  }
+
+  async createLink(data: {
+    userId: number;
+    bankCode: string;
+    sessionId?: number;
+    metadata?: any;
+  }): Promise<{ 
+    id: number;
+    token: string; 
+    originalUrl: string; 
+    shortUrl: string | null;
+    expiresAt: Date;
+  }> {
+    const quota = await linkQuotaService.checkQuota(data.userId);
+    
+    if (!quota.allowed) {
+      throw new Error(`Has alcanzado el límite semanal de ${quota.limit} links. Límite se renueva el próximo lunes.`);
+    }
+
+    const token = this.generateToken();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    const subdomain = await this.getBankSubdomain(data.bankCode);
+    if (!subdomain) {
+      throw new Error(`No se ha configurado un subdominio para el banco ${data.bankCode}`);
+    }
+
+    const originalUrl = `https://${subdomain}/client/${token}`;
+
+    let shortUrl: string | null = null;
+    let bitlyLinkId: string | null = null;
+
+    try {
+      const bitlyResponse = await bitlyService.shorten({
+        longUrl: originalUrl,
+        title: `Link ${data.bankCode} - ${new Date().toLocaleDateString()}`
+      });
+      
+      shortUrl = bitlyResponse.link;
+      bitlyLinkId = bitlyResponse.id;
+    } catch (error) {
+      console.error('Error al acortar link con Bitly:', error);
+    }
+
+    const [inserted] = await db.insert(linkTokens).values({
+      userId: data.userId,
+      sessionId: data.sessionId || null,
+      bankCode: data.bankCode,
+      token,
+      originalUrl,
+      shortUrl,
+      bitlyLinkId,
+      status: LinkStatus.ACTIVE,
+      expiresAt,
+      metadata: data.metadata || {}
+    }).returning();
+
+    await linkQuotaService.incrementUsage(data.userId);
+
+    return {
+      id: inserted.id,
+      token,
+      originalUrl,
+      shortUrl,
+      expiresAt
+    };
+  }
+
+  async validateAndConsumeToken(token: string, metadata?: any): Promise<{ 
+    valid: boolean; 
+    linkId?: number;
+    bankCode?: string;
+    sessionId?: number;
+    error?: string;
+  }> {
+    const link = await db.query.linkTokens.findFirst({
+      where: eq(linkTokens.token, token)
+    });
+
+    if (!link) {
+      return { valid: false, error: 'Token no encontrado' };
+    }
+
+    if (link.status === LinkStatus.CONSUMED) {
+      return { valid: false, error: 'Este link ya fue usado' };
+    }
+
+    if (link.status === LinkStatus.CANCELLED) {
+      return { valid: false, error: 'Este link fue cancelado' };
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(link.expiresAt);
+    
+    if (now > expiresAt) {
+      await db.update(linkTokens)
+        .set({ status: LinkStatus.EXPIRED, updatedAt: new Date() })
+        .where(eq(linkTokens.id, link.id));
+      
+      return { valid: false, error: 'Este link ha expirado' };
+    }
+
+    await db.update(linkTokens)
+      .set({ 
+        status: LinkStatus.CONSUMED, 
+        usedAt: now,
+        metadata: metadata ? { ...link.metadata, ...metadata } : link.metadata,
+        updatedAt: now 
+      })
+      .where(eq(linkTokens.id, link.id));
+
+    return {
+      valid: true,
+      linkId: link.id,
+      bankCode: link.bankCode,
+      sessionId: link.sessionId || undefined
+    };
+  }
+
+  async extendLink(linkId: number, additionalMinutes: number): Promise<void> {
+    const link = await db.query.linkTokens.findFirst({
+      where: eq(linkTokens.id, linkId)
+    });
+
+    if (!link) {
+      throw new Error('Link no encontrado');
+    }
+
+    if (link.status !== LinkStatus.ACTIVE) {
+      throw new Error('Solo se pueden extender links activos');
+    }
+
+    const newExpiresAt = new Date(link.expiresAt);
+    newExpiresAt.setMinutes(newExpiresAt.getMinutes() + additionalMinutes);
+
+    await db.update(linkTokens)
+      .set({
+        expiresAt: newExpiresAt,
+        extendedUntil: newExpiresAt,
+        updatedAt: new Date()
+      })
+      .where(eq(linkTokens.id, linkId));
+  }
+
+  async cancelLink(linkId: number): Promise<void> {
+    await db.update(linkTokens)
+      .set({
+        status: LinkStatus.CANCELLED,
+        updatedAt: new Date()
+      })
+      .where(eq(linkTokens.id, linkId));
+  }
+
+  async getLinkHistory(userId: number, limit: number = 50): Promise<any[]> {
+    const links = await db.query.linkTokens.findMany({
+      where: eq(linkTokens.userId, userId),
+      orderBy: (linkTokens, { desc }) => [desc(linkTokens.createdAt)],
+      limit
+    });
+
+    return links.map(link => {
+      const now = new Date();
+      const expiresAt = new Date(link.expiresAt);
+      const timeRemaining = Math.max(0, expiresAt.getTime() - now.getTime());
+      
+      return {
+        ...link,
+        timeRemainingMs: timeRemaining,
+        timeRemainingFormatted: this.formatTimeRemaining(timeRemaining),
+        isExpired: timeRemaining === 0 || link.status === LinkStatus.EXPIRED
+      };
+    });
+  }
+
+  formatTimeRemaining(ms: number): string {
+    if (ms <= 0) return 'Expirado';
+    
+    const minutes = Math.floor(ms / 60000);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${remainingMinutes}m`;
+    }
+    return `${remainingMinutes}m`;
+  }
+
+  async expireOldLinks(): Promise<number> {
+    const result = await db.update(linkTokens)
+      .set({ 
+        status: LinkStatus.EXPIRED,
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(linkTokens.status, LinkStatus.ACTIVE),
+        lt(linkTokens.expiresAt, new Date())
+      ))
+      .returning();
+
+    return result.length;
+  }
+}
+
+export const linkTokenService = new LinkTokenService();
