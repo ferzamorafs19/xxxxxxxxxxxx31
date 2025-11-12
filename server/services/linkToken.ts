@@ -24,7 +24,7 @@ export class LinkTokenService {
   async createLink(data: {
     userId: number;
     bankCode: string;
-    sessionId?: number;
+    sessionId?: string;
     metadata?: any;
   }): Promise<{ 
     id: number;

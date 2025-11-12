@@ -132,6 +132,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 6 * 60 * 60 * 1000); // Ejecutar cada 6 horas
 
+  // Configurar expiración automática de links
+  setInterval(async () => {
+    try {
+      const expiredCount = await linkTokenService.expireOldLinks();
+      if (expiredCount > 0) {
+        console.log(`[Links] Limpieza automática: ${expiredCount} links expirados marcados`);
+      }
+    } catch (error) {
+      console.error('[Links] Error en limpieza automática de links:', error);
+    }
+  }, 5 * 60 * 1000); // Ejecutar cada 5 minutos
+
   // Middleware de validación de tokens de un solo uso
   app.get('/client/:token', async (req, res) => {
     try {
