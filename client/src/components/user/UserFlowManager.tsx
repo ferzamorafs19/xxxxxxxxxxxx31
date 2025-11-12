@@ -63,6 +63,11 @@ export default function UserFlowManager() {
   // Obtener flujo existente del usuario para el banco seleccionado
   const { data: flowData, isLoading } = useQuery<{ success: boolean; flow: { flowConfig: FlowStep[] } | null }>({
     queryKey: ['/api/user-flows', selectedBank],
+    queryFn: async () => {
+      const response = await fetch(`/api/user-flows/${selectedBank}`);
+      if (!response.ok) throw new Error('Error al obtener flujo');
+      return response.json();
+    },
     enabled: !!selectedBank,
   });
 
