@@ -224,6 +224,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
                 <Settings className="mr-2 h-4 w-4" />
                 Flujos por Banco
               </button>
+              
+              <button 
+                onClick={() => handleTabChange('flows')}
+                className={`block w-full text-left ${activeTab === 'flows' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+                data-testid="button-flows"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Mis Flujos Personalizados
+              </button>
             </>
           )}
         </div>
