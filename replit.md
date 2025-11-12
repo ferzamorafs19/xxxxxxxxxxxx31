@@ -56,10 +56,13 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 
 ### Link URL Architecture (Fixed)
 - **Problem**: Link generation was creating URLs with bank subdomains (liverpool.aclaracion.info) that don't exist in DNS, causing 404 errors
-- **Solution**: Changed link generation to use the configured base domain (folioaclaraciones.com) instead of per-bank subdomains
+- **Solution**: Changed link generation to use bank codes in the URL path instead of subdomains
 - **Implementation**: 
-  - Modified `linkToken.ts` to fetch base URL from `site_config` table
-  - All links now use format: `https://folioaclaraciones.com/client/{token}`
+  - Modified `linkToken.ts` to fetch base URL from `site_config` table and include bank code in path
+  - All links now use format: `https://folioaclaraciones.com/{bankCode}/client/{token}`
+  - Examples: `folioaclaraciones.com/liverpool/client/abc123`, `folioaclaraciones.com/bbva/client/def456`
   - Bitly shortens these valid URLs successfully
-- **Impact**: Links now work correctly and are accessible to users
+  - Added new route `/:bankCode/client/:token` in routes.ts to handle bank-specific paths
+  - Kept legacy `/client/:token` route for backward compatibility
+- **Impact**: Links now work correctly with bank identification in the URL path
 - **Note**: The `bank_subdomains` table remains for potential future use but is no longer used in link generation

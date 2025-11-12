@@ -4290,6 +4290,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
     try {
       // Query para traer sesiones activas con links activos
+      const { db } = await import('../db');
       const activeSessions = await db
         .select({
           sessionId: sessions.sessionId,
