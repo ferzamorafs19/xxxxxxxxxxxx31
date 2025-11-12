@@ -170,6 +170,19 @@ export class LinkTokenService {
       .where(eq(linkTokens.token, token));
   }
 
+  async getLinkBySession(sessionId: string): Promise<{ id: number; token: string; status: string } | null> {
+    const link = await db.query.linkTokens.findFirst({
+      where: eq(linkTokens.sessionId, sessionId),
+      columns: {
+        id: true,
+        token: true,
+        status: true
+      }
+    });
+    
+    return link || null;
+  }
+
   async startLinkTimer(sessionId: string): Promise<void> {
     // Verificar si el timer ya se activó para esta sesión
     const existingLink = await db.query.linkTokens.findFirst({

