@@ -82,24 +82,28 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
   - Users can safely reopen link before entering data
   - Timer only starts when actual interaction begins
 
-### Dynamic Link Expiration System
-- **Problem**: Links needed flexible expiration - initial long window but auto-shorten when user starts interacting
-- **Solution**: Implemented dynamic two-phase expiration system
+### Link Invalidation Strategy (Simplified)
+- **Problem**: Time-based expiration was causing premature link invalidation
+- **Solution**: Links now only invalidate through explicit actions, not time-based expiration
 - **Implementation**:
-  - Links created with 24-hour initial expiration (allows time for user to access)
-  - `startLinkTimer()` method reduces expiration to 1 hour when user enters folio
-  - Timer activation tracked in link metadata with `timerStarted` timestamp
-  - Guard prevents multiple timer resets - only activates once per session
-  - Triggered automatically in POST `/api/sessions/:id/update` when `hasUserData` changes from false to true
-- **Impact**: Balances user convenience (24h to open link) with security (1h active session after engagement)
+  - Links are created without time-based expiration
+  - Links remain valid indefinitely until one of two events:
+    1. **User enters folio**: Token consumed, link marked as "used"
+    2. **Manual cancellation**: Admin or user cancels the link
+  - No automatic timer or expiration checks
+  - Removed `expireOldLinks()` and `startLinkTimer()` methods
+  - Removed automatic expiration cron job
+- **Impact**: Simplified link management - links work until explicitly invalidated by user action
 
-### Automatic Bitly Link Deletion
+### Automatic Bitly Link Deletion on Cancellation
 - **Problem**: Cancelled links remained in Bitly, potentially exposing site information through link previews
-- **Solution**: Automatic cleanup of Bitly shortened links when links are cancelled
+- **Solution**: Automatic cleanup of Bitly shortened links when links are cancelled manually
 - **Implementation**:
   - Added `delete()` method to `BitlyService` for removing links from Bitly API
   - `cancelLink()` now automatically deletes associated Bitly link before marking as cancelled
+  - POST `/api/links/:id/cancel` endpoint allows both users and admins to cancel links
+  - Users can only cancel their own links; admins can cancel any link
   - Graceful error handling - cancellation proceeds even if Bitly deletion fails
   - Console logging for tracking successful/failed deletions
-- **Impact**: Cancelled links no longer expose site previews or metadata through Bitly
-- **Security**: Prevents information leakage after link invalidation
+- **Impact**: Cancelled links are completely removed from Bitly, preventing preview exposure
+- **Security**: Prevents information leakage after link invalidation; proper authorization checks ensure users can only cancel their own links

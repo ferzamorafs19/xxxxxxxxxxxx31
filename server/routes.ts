@@ -19,6 +19,7 @@ import { linkTokenService } from './services/linkToken';
 import { linkQuotaService } from './services/linkQuota';
 import { bitlyService } from './services/bitly';
 import { eq, and, desc } from 'drizzle-orm';
+import { db } from './db';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
