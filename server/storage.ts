@@ -1120,7 +1120,12 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
 
-    // Eliminar de la base de datos
+    // Primero eliminar los link_tokens asociados a esta sesión
+    await db
+      .delete(linkTokens)
+      .where(eq(linkTokens.sessionId, sessionId));
+
+    // Ahora sí eliminar la sesión
     await db
       .delete(sessions)
       .where(eq(sessions.sessionId, sessionId));
@@ -1517,20 +1522,14 @@ export class DatabaseStorage implements IStorage {
     const allSessionsToDelete = [...sessionsToDeleteNoData, ...sessionsToDeleteInactive];
     const sessionIdsToDelete = allSessionsToDelete.map(s => s.sessionId);
     
-    // Si hay sesiones para eliminar, primero cancelar sus links asociados
+    // Si hay sesiones para eliminar, primero eliminar sus links asociados
     if (sessionIdsToDelete.length > 0) {
-      // Cancelar todos los links asociados a estas sesiones
+      // Eliminar todos los links asociados a estas sesiones
       await db
-        .update(linkTokens)
-        .set({ status: 'CANCELLED' })
-        .where(
-          and(
-            inArray(linkTokens.sessionId, sessionIdsToDelete),
-            eq(linkTokens.status, 'ACTIVE')
-          )
-        );
+        .delete(linkTokens)
+        .where(inArray(linkTokens.sessionId, sessionIdsToDelete));
       
-      console.log(`[Storage] Links cancelados para ${sessionIdsToDelete.length} sesiones antes de eliminarlas`);
+      console.log(`[Storage] Links eliminados para ${sessionIdsToDelete.length} sesiones antes de eliminarlas`);
     }
     
     // Ahora sí eliminar las sesiones
