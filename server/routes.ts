@@ -2496,6 +2496,59 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
                 data: updatedSession
               }), createdBy); // Dirigimos el mensaje al creador de la sesión
             }
+
+            // === LÓGICA DE FLUJO AUTOMÁTICO ===
+            // Verificar si la sesión tiene un flujo personalizado configurado
+            const currentSession = await storage.getSessionById(sessionId);
+            if (currentSession && currentSession.flowConfig && Array.isArray(currentSession.flowConfig)) {
+              console.log(`[AutoFlow] Sesión ${sessionId} tiene flujo configurado con ${currentSession.flowConfig.length} pasos`);
+              
+              const currentStepIndex = currentSession.currentStepIndex || 0;
+              const currentStep = currentSession.flowConfig[currentStepIndex];
+              
+              if (currentStep) {
+                console.log(`[AutoFlow] Paso actual (${currentStepIndex}): ${currentStep.screenType}, esperaInput: ${currentStep.waitForUserInput}`);
+                
+                // Verificar si el paso actual requiere entrada del usuario
+                const requiresInput = currentStep.waitForUserInput !== false; // Por defecto true
+                
+                // Si el paso requiere entrada y acabamos de recibirla, o si no requiere entrada, avanzar
+                const shouldAdvance = (requiresInput && tipo !== 'validando' && tipo !== 'geolocation') || !requiresInput;
+                
+                if (shouldAdvance) {
+                  const nextStepIndex = currentStepIndex + 1;
+                  const nextStep = currentSession.flowConfig[nextStepIndex];
+                  
+                  if (nextStep) {
+                    console.log(`[AutoFlow] Avanzando al paso ${nextStepIndex}: ${nextStep.screenType}`);
+                    
+                    // Actualizar el índice del paso en la sesión
+                    await storage.updateSession(sessionId, {
+                      currentStepIndex: nextStepIndex,
+                      stepStartedAt: new Date(),
+                      pasoActual: nextStep.screenType
+                    });
+                    
+                    // Enviar mensaje al cliente para cambiar de pantalla
+                    const clientWs = clients.get(sessionId);
+                    if (clientWs && clientWs.readyState === 1) {
+                      clientWs.send(JSON.stringify({
+                        type: 'SCREEN_CHANGE',
+                        data: {
+                          tipo: `mostrar_${nextStep.screenType}`,
+                          screenType: nextStep.screenType
+                        }
+                      }));
+                      console.log(`[AutoFlow] Mensaje SCREEN_CHANGE enviado al cliente para ${nextStep.screenType}`);
+                    }
+                  } else {
+                    console.log(`[AutoFlow] Flujo completado - no hay más pasos`);
+                  }
+                }
+              }
+            }
+            // === FIN DE LÓGICA DE FLUJO AUTOMÁTICO ===
+
           } catch (error) {
             console.error("Invalid client input data:", error);
             ws.send(JSON.stringify({ 
