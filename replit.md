@@ -45,6 +45,31 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 
 ## Recent Changes (November 12, 2025)
 
+### Telegram Mass Messaging with File Attachments
+- **Frontend (MessageSender.tsx)**: Added support for mass messaging and file attachments
+  - Checkbox to send messages to all users with configured Chat IDs
+  - File input with 50MB size validation and file preview
+  - Support for sending messages with or without attachments
+  - Shows sent/failed counts for mass messages
+- **Backend (routes.ts)**: Updated `/api/admin/send-message` endpoint
+  - Uses multer middleware to handle file uploads
+  - Supports both individual and broadcast messaging (sendToAll parameter)
+  - Sends files via `sendAdminDocument()` with optional caption
+  - Cleans up temporary files after sending
+  - Returns detailed results with sent/failed counts and errors
+- **TelegramBot**: New `sendAdminDocument()` function to send files via Telegram
+  - Accepts file path and optional caption
+  - Uses `ensureBotReady()` to ensure bot is initialized
+- **UI Changes**: Updated terminology from "Links con Bitly" to "Links" in Sidebar and user management table
+
+### Telegram Bot Initialization Improvements
+- **Async Initialization**: Bot now initializes asynchronously with extended cleanup time (7 seconds)
+- **ensureBotReady() Helper**: Ensures bot is fully initialized before use
+- **Reduced 409 Errors**: Extended webhook deletion timeout to minimize polling conflicts
+- **Note**: Error 409 still occurs occasionally during startup but significantly reduced
+
+## Recent Changes (November 12, 2025) - Previous
+
 ### Link Management System - Active Sessions & Quota Management
 - **GET /api/links/active-sessions**: New endpoint to retrieve active sessions with associated links (non-expired, non-cancelled), with time remaining calculations
 - **User Quota Display**: Added "Links" column to registered users table showing usage/limit with color-coded indicators:
