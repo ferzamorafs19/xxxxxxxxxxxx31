@@ -189,11 +189,15 @@ export default function AdminPanel() {
       return await res.json();
     },
     onSuccess: (data) => {
-      setClientLink(data.link);
+      // Preferir shortUrl de Bitly si está disponible, sino usar link largo
+      const linkToUse = data.shortUrl || data.link;
+      setClientLink(linkToUse);
       setClientCode(data.code);
       toast({
         title: "Link generado",
-        description: `Link generado con código: ${data.code}`,
+        description: data.shortUrl 
+          ? `Link acortado con Bitly: ${data.code}` 
+          : `Link generado con código: ${data.code}`,
       });
       
       // Actualizar inmediatamente la lista de sesiones para mostrar la nueva sesión
@@ -206,7 +210,7 @@ export default function AdminPanel() {
       try {
         // Primero intentamos con el API Clipboard
         const textArea = document.createElement('textarea');
-        textArea.value = data.link;
+        textArea.value = linkToUse;
         
         // Añadimos temporalmente el elemento al DOM
         document.body.appendChild(textArea);

