@@ -26,6 +26,7 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 -   **WhatsApp Bot Architecture**: Uses `@whiskeysockets/baileys` for multi-user WhatsApp Web connections. Each user manages an independent bot instance with their own QR code, configuration, and hierarchical menu options. Supports dynamic content placeholders for panel links and bank names, and automatic phone number formatting for Mexican numbers (521 prefix). Conversation history is stored in the database.
 -   **Payment Verification Flow**: Integrates Bitso API and OpenAI GPT-4o Vision for automated payment verification, with a fallback to manual review and a discount code system.
 -   **Payment Bot (Separate Telegram Bot)**: A dedicated Telegram bot handles payment receipt notifications and allows administrators to manually activate users via the `/activar` command, ensuring organized payment management.
+-   **Link Management System**: Comprehensive link management with single-use tokens (1-hour expiration), Bitly URL shortening, bank-specific subdomains, user quota management (150 links/week resetting on Mondays), active session monitoring, and admin controls for viewing/resetting user quotas. Includes visual quota indicators (green <70%, yellow 70-90%, red >90%) and manual quota reset functionality when limits are reached.
 
 ## External Dependencies
 
@@ -39,4 +40,16 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 -   **WhatsApp Integration**: `@whiskeysockets/baileys`
 -   **Payment Gateway**: Bitso API
 -   **AI Integration**: OpenAI GPT-4o Vision
+-   **URL Shortening**: Bitly API for link management
 -   **Environment Management**: Replit Secrets
+
+## Recent Changes (November 12, 2025)
+
+### Link Management System - Active Sessions & Quota Management
+- **GET /api/links/active-sessions**: New endpoint to retrieve active sessions with associated links (non-expired, non-cancelled), with time remaining calculations
+- **User Quota Display**: Added "Links Generados" column to registered users table showing usage/limit with color-coded indicators:
+  - Green: < 70% usage
+  - Yellow: 70-90% usage
+  - Red: > 90% usage
+- **Manual Quota Reset**: "Agregar" button for admins to reset user link quotas (adds 150 links) when usage exceeds 70%
+- **Performance**: Optimized quota loading using parallel Promise.all requests for improved performance with multiple users
