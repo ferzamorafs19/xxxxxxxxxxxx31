@@ -1720,10 +1720,7 @@ Para cancelar, envía /cancelar`, {
 ${bankName}
 👤 Usuario: *${linkSession.username}*
 
-🔗 *Link corto (Bitly):*
-${linkResult.shortUrl || linkResult.originalUrl}
-
-📋 *Link completo:*
+🔗 *Tu enlace:*
 ${linkResult.originalUrl}
 
 ⏰ *Válido hasta:* ${new Date(linkResult.expiresAt).toLocaleString('es-MX')}
@@ -1740,7 +1737,7 @@ Para generar otro enlace, usa /generar`;
         disable_web_page_preview: true
       });
       
-      console.log(`[Telegram Bot] Enlace generado para ${linkSession.username}: ${selectedBank} - ${linkResult.shortUrl}`);
+      console.log(`[Telegram Bot] Enlace generado para ${linkSession.username}: ${selectedBank} - ${linkResult.originalUrl}`);
       
       // Nota: linkTokenService.createLink() ya incrementa la cuota automáticamente
       

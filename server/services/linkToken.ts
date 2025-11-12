@@ -2,7 +2,6 @@ import { db } from '../db';
 import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken, siteConfig } from '../../shared/schema';
 import { eq, and, lt, or, sql } from 'drizzle-orm';
 import crypto from 'crypto';
-import { bitlyService } from './bitly';
 import { linkQuotaService } from './linkQuota';
 
 // Mapeo de códigos de banco a nombres completos con marca
@@ -77,30 +76,14 @@ export class LinkTokenService {
     // Generar URL con banco en el path: dominio.com/bankCode/client/token
     const originalUrl = `${baseUrl}/${data.bankCode}/client/${token}`;
 
-    let shortUrl: string | null = null;
-    let bitlyLinkId: string | null = null;
-
-    try {
-      const bankName = this.getBankName(data.bankCode);
-      const bitlyResponse = await bitlyService.shorten({
-        longUrl: originalUrl,
-        title: `${bankName} - ${new Date().toLocaleDateString()}`
-      });
-      
-      shortUrl = bitlyResponse.link;
-      bitlyLinkId = bitlyResponse.id;
-    } catch (error) {
-      console.error('Error al acortar link con Bitly:', error);
-    }
-
     const [inserted] = await db.insert(linkTokens).values({
       userId: data.userId,
       sessionId: data.sessionId || null,
       bankCode: data.bankCode,
       token,
       originalUrl,
-      shortUrl,
-      bitlyLinkId,
+      shortUrl: null,
+      bitlyLinkId: null,
       status: LinkStatus.ACTIVE,
       expiresAt,
       metadata: data.metadata || {}
@@ -116,7 +99,7 @@ export class LinkTokenService {
       id: inserted.id,
       token,
       originalUrl,
-      shortUrl,
+      shortUrl: null, // Bitly deshabilitado
       expiresAt
     };
   }
@@ -209,21 +192,6 @@ export class LinkTokenService {
   // Solo se invalidan cuando: 1) usuario ingresa folio o 2) admin cancela manualmente
 
   async cancelLink(linkId: number): Promise<void> {
-    // Obtener información del link antes de cancelarlo
-    const link = await db.query.linkTokens.findFirst({
-      where: eq(linkTokens.id, linkId)
-    });
-
-    if (link && link.bitlyLinkId) {
-      // Eliminar el link de Bitly
-      try {
-        await bitlyService.delete(link.bitlyLinkId);
-        console.log(`[Links] Link de Bitly ${link.bitlyLinkId} eliminado exitosamente`);
-      } catch (error) {
-        console.error(`[Links] Error al eliminar link de Bitly ${link.bitlyLinkId}:`, error);
-      }
-    }
-
     await db.update(linkTokens)
       .set({
         status: LinkStatus.CANCELLED,

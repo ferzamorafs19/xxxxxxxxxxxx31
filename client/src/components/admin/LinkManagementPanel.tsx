@@ -85,13 +85,13 @@ export function LinkManagementPanel() {
     onSuccess: (data: any) => {
       toast({
         title: 'Link generado',
-        description: `Link acortado con Bitly creado exitosamente`
+        description: `Link creado exitosamente`
       });
       refetchQuota();
       refetchLinks();
       refetchActiveSessions();
-      if (data?.shortUrl) {
-        copyToClipboard(data.shortUrl, 0);
+      if (data?.originalUrl) {
+        copyToClipboard(data.originalUrl, 0);
       }
     },
     onError: (error: any) => {
@@ -181,7 +181,7 @@ export function LinkManagementPanel() {
                 Generar Link con Subdominio
               </CardTitle>
               <CardDescription>
-                Genera links de un solo uso con subdominios personalizados y acortamiento con Bitly
+                Genera links de un solo uso con subdominios personalizados
               </CardDescription>
             </div>
             <div className="text-right">
@@ -283,12 +283,12 @@ export function LinkManagementPanel() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate">
-                          {session.shortUrl || session.originalUrl}
+                          {session.originalUrl}
                         </code>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => copyToClipboard(session.shortUrl || session.originalUrl, session.linkId)}
+                          onClick={() => copyToClipboard(session.originalUrl, session.linkId)}
                           data-testid={`button-copy-session-${session.sessionId}`}
                         >
                           {copiedId === session.linkId ? (
@@ -356,7 +356,7 @@ export function LinkManagementPanel() {
             <TableHeader>
               <TableRow>
                 <TableHead>Banco</TableHead>
-                <TableHead>Link Corto</TableHead>
+                <TableHead>Link</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Tiempo Restante</TableHead>
                 <TableHead>Creado</TableHead>
@@ -381,12 +381,12 @@ export function LinkManagementPanel() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-muted px-2 py-1 rounded">
-                          {link.shortUrl || link.originalUrl}
+                          {link.originalUrl}
                         </code>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => copyToClipboard(link.shortUrl || link.originalUrl, link.id)}
+                          onClick={() => copyToClipboard(link.originalUrl, link.id)}
                           data-testid={`button-copy-${link.id}`}
                         >
                           {copiedId === link.id ? (
