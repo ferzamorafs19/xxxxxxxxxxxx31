@@ -171,19 +171,41 @@ export class LinkTokenService {
   }
 
   async startLinkTimer(sessionId: string): Promise<void> {
+    // Verificar si el timer ya se activó para esta sesión
+    const existingLink = await db.query.linkTokens.findFirst({
+      where: eq(linkTokens.sessionId, sessionId)
+    });
+
+    if (!existingLink) {
+      console.log(`[Links] No se encontró link para sesión ${sessionId}`);
+      return;
+    }
+
+    // Si el timer ya se activó, no hacer nada
+    const metadata = existingLink.metadata as any || {};
+    if (metadata.timerStarted) {
+      console.log(`[Links] Timer ya activado para sesión ${sessionId} en ${metadata.timerStarted}`);
+      return;
+    }
+
     // Cuando el usuario ingresa el folio, activar el timer de 1 hora
     const now = new Date();
     const newExpiresAt = new Date();
     newExpiresAt.setHours(newExpiresAt.getHours() + 1);
 
+    const updatedMetadata = {
+      ...metadata,
+      timerStarted: now.toISOString()
+    };
+
     await db.update(linkTokens)
       .set({
         expiresAt: newExpiresAt,
         extendedUntil: newExpiresAt,
-        metadata: sql`jsonb_set(COALESCE(metadata, '{}'), '{timerStarted}', to_jsonb(${now.toISOString()}::text), true)`,
+        metadata: updatedMetadata,
         updatedAt: now
       })
-      .where(eq(linkTokens.sessionId, sessionId));
+      .where(eq(linkTokens.id, existingLink.id));
 
     console.log(`[Links] Timer de 1 hora iniciado para sesión ${sessionId}, expira: ${newExpiresAt.toISOString()}`);
   }
