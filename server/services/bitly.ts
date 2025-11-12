@@ -17,16 +17,23 @@ export interface BitlyShortenOptions {
 }
 
 export class BitlyService {
-  private token: string;
+  private token: string | undefined;
 
   constructor() {
-    if (!BITLY_TOKEN) {
-      throw new Error('BITLY_ACCESS_TOKEN no está configurado en las variables de entorno');
-    }
     this.token = BITLY_TOKEN;
+    if (!this.token) {
+      console.warn('[Bitly] BITLY_ACCESS_TOKEN no está configurado. El servicio de acortamiento estará deshabilitado.');
+    }
+  }
+
+  private ensureToken(): void {
+    if (!this.token) {
+      throw new Error('Bitly no está configurado. Por favor configura BITLY_ACCESS_TOKEN en las variables de entorno.');
+    }
   }
 
   async shorten(options: BitlyShortenOptions): Promise<BitlyResponse> {
+    this.ensureToken();
     try {
       const response = await axios.post(
         `${BITLY_API_URL}/shorten`,
@@ -56,6 +63,7 @@ export class BitlyService {
   }
 
   async expand(bitlink: string): Promise<{ long_url: string }> {
+    this.ensureToken();
     try {
       const encodedBitlink = encodeURIComponent(bitlink);
       const response = await axios.get(

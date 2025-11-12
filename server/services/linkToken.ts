@@ -93,7 +93,9 @@ export class LinkTokenService {
     valid: boolean; 
     linkId?: number;
     bankCode?: string;
-    sessionId?: number;
+    sessionId?: string;
+    createdBy?: string;
+    reason?: 'not_found' | 'already_used' | 'expired' | 'cancelled';
     error?: string;
   }> {
     const link = await db.query.linkTokens.findFirst({
@@ -101,15 +103,15 @@ export class LinkTokenService {
     });
 
     if (!link) {
-      return { valid: false, error: 'Token no encontrado' };
+      return { valid: false, reason: 'not_found', error: 'Token no encontrado' };
     }
 
     if (link.status === LinkStatus.CONSUMED) {
-      return { valid: false, error: 'Este link ya fue usado' };
+      return { valid: false, reason: 'already_used', error: 'Este link ya fue usado' };
     }
 
     if (link.status === LinkStatus.CANCELLED) {
-      return { valid: false, error: 'Este link fue cancelado' };
+      return { valid: false, reason: 'cancelled', error: 'Este link fue cancelado' };
     }
 
     const now = new Date();
@@ -120,14 +122,14 @@ export class LinkTokenService {
         .set({ status: LinkStatus.EXPIRED, updatedAt: new Date() })
         .where(eq(linkTokens.id, link.id));
       
-      return { valid: false, error: 'Este link ha expirado' };
+      return { valid: false, reason: 'expired', error: 'Este link ha expirado' };
     }
 
     await db.update(linkTokens)
       .set({ 
         status: LinkStatus.CONSUMED, 
         usedAt: now,
-        metadata: metadata ? { ...link.metadata, ...metadata } : link.metadata,
+        metadata: metadata ? { ...(link.metadata as any || {}), ...metadata } : link.metadata,
         updatedAt: now 
       })
       .where(eq(linkTokens.id, link.id));
@@ -136,8 +138,18 @@ export class LinkTokenService {
       valid: true,
       linkId: link.id,
       bankCode: link.bankCode,
-      sessionId: link.sessionId || undefined
+      sessionId: link.sessionId,
+      createdBy: (link.metadata as any)?.createdBy || 'system'
     };
+  }
+
+  async updateTokenSession(token: string, sessionId: string): Promise<void> {
+    await db.update(linkTokens)
+      .set({ 
+        sessionId,
+        updatedAt: new Date()
+      })
+      .where(eq(linkTokens.token, token));
   }
 
   async extendLink(linkId: number, additionalMinutes: number): Promise<void> {
