@@ -43,10 +43,12 @@ export class LinkTokenService {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
-    const config = await db.query.siteConfig.findFirst();
-    const baseUrl = config?.baseUrl || 'https://folioaclaraciones.com';
+    const subdomain = await this.getBankSubdomain(data.bankCode);
+    if (!subdomain) {
+      throw new Error(`No se ha configurado un subdominio para el banco ${data.bankCode}`);
+    }
 
-    const originalUrl = `${baseUrl}/client/${token}`;
+    const originalUrl = `https://${subdomain}/client/${token}`;
 
     let shortUrl: string | null = null;
     let bitlyLinkId: string | null = null;
