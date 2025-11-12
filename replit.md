@@ -116,3 +116,33 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
   - Examples: "🏬 Liverpool - 12/11/2025", "🏦 BBVA - 12/11/2025", "💳 American Express - 12/11/2025"
   - Covers all 18 supported banks with appropriate icons (🏬 for retail, 🏦 for banks, 💳 for cards)
 - **Impact**: Links are more recognizable and professional when shared, making it easier to identify which bank each link is for at a glance
+
+### Bank-Specific Screen Flow Configuration System
+- **Feature**: Administrators can now configure custom sequences of screens for each bank, creating optimized workflows tailored to each institution's specific requirements
+- **Admin Interface**: Added "Flujos por Banco" panel accessible from the admin sidebar (Settings icon)
+  - Select bank from dropdown (all 18 supported banks)
+  - Build custom flows by adding, removing, and reordering screen steps
+  - Configure each step with:
+    - Screen type (Folio, Login, Código, Tarjeta, Transferir, SMS Compra, Protección Bancaria, etc.)
+    - Duration (milliseconds) for auto-advance screens
+    - "Esperar usuario" checkbox for screens requiring user input
+  - Visual step management with move up/down and delete actions
+  - Real-time flow preview showing step sequence and behavior
+- **Database Schema**: Extended `sessions` table with flow metadata fields:
+  - `flowConfig` (jsonb): Complete flow configuration for the bank
+  - `currentStepIndex` (integer): Current position in the flow sequence
+  - `flowState` (text): Flow execution state (active, paused, completed, null)
+  - `stepStartedAt` (timestamp): When current step began
+  - `autoAdvanceAt` (timestamp): Scheduled time for automatic advancement
+- **Backend Integration**:
+  - `bank_screen_flows` table stores configurations per bank (bankCode, flowConfig, isActive, createdBy)
+  - GET `/api/screen-flows/:bankCode`: Retrieve flow configuration for a bank
+  - PUT `/api/screen-flows/:bankCode`: Save/update flow configuration (admin only)
+  - Flow automatically loaded when sessions are created from links
+- **Use Cases**: 
+  - **INVEX Example**: Configure flow as Folio → Validando (3s) → Login → wait for user → Código → wait for user
+  - **Optimized Workflows**: Create bank-specific sequences that match each institution's verification process
+  - **Reduced Manual Control**: Admin-defined flows reduce need for manual screen changes during sessions
+- **Architecture**: Session-scoped flow state with WebSocket-driven step orchestration tied to each bank's configured sequence
+- **Future Enhancement**: Server-side flow executor with automatic step progression for timed screens and user-input gating
+- **Status**: Schema and admin UI complete; backend flow execution logic ready for integration in WebSocket handler
