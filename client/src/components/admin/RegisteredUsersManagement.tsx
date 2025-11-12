@@ -86,8 +86,40 @@ const RegisteredUsersManagement: React.FC = () => {
       users.forEach(user => {
         console.log(`Usuario: ${user.username}, Activo: ${user.isActive}, Expira: ${user.expiresAt || 'No establecido'}`);
       });
+      // Cargar cuotas de links para cada usuario
+      fetchUserQuotas();
     }
   }, [users]);
+
+  // Cargar cuotas de links para todos los usuarios (paralelo para mejor rendimiento)
+  const fetchUserQuotas = async () => {
+    const quotasMap = new Map<number, LinkQuota>();
+    
+    // Obtener todas las cuotas en paralelo para mejor rendimiento
+    const quotaPromises = users.map(async (user) => {
+      try {
+        const response = await fetch(`/api/admin/users/${user.id}/link-quota`);
+        if (response.ok) {
+          const data = await response.json();
+          return { userId: user.id, quota: data.quota };
+        }
+      } catch (error) {
+        console.error(`Error al obtener cuota para usuario ${user.id}:`, error);
+      }
+      return null;
+    });
+    
+    const results = await Promise.all(quotaPromises);
+    
+    // Mapear los resultados
+    results.forEach((result) => {
+      if (result) {
+        quotasMap.set(result.userId, result.quota);
+      }
+    });
+    
+    setUserQuotas(quotasMap);
+  };
 
   // Filtrar usuarios según búsqueda y estado
   const filteredUsers = React.useMemo(() => {
@@ -481,6 +513,44 @@ const RegisteredUsersManagement: React.FC = () => {
     }
   };
   
+  // Resetear cuota de links de un usuario
+  const resetLinkQuotaMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest('POST', `/api/admin/users/${userId}/reset-link-quota`, {});
+      return await res.json();
+    },
+    onSuccess: (data, userId) => {
+      toast({
+        title: 'Cuota reseteada',
+        description: data.message || 'El usuario puede generar 150 links adicionales',
+      });
+      // Actualizar la cuota en el estado local
+      fetchUserQuotas();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error al resetear cuota',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Obtener el color del contador según el porcentaje de uso
+  const getQuotaColor = (used: number, limit: number): string => {
+    const percentage = (used / limit) * 100;
+    if (percentage >= 90) return 'text-red-600';
+    if (percentage >= 70) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  // Manejador para resetear la cuota de links
+  const handleResetLinkQuota = (user: User) => {
+    if (window.confirm(`¿Estás seguro de que deseas resetear la cuota de links para "${user.username}"? Esto permitirá al usuario generar 150 links adicionales.`)) {
+      resetLinkQuotaMutation.mutate(user.id);
+    }
+  };
+
   // Manejador para generar un nuevo enlace
   const handleGenerateLink = (user: User) => {
     // Verificar si el usuario está activo
@@ -668,6 +738,7 @@ const RegisteredUsersManagement: React.FC = () => {
                             <TableHead>Tipo</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead>Precio</TableHead>
+                            <TableHead>Links Generados</TableHead>
                             <TableHead>Caduca</TableHead>
                             <TableHead>Dispositivos</TableHead>
                             <TableHead>Último Login</TableHead>
@@ -720,6 +791,43 @@ const RegisteredUsersManagement: React.FC = () => {
                                     <span className="text-xs text-muted-foreground ml-1">(personalizado)</span>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                {(() => {
+                                  const quota = userQuotas.get(user.id);
+                                  if (!quota) {
+                                    return (
+                                      <div className="flex items-center gap-2">
+                                        <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">Cargando...</span>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  return (
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                        <LinkIcon className="w-3 h-3 text-muted-foreground" />
+                                        <span className={`font-medium ${getQuotaColor(quota.used, quota.limit)}`}>
+                                          {quota.used} / {quota.limit}
+                                        </span>
+                                      </div>
+                                      {quota.used >= quota.limit * 0.7 && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleResetLinkQuota(user)}
+                                          disabled={resetLinkQuotaMutation.isPending}
+                                          className="h-6 px-2 text-xs"
+                                          title="Resetear cuota y agregar 150 links más"
+                                        >
+                                          <Plus className="w-3 h-3 mr-1" />
+                                          Agregar
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell>
                                 {user.expiresAt ? (

