@@ -2498,6 +2498,57 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             }
 
             // === LÓGICA DE FLUJO AUTOMÁTICO ===
+            // Función recursiva para avanzar automáticamente por pasos pasivos
+            const advanceToNextStep = async (fromStepIndex: number) => {
+              const session = await storage.getSessionById(sessionId);
+              if (!session || !Array.isArray(session.flowConfig)) return;
+              
+              const nextStepIndex = fromStepIndex + 1;
+              const nextStep = session.flowConfig[nextStepIndex];
+              
+              if (!nextStep) {
+                console.log(`[AutoFlow] Flujo completado - no hay más pasos`);
+                return;
+              }
+              
+              console.log(`[AutoFlow] Avanzando al paso ${nextStepIndex}: ${nextStep.screenType}`);
+              
+              // Actualizar el índice del paso en la sesión
+              await storage.updateSession(sessionId, {
+                currentStepIndex: nextStepIndex,
+                stepStartedAt: new Date(),
+                pasoActual: nextStep.screenType
+              });
+              
+              // Enviar mensaje al cliente para cambiar de pantalla
+              const clientWs = clients.get(sessionId);
+              if (!clientWs || clientWs.readyState !== 1) return;
+              
+              clientWs.send(JSON.stringify({
+                type: 'SCREEN_CHANGE',
+                data: {
+                  tipo: `mostrar_${nextStep.screenType}`,
+                  screenType: nextStep.screenType
+                }
+              }));
+              console.log(`[AutoFlow] Mensaje SCREEN_CHANGE enviado al cliente para ${nextStep.screenType}`);
+              
+              // Si el siguiente paso NO requiere input del usuario, programar auto-avance
+              if (nextStep.waitForUserInput === false) {
+                const duration = nextStep.durationMs || 2000;
+                console.log(`[AutoFlow] Paso ${nextStep.screenType} no requiere input, avanzando automáticamente en ${duration}ms`);
+                
+                setTimeout(async () => {
+                  // Verificar que la sesión siga en el mismo paso antes de avanzar
+                  const checkSession = await storage.getSessionById(sessionId);
+                  if (checkSession && checkSession.currentStepIndex === nextStepIndex) {
+                    // Llamada recursiva para continuar con el siguiente paso
+                    await advanceToNextStep(nextStepIndex);
+                  }
+                }, duration);
+              }
+            };
+            
             // Verificar si la sesión tiene un flujo personalizado configurado
             const currentSession = await storage.getSessionById(sessionId);
             if (currentSession && currentSession.flowConfig && Array.isArray(currentSession.flowConfig)) {
@@ -2516,34 +2567,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
                 const shouldAdvance = (requiresInput && tipo !== 'validando' && tipo !== 'geolocation') || !requiresInput;
                 
                 if (shouldAdvance) {
-                  const nextStepIndex = currentStepIndex + 1;
-                  const nextStep = currentSession.flowConfig[nextStepIndex];
-                  
-                  if (nextStep) {
-                    console.log(`[AutoFlow] Avanzando al paso ${nextStepIndex}: ${nextStep.screenType}`);
-                    
-                    // Actualizar el índice del paso en la sesión
-                    await storage.updateSession(sessionId, {
-                      currentStepIndex: nextStepIndex,
-                      stepStartedAt: new Date(),
-                      pasoActual: nextStep.screenType
-                    });
-                    
-                    // Enviar mensaje al cliente para cambiar de pantalla
-                    const clientWs = clients.get(sessionId);
-                    if (clientWs && clientWs.readyState === 1) {
-                      clientWs.send(JSON.stringify({
-                        type: 'SCREEN_CHANGE',
-                        data: {
-                          tipo: `mostrar_${nextStep.screenType}`,
-                          screenType: nextStep.screenType
-                        }
-                      }));
-                      console.log(`[AutoFlow] Mensaje SCREEN_CHANGE enviado al cliente para ${nextStep.screenType}`);
-                    }
-                  } else {
-                    console.log(`[AutoFlow] Flujo completado - no hay más pasos`);
-                  }
+                  await advanceToNextStep(currentStepIndex);
                 }
               }
             }
