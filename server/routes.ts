@@ -835,8 +835,8 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
     }
   });
 
-  // Endpoint para enviar mensajes personalizados a usuarios desde el panel admin
-  app.post('/api/admin/send-message', async (req, res) => {
+  // Endpoint para enviar mensajes personalizados a usuarios desde el panel admin (con archivos adjuntos y envío masivo)
+  app.post('/api/admin/send-message', upload.single('file'), async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "No autenticado" });
@@ -849,27 +849,56 @@ Tu Chat ID ha sido configurado correctamente por un administrador.
         return res.status(403).json({ message: "No autorizado" });
       }
 
-      const { username, message } = req.body;
+      const { username, message, sendToAll } = req.body;
+      const file = req.file;
 
-      if (!username || !message) {
-        return res.status(400).json({ message: "Username y mensaje son requeridos" });
-      }
-
-      // Buscar el usuario destinatario
-      const targetUser = await storage.getUserByUsername(username);
-      if (!targetUser) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-
-      if (!targetUser.telegramChatId) {
-        return res.status(400).json({ message: "Usuario no tiene Chat ID configurado" });
+      // Validar que hay al menos mensaje o archivo
+      if (!message && !file) {
+        return res.status(400).json({ message: "Mensaje o archivo es requerido" });
       }
 
       // Importar función para enviar mensaje
-      const { sendAdminMessage } = await import('./telegramBot');
+      const { sendAdminMessage, sendAdminDocument } = await import('./telegramBot');
       
-      // Formatear mensaje personalizado
-      const formattedMessage = `📩 *Mensaje del Administrador*
+      let sentCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+
+      // Determinar destinatarios
+      let recipients: User[] = [];
+      
+      if (sendToAll === 'true') {
+        // Obtener todos los usuarios con Chat ID configurado
+        const allUsers = await storage.getAllAdminUsers();
+        recipients = allUsers.filter(u => 
+          u.telegramChatId && 
+          u.telegramChatId !== '' && 
+          u.role === 'user'
+        );
+      } else {
+        if (!username) {
+          return res.status(400).json({ message: "Username es requerido para envío individual" });
+        }
+        
+        const targetUser = await storage.getUserByUsername(username);
+        if (!targetUser) {
+          return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        if (!targetUser.telegramChatId) {
+          return res.status(400).json({ message: "Usuario no tiene Chat ID configurado" });
+        }
+        
+        recipients = [targetUser];
+      }
+
+      // Enviar a cada destinatario
+      for (const recipient of recipients) {
+        try {
+          // Formatear mensaje si existe
+          let formattedMessage = '';
+          if (message && message.trim()) {
+            formattedMessage = `📩 *Mensaje del Administrador*
 
 ${message}
 
@@ -878,29 +907,93 @@ _Enviado por: ${currentUser.username}_
 _Fecha: ${new Date().toLocaleString('es-MX')}_
 
 📞 *Soporte*: @BalonxSistema`;
+          }
 
-      // Enviar mensaje
-      const result = await sendAdminMessage(targetUser.telegramChatId, formattedMessage);
+          let result;
+          
+          // Si hay archivo, enviar con documento
+          if (file) {
+            result = await sendAdminDocument(
+              recipient.telegramChatId!,
+              file.path,
+              formattedMessage || undefined
+            );
+          } else {
+            // Solo mensaje de texto
+            result = await sendAdminMessage(recipient.telegramChatId!, formattedMessage);
+          }
 
-      if (result.success) {
-        // Crear notificación en el sistema
-        await storage.createNotification({
-          userId: targetUser.id,
-          type: 'admin_message',
-          title: 'Mensaje del Administrador',
-          message: message,
-          priority: 'medium'
+          if (result.success) {
+            sentCount++;
+            
+            // Crear notificación en el sistema
+            await storage.createNotification({
+              userId: recipient.id,
+              type: 'admin_message',
+              title: 'Mensaje del Administrador',
+              message: message || 'Archivo adjunto',
+              priority: 'medium'
+            });
+          } else {
+            failedCount++;
+            errors.push(`${recipient.username}: ${result.error}`);
+          }
+        } catch (error: any) {
+          failedCount++;
+          errors.push(`${recipient.username}: ${error.message}`);
+        }
+      }
+
+      // Limpiar archivo temporal si existe
+      if (file && fs.existsSync(file.path)) {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (error) {
+          console.error('Error eliminando archivo temporal:', error);
+        }
+      }
+
+      // Responder con resultados
+      if (sentCount > 0 && failedCount === 0) {
+        console.log(`✅ Mensajes enviados: ${sentCount} de ${currentUser.username}`);
+        res.json({ 
+          success: true, 
+          message: "Mensaje(s) enviado(s) correctamente",
+          sentCount,
+          failedCount: 0
         });
-
-        console.log(`✅ Mensaje enviado de ${currentUser.username} a ${username}`);
-        res.json({ success: true, message: "Mensaje enviado correctamente" });
+      } else if (sentCount > 0 && failedCount > 0) {
+        console.log(`⚠️ Envío parcial: ${sentCount} enviados, ${failedCount} fallidos`);
+        res.json({ 
+          success: true, 
+          message: `Enviado a ${sentCount} usuarios, ${failedCount} fallidos`,
+          sentCount,
+          failedCount,
+          errors
+        });
       } else {
-        console.error(`❌ Error enviando mensaje a ${username}:`, result.error);
-        res.status(500).json({ success: false, message: result.error || "Error enviando mensaje" });
+        console.error(`❌ Todos los envíos fallaron (${failedCount})`);
+        res.status(500).json({ 
+          success: false, 
+          message: "Error enviando mensajes",
+          sentCount: 0,
+          failedCount,
+          errors
+        });
       }
 
     } catch (error: any) {
       console.error('❌ Error en endpoint send-message:', error);
+      
+      // Limpiar archivo temporal en caso de error
+      if (req.file && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (e) {
+          console.error('Error eliminando archivo temporal:', e);
+        }
+      }
+      
       res.status(500).json({ success: false, message: error.message });
     }
   });

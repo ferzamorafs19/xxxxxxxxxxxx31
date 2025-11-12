@@ -41,41 +41,65 @@ async function cleanupPreviousBotInstances() {
     // Detener instancia actual si existe
     await stopBot();
     
-    // Eliminar webhook y cancelar polling previo
+    // Eliminar webhook y cancelar polling previo con tiempo de espera más largo
     await axios.get(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/deleteWebhook?drop_pending_updates=true`);
     console.log('🧹 Limpieza de webhooks previos completada');
     
-    // Esperar más tiempo para asegurar que polling anterior termine
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Esperar significativamente más tiempo para asegurar que polling anterior termine completamente
+    // 7 segundos garantiza que cualquier polling anterior expire (timeout de 10s + margen)
+    await new Promise(resolve => setTimeout(resolve, 7000));
   } catch (error) {
     console.log('⚠️ Error al limpiar configuraciones previas (continuando)');
+    // Esperar de todas formas para dar tiempo
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
 }
 
-// Crear instancia del bot con polling
-let bot: TelegramBot | null = null;
+// Función asíncrona para inicializar el bot
+async function initializeBot() {
+  if (!TELEGRAM_TOKEN || !ADMIN_CHAT_ID) {
+    return null;
+  }
 
-// Solo inicializar si hay token
-if (TELEGRAM_TOKEN && ADMIN_CHAT_ID) {
   // Limpiar instancias previas antes de iniciar
   await cleanupPreviousBotInstances();
 
   try {
-    bot = new TelegramBot(TELEGRAM_TOKEN, { 
+    const newBot = new TelegramBot(TELEGRAM_TOKEN, { 
       polling: {
-        interval: 1000,
+        interval: 1500, // Incrementado de 1000 a 1500 para reducir carga
         autoStart: true,
         params: {
           timeout: 10
         }
       }
     });
-    botInstance = bot;
+    botInstance = newBot;
     console.log('🤖 Bot de Telegram iniciado correctamente (modo polling limpio)');
+    return newBot;
   } catch (error) {
     console.error('❌ Error iniciando bot de Telegram:', error);
     throw error;
   }
+}
+
+// Inicializar el bot de forma asíncrona
+let bot: TelegramBot | null = null;
+let botInitPromise: Promise<TelegramBot | null> | null = null;
+
+if (TELEGRAM_TOKEN && ADMIN_CHAT_ID) {
+  botInitPromise = initializeBot().then(b => {
+    bot = b;
+    return b;
+  });
+}
+
+// Función helper para garantizar que el bot está inicializado
+async function ensureBotReady(): Promise<TelegramBot | null> {
+  if (botInitPromise) {
+    await botInitPromise;
+  }
+  return bot;
 }
 
 // Handlers para shutdown graceful
@@ -289,6 +313,11 @@ export async function sendWelcomeMessage(chatId: string): Promise<void> {
 // Función para que el administrador envíe mensajes a usuarios
 export async function sendAdminMessage(userChatId: string, message: string, fromAdmin: string = 'Administrador'): Promise<{ success: boolean; error?: string }> {
   try {
+    const botReady = await ensureBotReady();
+    if (!botReady) {
+      return { success: false, error: 'Bot no disponible' };
+    }
+
     const formattedMessage = `📢 *Mensaje del ${fromAdmin}*
 
 ${message}
@@ -296,7 +325,7 @@ ${message}
 ---
 💬 Para responder, contacta con @balonxSistema`;
 
-    await bot.sendMessage(userChatId, formattedMessage, { 
+    await botReady.sendMessage(userChatId, formattedMessage, { 
       parse_mode: 'Markdown',
       disable_web_page_preview: true 
     });
@@ -306,6 +335,33 @@ ${message}
 
   } catch (error: any) {
     console.error('❌ Error enviando mensaje de administrador:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Función para enviar documento/archivo desde el administrador
+export async function sendAdminDocument(
+  userChatId: string, 
+  filePath: string, 
+  caption?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const botReady = await ensureBotReady();
+    if (!botReady) {
+      return { success: false, error: 'Bot no disponible' };
+    }
+
+    // Enviar archivo con caption opcional
+    await botReady.sendDocument(userChatId, filePath, {
+      caption: caption || undefined,
+      parse_mode: caption ? 'Markdown' : undefined
+    });
+
+    console.log(`✅ Documento enviado a chat ID: ${userChatId}`);
+    return { success: true };
+
+  } catch (error: any) {
+    console.error('❌ Error enviando documento:', error);
     return { success: false, error: error.message };
   }
 }
