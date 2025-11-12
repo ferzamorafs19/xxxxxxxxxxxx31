@@ -782,3 +782,26 @@ export const insertBankScreenFlowSchema = createInsertSchema(bankScreenFlows).om
 
 export type InsertBankScreenFlow = z.infer<typeof insertBankScreenFlowSchema>;
 export type BankScreenFlow = typeof bankScreenFlows.$inferSelect;
+
+// Tabla para configuración de flujos de pantallas por usuario y banco
+export const userBankFlows = pgTable("user_bank_flows", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }), // Usuario que creó el flujo
+  bankCode: text("bank_code").notNull(), // Código del banco
+  flowConfig: jsonb("flow_config").notNull(), // Array de {screenType, durationMs, waitForUser, payload}
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+}, (table) => ({
+  // Restricción única: cada usuario solo puede tener un flujo activo por banco
+  uniqueUserBank: unique().on(table.userId, table.bankCode)
+}));
+
+export const insertUserBankFlowSchema = createInsertSchema(userBankFlows).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type InsertUserBankFlow = z.infer<typeof insertUserBankFlowSchema>;
+export type UserBankFlow = typeof userBankFlows.$inferSelect;
