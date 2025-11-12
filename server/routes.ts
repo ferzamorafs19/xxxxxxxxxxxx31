@@ -4765,7 +4765,38 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
         return res.status(400).json({ message: "Se requieren bankCode y subdomain" });
       }
 
-      await storage.upsertBankSubdomain({ bankCode, subdomain, isActive: true });
+      // Validar y normalizar el subdominio
+      const trimmedSubdomain = subdomain.trim().toLowerCase();
+      
+      // No permitir puntos (solo prefijo)
+      if (trimmedSubdomain.includes('.')) {
+        return res.status(400).json({ 
+          message: "Solo ingresa el prefijo del subdominio (ejemplo: 'liverpool'), no el dominio completo. Se combinará automáticamente con tu dominio configurado." 
+        });
+      }
+
+      // No permitir protocolos
+      if (trimmedSubdomain.includes('://')) {
+        return res.status(400).json({ 
+          message: "No incluyas el protocolo (http:// o https://). Solo el prefijo del subdominio." 
+        });
+      }
+
+      // Validar formato DNS: alfanumérico con guiones, sin guiones al inicio/final
+      if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(trimmedSubdomain)) {
+        return res.status(400).json({ 
+          message: "El subdominio debe empezar y terminar con letra o número. Solo puede contener letras minúsculas, números y guiones internos." 
+        });
+      }
+
+      // Validar longitud máxima DNS
+      if (trimmedSubdomain.length > 63) {
+        return res.status(400).json({ 
+          message: "El subdominio no puede exceder 63 caracteres" 
+        });
+      }
+
+      await storage.upsertBankSubdomain({ bankCode, subdomain: trimmedSubdomain, isActive: true });
 
       res.json({
         success: true,

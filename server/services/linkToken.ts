@@ -3,6 +3,7 @@ import { linkTokens, bankSubdomains, LinkStatus, type InsertLinkToken, siteConfi
 import { eq, and, lt, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { linkQuotaService } from './linkQuota';
+import { randomInt } from 'crypto';
 
 // Mapeo de códigos de banco a nombres completos con marca
 const BANK_NAMES: Record<string, string> = {
@@ -28,8 +29,10 @@ const BANK_NAMES: Record<string, string> = {
 
 export class LinkTokenService {
   generateToken(): string {
-    // Genera un token corto de 12 caracteres (reducido de 32)
-    return nanoid(12);
+    // Genera un token de 12 dígitos numéricos usando crypto (seguro)
+    const min = 100000000000; // 12 dígitos mínimo
+    const max = 999999999999; // 12 dígitos máximo
+    return randomInt(min, max + 1).toString();
   }
 
   getBankName(bankCode: string): string {
@@ -37,14 +40,36 @@ export class LinkTokenService {
   }
 
   async getBankSubdomain(bankCode: string): Promise<string | null> {
-    const subdomain = await db.query.bankSubdomains.findFirst({
+    const result = await db.query.bankSubdomains.findFirst({
       where: and(
         eq(bankSubdomains.bankCode, bankCode),
         eq(bankSubdomains.isActive, true)
       )
     });
 
-    return subdomain?.subdomain || null;
+    if (!result?.subdomain) return null;
+    
+    // Normalizar datos legacy: limpiar protocolo, espacios y extraer prefijo
+    let subdomain = result.subdomain.trim().toLowerCase();
+    
+    // Quitar protocolo si existe (case insensitive: https://, http://, HTTP://, HTTPS://)
+    subdomain = subdomain.replace(/^https?:\/\//i, '');
+    
+    // Si contiene punto, extraer solo el prefijo del subdominio
+    if (subdomain.includes('.')) {
+      subdomain = subdomain.split('.')[0];
+    }
+    
+    // Limpiar espacios adicionales
+    subdomain = subdomain.trim();
+    
+    // Validar que sea un prefijo DNS válido (sin guiones al inicio/final)
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(subdomain) || subdomain.length > 63) {
+      console.error(`[LinkToken] Subdominio inválido para ${bankCode}: "${result.subdomain}" normalizado a "${subdomain}"`);
+      return null;
+    }
+    
+    return subdomain;
   }
 
   async createLink(data: {
@@ -70,20 +95,36 @@ export class LinkTokenService {
     // Expiración inicial de 24 horas - el timer de 1 hora comenzará cuando el usuario ingrese el folio
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    // Obtener el dominio base de la configuración
+    // Obtener el dominio base de la configuración del sitio
     const config = await db.query.siteConfig.findFirst();
     const baseUrl = config?.baseUrl || 'https://folioaclaraciones.com';
+    
+    // Parsear el baseUrl para extraer componentes
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(baseUrl);
+    } catch (error) {
+      // Si falla el parsing, asumir que es solo el dominio y agregar https://
+      parsedUrl = new URL(`https://${baseUrl}`);
+    }
+    
+    const protocol = parsedUrl.protocol; // http: o https:
+    const host = parsedUrl.host; // dominio.com:puerto (incluye puerto si existe)
+    const hostname = parsedUrl.hostname; // solo dominio.com (sin puerto)
+    const pathname = parsedUrl.pathname.replace(/\/$/, ''); // path sin trailing slash
 
     // Intentar obtener subdominio configurado para este banco
     const bankSubdomain = await this.getBankSubdomain(data.bankCode);
     
     let originalUrl: string;
     if (bankSubdomain) {
-      // Usar subdominio si está configurado: https://liverpool.folioaclaraciones.com/client/token
-      originalUrl = `https://${bankSubdomain}/client/${token}`;
+      // Combinar subdominio + dominio base: http://liverpool.dominio.com:puerto/client/token
+      // Nota: los subdominios no preservan paths del baseUrl, solo protocolo, host y puerto
+      originalUrl = `${protocol}//${bankSubdomain}.${host}/client/${token}`;
     } else {
-      // Fallback al path si no hay subdominio: https://folioaclaraciones.com/liverpool/client/token
-      originalUrl = `${baseUrl}/${data.bankCode}/client/${token}`;
+      // Fallback al path: preservar baseUrl completo (origin + pathname) + /bankCode/client/token
+      const normalizedBase = `${parsedUrl.origin}${pathname}`;
+      originalUrl = `${normalizedBase}/${data.bankCode}/client/${token}`;
     }
 
     const [inserted] = await db.insert(linkTokens).values({

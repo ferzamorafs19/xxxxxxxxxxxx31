@@ -679,7 +679,7 @@ export enum LinkStatus {
 export const bankSubdomains = pgTable("bank_subdomains", {
   id: serial("id").primaryKey(),
   bankCode: text("bank_code").notNull().unique(), // Código del banco (liverpool, bbva, etc.)
-  subdomain: text("subdomain").notNull(), // Subdominio (liverpool.aclaracion.info)
+  subdomain: text("subdomain").notNull(), // Solo el prefijo del subdominio (ejemplo: "liverpool"), se combina con el dominio base configurado
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()

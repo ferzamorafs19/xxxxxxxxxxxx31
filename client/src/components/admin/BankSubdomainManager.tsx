@@ -138,9 +138,10 @@ export default function BankSubdomainManager() {
         <AlertDescription>
           <p className="font-medium mb-2">¿Cómo funcionan los subdominios?</p>
           <ul className="list-disc list-inside space-y-1 text-sm">
-            <li><strong>Con subdominio:</strong> https://<span className="text-blue-600">liverpool.tudominio.com</span>/client/token</li>
-            <li><strong>Sin subdominio:</strong> https://tudominio.com/<span className="text-blue-600">liverpool</span>/client/token</li>
-            <li>Si un banco no tiene subdominio configurado, usará el formato sin subdominio</li>
+            <li>Solo escribe el <strong>prefijo del subdominio</strong> (ejemplo: <code>liverpool</code>)</li>
+            <li>Se combinará automáticamente con el dominio configurado en "Configuración del Sitio"</li>
+            <li><strong>Con subdominio:</strong> https://<span className="text-blue-600">liverpool</span>.tudominio.com/client/123456789012</li>
+            <li><strong>Sin subdominio:</strong> https://tudominio.com/<span className="text-blue-600">liverpool</span>/client/123456789012</li>
             <li>Los subdominios deben estar configurados en tu DNS apuntando a tu servidor</li>
           </ul>
         </AlertDescription>
@@ -154,7 +155,7 @@ export default function BankSubdomainManager() {
             Configuración de Subdominios
           </CardTitle>
           <CardDescription>
-            Define el subdominio completo para cada banco (ejemplo: liverpool.tudominio.com)
+            Define solo el prefijo del subdominio para cada banco (ejemplo: liverpool, bbva, santander)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +182,7 @@ export default function BankSubdomainManager() {
                     <TableCell>
                       <Input
                         type="text"
-                        placeholder={`${bank.code}.tudominio.com`}
+                        placeholder={bank.code}
                         value={subdomains[bank.code] || ''}
                         onChange={(e) => handleSubdomainChange(bank.code, e.target.value)}
                         data-testid={`input-subdomain-${bank.code}`}
