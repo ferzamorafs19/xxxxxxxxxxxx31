@@ -156,17 +156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 6 * 60 * 60 * 1000); // Ejecutar cada 6 horas
 
-  // Configurar expiración automática de links
-  setInterval(async () => {
-    try {
-      const expiredCount = await linkTokenService.expireOldLinks();
-      if (expiredCount > 0) {
-        console.log(`[Links] Limpieza automática: ${expiredCount} links expirados marcados`);
-      }
-    } catch (error) {
-      console.error('[Links] Error en limpieza automática de links:', error);
-    }
-  }, 5 * 60 * 1000); // Ejecutar cada 5 minutos
+  // NO hay expiración automática de links por tiempo
+  // Los links solo se invalidan cuando: 1) usuario ingresa folio o 2) admin cancela manualmente
 
   // Middleware de validación de tokens de un solo uso (con banco en el path)
   app.get('/:bankCode/client/:token', async (req, res) => {
@@ -1130,7 +1121,7 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
       // Actualizar sesión
       const session = await storage.updateSession(id, req.body);
 
-      // Si el usuario ingresó el folio por primera vez: consumir token y activar timer de 1 hora
+      // Si el usuario ingresó el folio por primera vez: consumir token (sin timer, los links no expiran)
       if (currentSession && !currentSession.hasUserData && session.hasUserData) {
         try {
           // Obtener el link asociado a esta sesión para consumir su token
@@ -1140,12 +1131,8 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
             await linkTokenService.consumeToken(link.token);
             console.log(`[Links] Token ${link.token} consumido (usuario ingresó el folio)`);
           }
-          
-          // Activar timer de 1 hora
-          await linkTokenService.startLinkTimer(id);
-          console.log(`[Links] Timer de 1 hora activado para sesión ${id}`);
         } catch (error) {
-          console.error(`[Links] Error al consumir token/activar timer para sesión ${id}:`, error);
+          console.error(`[Links] Error al consumir token para sesión ${id}:`, error);
         }
       }
 
@@ -4507,33 +4494,9 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
     }
   });
 
-  // Extender duración de un link
-  app.post("/api/links/:id/extend", async (req, res) => {
-    if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "No autenticado" });
-    }
+  // Endpoint de extender link eliminado - los links no expiran por tiempo
 
-    try {
-      const linkId = parseInt(req.params.id);
-      const { minutes } = req.body;
-
-      if (!minutes || minutes < 1 || minutes > 360) {
-        return res.status(400).json({ message: "Los minutos deben estar entre 1 y 360" });
-      }
-
-      await linkTokenService.extendLink(linkId, minutes);
-
-      res.json({
-        success: true,
-        message: `Link extendido por ${minutes} minutos`
-      });
-    } catch (error: any) {
-      console.error("Error extendiendo link:", error);
-      res.status(500).json({ message: error.message || "Error al extender link" });
-    }
-  });
-
-  // Cancelar un link
+  // Cancelar un link (usuarios pueden cancelar sus propios links, admins pueden cancelar cualquiera)
   app.post("/api/links/:id/cancel", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "No autenticado" });
@@ -4541,11 +4504,29 @@ _Fecha: ${new Date().toLocaleString('es-MX')}_
 
     try {
       const linkId = parseInt(req.params.id);
+      
+      // Verificar que el usuario sea el dueño del link o sea admin
+      const link = await db.query.linkTokens.findFirst({
+        where: eq(linkTokens.id, linkId)
+      });
+
+      if (!link) {
+        return res.status(404).json({ message: "Link no encontrado" });
+      }
+
+      // Solo el dueño del link o un admin puede cancelarlo
+      if (link.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "No tienes permiso para cancelar este link" });
+      }
+
+      // Cancelar el link y eliminar de Bitly automáticamente
       await linkTokenService.cancelLink(linkId);
+
+      console.log(`[Links] Link ${linkId} cancelado por ${req.user.username} (${req.user.role})`);
 
       res.json({
         success: true,
-        message: "Link cancelado exitosamente"
+        message: "Link cancelado y eliminado de Bitly exitosamente"
       });
     } catch (error: any) {
       console.error("Error cancelando link:", error);

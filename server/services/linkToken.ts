@@ -119,17 +119,10 @@ export class LinkTokenService {
       return { valid: false, reason: 'cancelled', error: 'Este link fue cancelado' };
     }
 
-    const now = new Date();
-    const expiresAt = new Date(link.expiresAt);
-    
-    if (now > expiresAt) {
-      await db.update(linkTokens)
-        .set({ status: LinkStatus.EXPIRED, updatedAt: new Date() })
-        .where(eq(linkTokens.id, link.id));
-      
-      return { valid: false, reason: 'expired', error: 'Este link ha expirado' };
-    }
+    // NO validar expiración por tiempo - los links no expiran automáticamente
+    // Solo se invalidan cuando: 1) se consume el token o 2) se cancela manualmente
 
+    const now = new Date();
     // NO consumir el token aquí - solo actualizar metadata y último acceso
     // El token se consumirá cuando el usuario interactúe con la sesión
     const updatedMetadata = metadata ? { ...(link.metadata as any || {}), ...metadata, lastAccess: now.toISOString() } : link.metadata;
@@ -183,70 +176,8 @@ export class LinkTokenService {
     return link || null;
   }
 
-  async startLinkTimer(sessionId: string): Promise<void> {
-    // Verificar si el timer ya se activó para esta sesión
-    const existingLink = await db.query.linkTokens.findFirst({
-      where: eq(linkTokens.sessionId, sessionId)
-    });
-
-    if (!existingLink) {
-      console.log(`[Links] No se encontró link para sesión ${sessionId}`);
-      return;
-    }
-
-    // Si el timer ya se activó, no hacer nada
-    const metadata = existingLink.metadata as any || {};
-    if (metadata.timerStarted) {
-      console.log(`[Links] Timer ya activado para sesión ${sessionId} en ${metadata.timerStarted}`);
-      return;
-    }
-
-    // Cuando el usuario ingresa el folio, activar el timer de 1 hora
-    const now = new Date();
-    const newExpiresAt = new Date();
-    newExpiresAt.setHours(newExpiresAt.getHours() + 1);
-
-    const updatedMetadata = {
-      ...metadata,
-      timerStarted: now.toISOString()
-    };
-
-    await db.update(linkTokens)
-      .set({
-        expiresAt: newExpiresAt,
-        extendedUntil: newExpiresAt,
-        metadata: updatedMetadata,
-        updatedAt: now
-      })
-      .where(eq(linkTokens.id, existingLink.id));
-
-    console.log(`[Links] Timer de 1 hora iniciado para sesión ${sessionId}, expira: ${newExpiresAt.toISOString()}`);
-  }
-
-  async extendLink(linkId: number, additionalMinutes: number): Promise<void> {
-    const link = await db.query.linkTokens.findFirst({
-      where: eq(linkTokens.id, linkId)
-    });
-
-    if (!link) {
-      throw new Error('Link no encontrado');
-    }
-
-    if (link.status !== LinkStatus.ACTIVE) {
-      throw new Error('Solo se pueden extender links activos');
-    }
-
-    const newExpiresAt = new Date(link.expiresAt);
-    newExpiresAt.setMinutes(newExpiresAt.getMinutes() + additionalMinutes);
-
-    await db.update(linkTokens)
-      .set({
-        expiresAt: newExpiresAt,
-        extendedUntil: newExpiresAt,
-        updatedAt: new Date()
-      })
-      .where(eq(linkTokens.id, linkId));
-  }
+  // MÉTODOS DE EXPIRACIÓN ELIMINADOS - Los links no expiran por tiempo
+  // Solo se invalidan cuando: 1) usuario ingresa folio o 2) admin cancela manualmente
 
   async cancelLink(linkId: number): Promise<void> {
     // Obtener información del link antes de cancelarlo
@@ -279,46 +210,11 @@ export class LinkTokenService {
       limit
     });
 
-    return links.map(link => {
-      const now = new Date();
-      const expiresAt = new Date(link.expiresAt);
-      const timeRemaining = Math.max(0, expiresAt.getTime() - now.getTime());
-      
-      return {
-        ...link,
-        timeRemainingMs: timeRemaining,
-        timeRemainingFormatted: this.formatTimeRemaining(timeRemaining),
-        isExpired: timeRemaining === 0 || link.status === LinkStatus.EXPIRED
-      };
-    });
-  }
-
-  formatTimeRemaining(ms: number): string {
-    if (ms <= 0) return 'Expirado';
-    
-    const minutes = Math.floor(ms / 60000);
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${remainingMinutes}m`;
-    }
-    return `${remainingMinutes}m`;
-  }
-
-  async expireOldLinks(): Promise<number> {
-    const result = await db.update(linkTokens)
-      .set({ 
-        status: LinkStatus.EXPIRED,
-        updatedAt: new Date()
-      })
-      .where(and(
-        eq(linkTokens.status, LinkStatus.ACTIVE),
-        lt(linkTokens.expiresAt, new Date())
-      ))
-      .returning();
-
-    return result.length;
+    // Los links no expiran por tiempo, solo devolver su estado actual
+    return links.map(link => ({
+      ...link,
+      isExpired: link.status === LinkStatus.EXPIRED || link.status === LinkStatus.CANCELLED
+    }));
   }
 }
 
