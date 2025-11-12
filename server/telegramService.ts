@@ -141,22 +141,53 @@ function formatMessage(data: TelegramNotificationData): string {
 
 // Función principal para enviar notificación a Telegram
 export async function sendTelegramNotification(data: TelegramNotificationData): Promise<void> {
+  if (!bot) {
+    console.log('[Telegram] Servicio no configurado. Notificación omitida.');
+    return;
+  }
+  
+  const message = formatMessage(data);
+  let adminSent = false;
+  let userSent = false;
+  
   try {
-    if (!bot || !ADMIN_CHAT_ID) {
-      console.log('[Telegram] Servicio no configurado. Notificación omitida.');
-      return;
+    // Enviar notificación al administrador principal si está configurado
+    if (ADMIN_CHAT_ID) {
+      await bot.sendMessage(ADMIN_CHAT_ID, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+      adminSent = true;
+      console.log(`[Telegram] Notificación enviada al admin principal para sesión ${data.sessionId}`);
     }
-    
-    const message = formatMessage(data);
-    
-    await bot.sendMessage(ADMIN_CHAT_ID, message, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    });
-    
-    console.log(`[Telegram] Notificación enviada exitosamente para sesión ${data.sessionId}, tipo: ${data.tipo}`);
   } catch (error) {
-    console.error('[Telegram] Error enviando notificación:', error);
+    console.error(`[Telegram] Error enviando notificación al admin principal:`, error);
+  }
+  
+  // Enviar notificación al usuario que creó la sesión (si tiene Chat ID configurado)
+  if (data.createdBy) {
+    try {
+      const { storage } = await import('./storage');
+      const user = await storage.getUserByUsername(data.createdBy);
+      
+      if (user && user.telegramChatId) {
+        await bot.sendMessage(user.telegramChatId, message, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        });
+        userSent = true;
+        console.log(`[Telegram] Notificación enviada al usuario ${data.createdBy} (Chat ID: ${user.telegramChatId})`);
+      } else {
+        console.log(`[Telegram] Usuario ${data.createdBy} no tiene Chat ID configurado`);
+      }
+    } catch (error) {
+      console.error(`[Telegram] Error enviando notificación al usuario ${data.createdBy}:`, error);
+    }
+  }
+  
+  // Log de estado final
+  if (!adminSent && !userSent) {
+    console.warn(`[Telegram] ADVERTENCIA: No se envió notificación a nadie para sesión ${data.sessionId}`);
   }
 }
 

