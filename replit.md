@@ -107,3 +107,12 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
   - Console logging for tracking successful/failed deletions
 - **Impact**: Cancelled links are completely removed from Bitly, preventing preview exposure
 - **Security**: Prevents information leakage after link invalidation; proper authorization checks ensure users can only cancel their own links
+
+### Bitly Link Titles with Bank Branding
+- **Feature**: Enhanced Bitly shortened links with descriptive bank names and icons
+- **Implementation**:
+  - Added `BANK_NAMES` mapping with bank codes to display names with emoji icons
+  - Bitly link titles now show: `{Bank Icon} {Bank Name} - {Date}`
+  - Examples: "🏬 Liverpool - 12/11/2025", "🏦 BBVA - 12/11/2025", "💳 American Express - 12/11/2025"
+  - Covers all 18 supported banks with appropriate icons (🏬 for retail, 🏦 for banks, 💳 for cards)
+- **Impact**: Links are more recognizable and professional when shared, making it easier to identify which bank each link is for at a glance

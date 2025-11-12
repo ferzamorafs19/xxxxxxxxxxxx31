@@ -5,9 +5,35 @@ import crypto from 'crypto';
 import { bitlyService } from './bitly';
 import { linkQuotaService } from './linkQuota';
 
+// Mapeo de códigos de banco a nombres completos con marca
+const BANK_NAMES: Record<string, string> = {
+  liverpool: '🏬 Liverpool',
+  citibanamex: '🏦 Citibanamex',
+  banbajio: '🏦 BanBajío',
+  bbva: '🏦 BBVA',
+  banorte: '🏦 Banorte',
+  bancoppel: '🏦 BanCoppel',
+  hsbc: '🏦 HSBC',
+  amex: '💳 American Express',
+  santander: '🏦 Santander',
+  scotiabank: '🏦 Scotiabank',
+  invex: '🏦 Invex',
+  banregio: '🏦 Banregio',
+  spin: '💳 SPIN',
+  platacard: '💳 Platacard',
+  bancoazteca: '🏦 Banco Azteca',
+  bienestar: '🏦 Banco del Bienestar',
+  inbursa: '🏦 Inbursa',
+  afirme: '🏦 Afirme'
+};
+
 export class LinkTokenService {
   generateToken(): string {
     return crypto.randomBytes(16).toString('hex');
+  }
+
+  getBankName(bankCode: string): string {
+    return BANK_NAMES[bankCode.toLowerCase()] || `🏦 ${bankCode.toUpperCase()}`;
   }
 
   async getBankSubdomain(bankCode: string): Promise<string | null> {
@@ -55,9 +81,10 @@ export class LinkTokenService {
     let bitlyLinkId: string | null = null;
 
     try {
+      const bankName = this.getBankName(data.bankCode);
       const bitlyResponse = await bitlyService.shorten({
         longUrl: originalUrl,
-        title: `Link ${data.bankCode} - ${new Date().toLocaleDateString()}`
+        title: `${bankName} - ${new Date().toLocaleDateString()}`
       });
       
       shortUrl = bitlyResponse.link;
