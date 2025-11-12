@@ -140,7 +140,7 @@ export class LinkTokenService {
       valid: true,
       linkId: link.id,
       bankCode: link.bankCode,
-      sessionId: link.sessionId,
+      sessionId: link.sessionId || undefined,
       createdBy: (link.metadata as any)?.createdBy || 'system'
     };
   }
