@@ -155,13 +155,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
             )}
           </button>
 
-          {/* Links con Subdominios para todos los usuarios */}
+          {/* Links para todos los usuarios */}
           <button 
             onClick={() => handleTabChange('links')}
             className={`block w-full text-left ${activeTab === 'links' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
           >
             <Link2 className="mr-2 h-4 w-4" />
-            Links con Bitly
+            Links
           </button>
           
           {isAdmin && (

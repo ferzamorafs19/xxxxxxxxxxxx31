@@ -47,7 +47,7 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 
 ### Link Management System - Active Sessions & Quota Management
 - **GET /api/links/active-sessions**: New endpoint to retrieve active sessions with associated links (non-expired, non-cancelled), with time remaining calculations
-- **User Quota Display**: Added "Links Generados" column to registered users table showing usage/limit with color-coded indicators:
+- **User Quota Display**: Added "Links" column to registered users table showing usage/limit with color-coded indicators:
   - Green: < 70% usage
   - Yellow: 70-90% usage
   - Red: > 90% usage

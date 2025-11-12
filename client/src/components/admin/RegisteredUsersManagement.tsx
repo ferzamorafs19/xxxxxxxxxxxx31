@@ -738,7 +738,7 @@ const RegisteredUsersManagement: React.FC = () => {
                             <TableHead>Tipo</TableHead>
                             <TableHead>Estado</TableHead>
                             <TableHead>Precio</TableHead>
-                            <TableHead>Links Generados</TableHead>
+                            <TableHead>Links</TableHead>
                             <TableHead>Caduca</TableHead>
                             <TableHead>Dispositivos</TableHead>
                             <TableHead>Último Login</TableHead>
