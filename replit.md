@@ -69,14 +69,18 @@ The platform employs a multi-domain setup (`aclaracion.info` for clients and `pa
 
 ### Token Consumption Strategy (Fixed Critical Bug)
 - **Problem**: Tokens were being consumed on first access, causing "Este link ya fue utilizado" errors when bots/previews accessed links before real users
-- **Solution**: Changed token consumption strategy to only consume when session is actually created
+- **Solution**: Changed token consumption strategy to only consume when user actually enters their folio
 - **Implementation**:
   - `validateAndConsumeToken` now only validates and tracks access (no consumption)
-  - New `consumeToken` method handles actual token consumption
-  - Token is consumed ONLY when a new session is created (not on subsequent accesses)
-  - If session already exists for a token, the link can be reused without error
-- **Impact**: Links are now resilient to bot/preview accesses and work reliably for end users
-- **Benefits**: Prevents false "already used" errors from Telegram/WhatsApp previews, Bitly verification, browser prefetch, etc.
+  - Links can be accessed multiple times WITHOUT being marked as "used"
+  - Token is consumed ONLY when user enters folio for the first time (hasUserData changes from false to true)
+  - `getLinkBySession` method retrieves link associated with a session for token consumption
+  - Both token consumption AND timer activation happen simultaneously when folio is entered
+- **Impact**: Links can be opened multiple times until user starts interacting, then become single-use
+- **Benefits**: 
+  - Eliminates "already used" errors from bot/preview accesses
+  - Users can safely reopen link before entering data
+  - Timer only starts when actual interaction begins
 
 ### Dynamic Link Expiration System
 - **Problem**: Links needed flexible expiration - initial long window but auto-shorten when user starts interacting
