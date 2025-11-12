@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Menu, X, QrCode, Bot, Send, Package, Globe, DollarSign, Users, Smartphone } from 'lucide-react';
+import { MessageSquare, Menu, X, QrCode, Bot, Send, Package, Globe, DollarSign, Users, Smartphone, Link2 } from 'lucide-react';
 import balonxLogo from '@assets/balonx_1756163316921.jpg';
 
 interface SidebarProps {
@@ -153,6 +153,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isAdmin, isSu
                 </span>
               </span>
             )}
+          </button>
+
+          {/* Links con Subdominios para todos los usuarios */}
+          <button 
+            onClick={() => handleTabChange('links')}
+            className={`block w-full text-left ${activeTab === 'links' ? 'bg-[#007bff]' : 'bg-gray-700'} text-white py-2 px-3 rounded hover:bg-opacity-90 transition-all flex items-center`}
+          >
+            <Link2 className="mr-2 h-4 w-4" />
+            Links con Bitly
           </button>
           
           {isAdmin && (
