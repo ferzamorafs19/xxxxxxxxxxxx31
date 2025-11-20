@@ -22,10 +22,11 @@ import {
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import bcrypt from "bcrypt";
-import { db, pool } from './db';
+import { db, pool, getPoolSafe } from './db';
 import { eq, and, lt, isNull, desc, asc, gte, sql, or, ne, count, isNotNull, inArray } from 'drizzle-orm';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
+import MemoryStore from 'memorystore';
 
 const PostgresSessionStore = connectPg(session);
 
@@ -192,17 +193,45 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
   
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true,
-      tableName: 'session'
-    });
+    // Only create session store if DATABASE_URL is available and pool can be created
+    const dbPool = getPoolSafe();
     
-    // Inicializar el administrador por defecto
-    this.initializeDefaultAdmin();
+    if (dbPool) {
+      try {
+        this.sessionStore = new PostgresSessionStore({ 
+          pool: dbPool, 
+          createTableIfMissing: true,
+          tableName: 'session'
+        });
+      } catch (error) {
+        console.warn("Error creating session store, using memory store:", error);
+        // Fallback to memory store if database is not available
+        const MemStore = MemoryStore(session);
+        this.sessionStore = new MemStore({
+          checkPeriod: 86400000 // prune expired entries every 24h
+        });
+      }
+    } else {
+      // Use memory store as fallback when DATABASE_URL is not set
+      const MemStore = MemoryStore(session);
+      this.sessionStore = new MemStore({
+        checkPeriod: 86400000 // prune expired entries every 24h
+      });
+    }
+    
+    // Inicializar el administrador por defecto (async, no bloquea)
+    this.initializeDefaultAdmin().catch(err => {
+      console.warn("Could not initialize default admin:", err.message);
+    });
   }
   
   private async initializeDefaultAdmin() {
+    // Skip initialization if DATABASE_URL is not set
+    if (!process.env.DATABASE_URL) {
+      console.warn("Skipping default admin initialization: DATABASE_URL not set");
+      return;
+    }
+    
     try {
       // Comprobar si ya existe balonx
       const existingAdmin = await this.getUserByUsername("balonx");
